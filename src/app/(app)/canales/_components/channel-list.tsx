@@ -1,0 +1,107 @@
+
+'use client';
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Users, User, Building, Hash } from 'lucide-react';
+import type { Channel } from '@/lib/types';
+import { cn } from "@/lib/utils";
+
+interface ChannelListProps {
+  channels: Channel[];
+  selectedChannel: Channel | null;
+  onSelectChannel: (channel: Channel) => void;
+  loading: boolean;
+}
+
+const getChannelIcon = (type: Channel['type']) => {
+  switch (type) {
+    case 'GENERAL': return <Users className="h-4 w-4" />;
+    case 'ROLE': return <Users className="h-4 w-4" />;
+    case 'CREW': return <Building className="h-4 w-4" />;
+    case 'DIRECT': return <User className="h-4 w-4" />;
+    default: return <Hash className="h-4 w-4" />;
+  }
+};
+
+export function ChannelList({ channels, selectedChannel, onSelectChannel, loading }: ChannelListProps) {
+  const channelGroups = {
+    general: channels.filter(c => c.type === 'GENERAL' || c.type === 'ROLE'),
+    cuadrillas: channels.filter(c => c.type === 'CREW'),
+    directos: channels.filter(c => c.type === 'DIRECT'),
+  };
+
+  return (
+    <div className="h-full border-r">
+      <ScrollArea className="h-full">
+        <div className="p-2 space-y-2">
+            {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-9 w-full rounded-md bg-muted animate-pulse" />
+                ))
+            ) : (
+                <>
+                    {channelGroups.general.length > 0 && (
+                        <div>
+                            <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">General</h3>
+                            {channelGroups.general.map(channel => (
+                                <Button
+                                key={channel.id}
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start gap-2",
+                                    selectedChannel?.id === channel.id && "bg-muted font-semibold"
+                                )}
+                                onClick={() => onSelectChannel(channel)}
+                                >
+                                {getChannelIcon(channel.type)}
+                                {channel.nombre}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+                    {channelGroups.cuadrillas.length > 0 && (
+                         <div>
+                            <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Cuadrillas</h3>
+                            {channelGroups.cuadrillas.map(channel => (
+                                <Button
+                                key={channel.id}
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start gap-2",
+                                    selectedChannel?.id === channel.id && "bg-muted font-semibold"
+                                )}
+                                onClick={() => onSelectChannel(channel)}
+                                >
+                                {getChannelIcon(channel.type)}
+                                {channel.nombre}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+                    {channelGroups.directos.length > 0 && (
+                         <div>
+                            <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Mensajes Directos</h3>
+                            {channelGroups.directos.map(channel => (
+                                <Button
+                                key={channel.id}
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start gap-2",
+                                    selectedChannel?.id === channel.id && "bg-muted font-semibold"
+                                )}
+                                onClick={() => onSelectChannel(channel)}
+                                >
+                                {getChannelIcon(channel.type)}
+                                {channel.nombre}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}

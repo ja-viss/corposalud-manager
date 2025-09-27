@@ -1,12 +1,15 @@
+
 'use server';
 
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole } from '@/lib/types';
+import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
+import Channel from '@/models/Channel';
+import Message from '@/models/Message';
 import mongoose from 'mongoose';
 
 // Helper function to safely serialize data
@@ -75,7 +78,7 @@ export async function deleteUser(userId: string) {
         });
 
         if (crewWithUser) {
-          return { success: false, message: 'No se puede eliminar un usuario que pertenece a una cuadrilla.' };
+          return { success: false, message: 'No se puede eliminar un usuario que pertenece a una cuadrilla. Primero debe desvincularlo.' };
         }
         
         await User.findByIdAndDelete(userId);
@@ -212,11 +215,17 @@ export async function getCrews() {
 }
 
 async function getNextCrewNumber() {
-    const lastCrew = await Crew.findOne().sort({ fechaCreacion: -1 });
-    if (!lastCrew) return 1;
-    const lastNumber = parseInt(lastCrew.nombre.split(' - N°')[1] || '0');
-    return lastNumber + 1;
+    const lastCrew = await Crew.findOne().sort({ 'nombre': -1 });
+    if (!lastCrew || !lastCrew.nombre.includes('N°')) return 1;
+    
+    try {
+        const lastNumber = parseInt(lastCrew.nombre.split(' - N°')[1] || '0', 10);
+        return lastNumber + 1;
+    } catch {
+        return 1; // Fallback if parsing fails
+    }
 }
+
 
 export async function createCrew(crewData: { moderadores: string[]; obreros: string[] }) {
     try {
@@ -266,5 +275,127 @@ export async function deleteCrew(crewId: string) {
     } catch (error) {
         console.error('Error al eliminar cuadrilla:', error);
         return { success: false, message: 'Error al eliminar la cuadrilla.' };
+    }
+}
+
+
+// Acciones de Canales
+export async function getChannels() {
+    try {
+        await dbConnect();
+
+        // Step 1: Ensure base channels exist (General, Moderadores, Obreros)
+        const baseChannelNames = ["Anuncios Generales", "Moderadores", "Obreros"];
+        for (const name of baseChannelNames) {
+            const role = name === 'Anuncios Generales' ? undefined : (name.slice(0, -1) as UserRole);
+            const members = await User.find(role ? { role } : {}).select('_id');
+            const memberIds = members.map(m => m._id);
+
+            await Channel.findOneAndUpdate(
+                { nombre: name },
+                { 
+                    nombre: name,
+                    type: role ? 'ROLE' : 'GENERAL',
+                    members: memberIds,
+                    isDeletable: false
+                },
+                { upsert: true, new: true }
+            );
+        }
+
+        // Step 2: Sync crew channels
+        const crews = await Crew.find({}).populate('moderadores obreros');
+        for (const crew of crews) {
+            const memberIds = [...crew.moderadores.map(m => m._id), ...crew.obreros.map(o => o._id)];
+            await Channel.findOneAndUpdate(
+                { crewId: crew._id },
+                {
+                    nombre: crew.nombre,
+                    type: 'CREW',
+                    members: memberIds,
+                    crewId: crew._id,
+                    isDeletable: false,
+                },
+                { upsert: true, new: true }
+            );
+        }
+
+        // Step 3: Fetch all channels to return
+        const channels = await Channel.find({}).sort({ 'type': 1, 'nombre': 1 }).exec();
+        
+        return { success: true, data: safeSerialize(channels) as ChannelType[] };
+    } catch (error) {
+        console.error('Error al obtener canales:', error);
+        return { success: false, message: 'Error al obtener los canales.' };
+    }
+}
+
+export async function createDirectChannel(userId1: string, userId2: string) {
+    try {
+        await dbConnect();
+        
+        const user2 = await User.findById(userId2);
+        if (!user2) {
+            return { success: false, message: "El usuario seleccionado no existe." };
+        }
+
+        // Check if a direct channel between these two users already exists
+        const existingChannel = await Channel.findOne({
+            type: 'DIRECT',
+            members: { $all: [userId1, userId2], $size: 2 }
+        });
+
+        if (existingChannel) {
+            return { success: true, data: safeSerialize(existingChannel), message: "El canal directo ya existe." };
+        }
+
+        const newChannel = new Channel({
+            nombre: `Conversación con ${user2.nombre} ${user2.apellido}`,
+            type: 'DIRECT',
+            members: [userId1, userId2],
+            isDeletable: true,
+        });
+
+        await newChannel.save();
+        await logActivity(`channel-creation:direct:${user2.username}`, 'Sistema');
+        return { success: true, data: safeSerialize(newChannel), message: 'Canal directo creado exitosamente.' };
+    } catch (error) {
+        console.error('Error al crear canal directo:', error);
+        return { success: false, message: 'Error al crear el canal directo.' };
+    }
+}
+
+
+export async function getMessages(channelId: string) {
+    try {
+        await dbConnect();
+        const messages = await Message.find({ channelId })
+            .populate('senderId', 'nombre apellido username')
+            .sort({ fecha: 1 })
+            .exec();
+        return { success: true, data: safeSerialize(messages) as MessageType[] };
+    } catch (error) {
+        console.error('Error al obtener mensajes:', error);
+        return { success: false, message: 'Error al obtener mensajes del canal.' };
+    }
+}
+
+
+export async function sendMessage(channelId: string, senderId: string, content: string) {
+    try {
+        await dbConnect();
+        const newMessage = new Message({
+            channelId,
+            senderId,
+            content
+        });
+        await newMessage.save();
+        
+        const populatedMessage = await Message.findById(newMessage._id).populate('senderId', 'nombre apellido username').exec();
+
+        return { success: true, data: safeSerialize(populatedMessage), message: "Mensaje enviado." };
+    } catch (error) {
+        console.error('Error al enviar mensaje:', error);
+        return { success: false, message: 'Error al enviar el mensaje.' };
     }
 }

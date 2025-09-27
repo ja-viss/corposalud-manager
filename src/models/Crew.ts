@@ -1,3 +1,4 @@
+
 import mongoose, { Schema, models, model } from 'mongoose';
 
 const CrewSchema = new Schema({
@@ -10,6 +11,7 @@ const CrewSchema = new Schema({
   toJSON: {
     virtuals: true,
     transform(doc, ret) {
+      ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
     },
@@ -17,16 +19,12 @@ const CrewSchema = new Schema({
   toObject: {
     virtuals: true,
     transform(doc, ret) {
+      ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
     },
   }
 });
-
-CrewSchema.virtual('id').get(function() {
-  return this._id.toHexString();
-});
-
 
 const Crew = models.Crew || model('Crew', CrewSchema);
 

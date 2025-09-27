@@ -1,3 +1,4 @@
+
 export type UserRole = 'Admin' | 'Moderador' | 'Obrero';
 
 export interface User {
@@ -30,4 +31,22 @@ export interface ActivityLog {
   realizadoPor: string;
   fecha: string;
   detalles?: string;
+}
+
+export interface Channel {
+  id: string;
+  nombre: string;
+  type: 'GENERAL' | 'CREW' | 'ROLE' | 'DIRECT';
+  members: string[];
+  crewId?: string;
+  isDeletable: boolean;
+  fechaCreacion: string;
+}
+
+export interface Message {
+  id: string;
+  channelId: string;
+  senderId: Pick<User, 'id' | 'nombre' | 'apellido' | 'username'>;
+  content: string;
+  fecha: string;
 }

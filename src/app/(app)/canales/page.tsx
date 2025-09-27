@@ -1,13 +1,70 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, MessageSquare } from "lucide-react";
+
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { PlusCircle, Users, User, Building } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import type { Channel, User as UserType } from '@/lib/types';
+import { getChannels, getUsers } from '@/app/actions';
+
+import { ChatView } from './_components/chat-view';
+import { ChannelList } from './_components/channel-list';
+import { CreateChannelModal } from './_components/create-channel-modal';
 
 export default function CanalesPage() {
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [allUsers, setAllUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchChannelsAndUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [channelResult, usersResult] = await Promise.all([getChannels(), getUsers()]);
+
+      if (channelResult.success && channelResult.data) {
+        setChannels(channelResult.data);
+        if (channelResult.data.length > 0) {
+            // Automatically select the first channel, e.g., "Anuncios Generales"
+            setSelectedChannel(channelResult.data[0]);
+        }
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: channelResult.message });
+      }
+
+      if (usersResult.success && usersResult.data) {
+        setAllUsers(usersResult.data);
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron cargar los usuarios.' });
+      }
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error de red', description: 'No se pudo conectar con el servidor.' });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchChannelsAndUsers();
+  }, [fetchChannelsAndUsers]);
+  
+  const handleChannelCreated = () => {
+      fetchChannelsAndUsers();
+      setIsModalOpen(false);
+  }
+
   return (
-    <div className="space-y-6 py-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Canales de Chat</h1>
-        <Button size="sm" className="gap-1">
+    <>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Canales de Chat</h1>
+          <p className="text-muted-foreground">Comunicación unidireccional con el personal.</p>
+        </div>
+        <Button size="sm" className="gap-1" onClick={() => setIsModalOpen(true)}>
           <PlusCircle className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
             Crear Canal
@@ -15,38 +72,26 @@ export default function CanalesPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Canales Activos</CardTitle>
-          <CardDescription>Comunicación unidireccional con las cuadrillas.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base font-medium">Anuncios Generales</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Para todo el personal.</p>
-            </CardContent>
-          </Card>
-          <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base font-medium">Cuadrilla - N°1</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Canal para la cuadrilla 1.</p>
-            </CardContent>
-          </Card>
-           <Card className="border-dashed flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex flex-col items-center text-center p-6">
-              <PlusCircle className="h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-base font-medium">Crear Nuevo Canal</p>
-            </div>
-          </Card>
+      <Card className="h-[calc(100vh-15rem)]">
+        <CardContent className="p-0 h-full">
+          <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] h-full">
+            <ChannelList
+              channels={channels}
+              selectedChannel={selectedChannel}
+              onSelectChannel={setSelectedChannel}
+              loading={loading}
+            />
+            <ChatView channel={selectedChannel} />
+          </div>
         </CardContent>
       </Card>
-    </div>
+      
+      <CreateChannelModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        users={allUsers}
+        onChannelCreated={handleChannelCreated}
+      />
+    </>
   );
 }

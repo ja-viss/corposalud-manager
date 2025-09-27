@@ -1,11 +1,11 @@
 
 import mongoose, { Schema, models, model } from 'mongoose';
 
-const ActivityLogSchema = new Schema({
-  action: { type: String, required: true },
-  realizadoPor: { type: String, required: true },
+const MessageSchema = new Schema({
+  channelId: { type: Schema.Types.ObjectId, ref: 'Channel', required: true },
+  senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  content: { type: String, required: true },
   fecha: { type: Date, default: Date.now },
-  detalles: { type: String },
 }, {
   toJSON: {
     virtuals: true,
@@ -24,6 +24,6 @@ const ActivityLogSchema = new Schema({
   }
 });
 
-const ActivityLog = models.ActivityLog || model('ActivityLog', ActivityLogSchema);
+const Message = models.Message || model('Message', MessageSchema);
 
-export default ActivityLog;
+export default Message;
