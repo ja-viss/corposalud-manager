@@ -91,7 +91,7 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? "Editar Cuadrilla" : "Crear Nueva Cuadrilla"}</DialogTitle>
                     <DialogDescription>
@@ -99,16 +99,16 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField control={form.control} name="nombre" render={({ field }) => (
-                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Nombre de la Cuadrilla</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
 
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
                             <FormField control={form.control} name="moderadores" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Moderadores</FormLabel>
-                                    <ScrollArea className="h-40 rounded-md border p-4">
+                                    <ScrollArea className="h-48 rounded-md border p-4">
                                         {moderadores.map((mod) => (
                                             <div key={mod.id} className="flex items-center space-x-2 mb-2">
                                                 <Checkbox
@@ -130,7 +130,7 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
                             <FormField control={form.control} name="obreros" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Obreros</FormLabel>
-                                     <ScrollArea className="h-40 rounded-md border p-4">
+                                     <ScrollArea className="h-48 rounded-md border p-4">
                                         {obreros.map((obrero) => (
                                             <div key={obrero.id} className="flex items-center space-x-2 mb-2">
                                                 <Checkbox
@@ -151,7 +151,7 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
                             )} />
                         </div>
                         
-                         <DialogFooter>
+                         <DialogFooter className="pt-4">
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit">Guardar Cuadrilla</Button>
                         </DialogFooter>

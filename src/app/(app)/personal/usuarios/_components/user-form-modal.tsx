@@ -8,7 +8,6 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -107,7 +106,7 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
                     <DialogDescription>
@@ -115,26 +114,22 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="nombre" render={({ field }) => (
-                                <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="apellido" render={({ field }) => (
-                                <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4 sm:grid-cols-2">
+                        <FormField control={form.control} name="nombre" render={({ field }) => (
+                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="apellido" render={({ field }) => (
+                            <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                         <FormField control={form.control} name="cedula" render={({ field }) => (
                             <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="telefono" render={({ field }) => (
-                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
+                         <FormField control={form.control} name="telefono" render={({ field }) => (
+                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="email" className="sm:col-span-2" render={({ field }) => (
+                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                          <FormField control={form.control} name="username" render={({ field }) => (
                             <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -145,10 +140,10 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
                                 <FormMessage />
                             </FormItem>
                         )} />
-                        <FormField control={form.control} name="role" render={({ field }) => (
+                        <FormField control={form.control} name="role" className="sm:col-span-2" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Rol</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
                                     </FormControl>
@@ -161,7 +156,7 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
                                 <FormMessage />
                             </FormItem>
                         )} />
-                         <DialogFooter>
+                         <DialogFooter className="sm:col-span-2 pt-4">
                             <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                             <Button type="submit">Guardar Usuario</Button>
                         </DialogFooter>
