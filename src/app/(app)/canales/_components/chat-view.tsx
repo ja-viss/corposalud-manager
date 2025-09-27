@@ -96,24 +96,29 @@ export function ChatView({ channel }: ChatViewProps) {
                 <p>No hay mensajes en este canal todavía.<br/>Sé el primero en enviar uno.</p>
              </div>
           ) : (
-            messages.map((msg) => (
-              <div key={msg.id} className="flex items-start gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>{msg.senderId.nombre.charAt(0)}{msg.senderId.apellido.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <p className="font-semibold text-sm">{msg.senderId.nombre} {msg.senderId.apellido}</p>
-                    <p className="text-xs text-muted-foreground">
-                       {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
-                    </p>
-                  </div>
-                  <div className="p-2 mt-1 rounded-lg bg-card text-sm">
-                    <p>{msg.content}</p>
+            messages.map((msg) => {
+              const senderName = msg.senderId ? `${msg.senderId.nombre} ${msg.senderId.apellido}` : "Usuario Eliminado";
+              const senderInitials = msg.senderId ? `${msg.senderId.nombre.charAt(0)}${msg.senderId.apellido.charAt(0)}` : "UE";
+
+              return (
+                <div key={msg.id} className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>{senderInitials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <p className="font-semibold text-sm">{senderName}</p>
+                      <p className="text-xs text-muted-foreground">
+                         {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
+                      </p>
+                    </div>
+                    <div className="p-2 mt-1 rounded-lg bg-card text-sm">
+                      <p>{msg.content}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </ScrollArea>
