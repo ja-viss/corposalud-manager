@@ -8,6 +8,7 @@ import {
 import { Users, Building, ClipboardList, UserCheck, UserX, Activity, LogIn, FileText, PlusCircle } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
+import Crew from "@/models/Crew";
 import { getActivityLogs } from "@/app/actions";
 import type { ActivityLog } from "@/lib/types";
 import { formatDistanceToNow } from 'date-fns';
@@ -21,9 +22,8 @@ async function getDashboardStats() {
   const inactiveUsers = totalUsers - activeUsers;
   const logResult = await getActivityLogs(3);
   
-  // These are placeholders for now
-  const activeCrews = 42; 
-  const reportsGenerated = 316;
+  const activeCrews = await Crew.countDocuments(); 
+  const reportsGenerated = 0; // Placeholder until report generation is implemented
 
   return {
     totalUsers,
