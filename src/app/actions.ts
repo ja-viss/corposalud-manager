@@ -12,17 +12,12 @@ import mongoose from 'mongoose';
 export async function getActivityLogs(limit?: number) {
     try {
         await dbConnect();
-        const query = ActivityLog.find({}).sort({ fecha: -1 }).lean();
+        const query = ActivityLog.find({}).sort({ fecha: -1 });
         if (limit) {
             query.limit(limit);
         }
-        const logs = await query;
-        const plainLogs = logs.map(log => ({
-            ...log,
-            id: log._id.toString(),
-            fecha: new Date(log.fecha).toISOString(),
-        }));
-        return { success: true, data: plainLogs as ActivityLogType[] };
+        const logs = await query.lean();
+        return { success: true, data: logs as ActivityLogType[] };
     } catch (error) {
         console.error('Error al obtener los logs de actividad:', error);
         return { success: false, message: 'Error al obtener los logs de actividad.' };
@@ -33,14 +28,8 @@ export async function getActivityLogs(limit?: number) {
 export async function getUsers(filter: { role?: UserRole } = {}) {
     try {
         await dbConnect();
-        const query = User.find(filter).sort({ fechaCreacion: -1 }).lean();
-        const users = await query;
-        const plainUsers = users.map(user => ({
-            ...user,
-            id: user._id.toString(),
-            fechaCreacion: new Date(user.fechaCreacion).toISOString(),
-        }));
-        return { success: true, data: plainUsers as UserType[] };
+        const users = await User.find(filter).sort({ fechaCreacion: -1 }).lean();
+        return { success: true, data: users as UserType[] };
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
         return { success: false, message: 'Error al obtener los usuarios.' };
@@ -55,12 +44,7 @@ export async function getUserById(userId: string) {
         if (!user) {
             return { success: false, message: 'Usuario no encontrado' };
         }
-        const plainUser = {
-            ...user,
-            id: user._id.toString(),
-            fechaCreacion: new Date(user.fechaCreacion).toISOString(),
-        };
-        return { success: true, data: plainUser as UserType };
+        return { success: true, data: user as UserType };
     } catch (error) {
         console.error('Error fetching user by ID:', error);
         return { success: false, message: 'Error al obtener el usuario' };
@@ -81,7 +65,6 @@ export async function deleteUser(userId: string) {
             return { success: false, message: 'No se puede eliminar a un administrador.' };
         }
 
-        // Check if user is a member of any crew
         const crewWithUser = await Crew.findOne({
           $or: [{ moderadores: userId }, { obreros: userId }],
         });
@@ -119,15 +102,14 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
         const newUser = new User({
             ...userData,
             contrasena: hashedPassword,
-            creadoPor: 'Admin', // Or the user who is creating it
+            creadoPor: 'Admin',
             fechaCreacion: new Date(),
             status: 'active',
         });
 
         await newUser.save();
         await logActivity(`user-creation:${newUser.username}`, 'Admin');
-        const plainNewUser = JSON.parse(JSON.stringify(newUser));
-        return { success: true, data: plainNewUser, message: 'Usuario creado exitosamente.' };
+        return { success: true, data: newUser.toJSON(), message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
         console.error('Error al crear usuario:', error);
@@ -139,11 +121,6 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
     try {
         await dbConnect();
 
-        const userToUpdate = await User.findById(userId);
-        if (!userToUpdate) {
-            return { success: false, message: 'Usuario no encontrado.' };
-        }
-
         const updateData: any = { ...userData };
 
         if (userData.contrasena) {
@@ -153,12 +130,14 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
             delete updateData.contrasena;
         }
 
-        Object.assign(userToUpdate, updateData);
-        await userToUpdate.save();
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).lean();
         
-        await logActivity(`user-update:${userToUpdate.username}`, 'Admin');
-        const plainUpdatedUser = JSON.parse(JSON.stringify(userToUpdate));
-        return { success: true, data: plainUpdatedUser, message: 'Usuario actualizado exitosamente.' };
+        if (!updatedUser) {
+            return { success: false, message: 'Usuario no encontrado.' };
+        }
+
+        await logActivity(`user-update:${updatedUser.username}`, 'Admin');
+        return { success: true, data: updatedUser, message: 'Usuario actualizado exitosamente.' };
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
         return { success: false, message: 'Error al actualizar el usuario.' };
@@ -218,18 +197,9 @@ export async function getCrews() {
             .populate('moderadores', 'id nombre apellido')
             .populate('obreros', 'id nombre apellido')
             .sort({ fechaCreacion: -1 })
-            .lean();
-
-        const plainCrews = crews.map(crew => {
-            const plainCrew = JSON.parse(JSON.stringify(crew));
-            return {
-                ...plainCrew,
-                id: plainCrew._id.toString(),
-                fechaCreacion: new Date(plainCrew.fechaCreacion).toISOString(),
-            };
-        });
+            .lean({ virtuals: true });
         
-        return { success: true, data: plainCrews as CrewType[] };
+        return { success: true, data: crews as CrewType[] };
     } catch (error) {
         console.error('Error al obtener cuadrillas:', error);
         return { success: false, message: 'Error al obtener las cuadrillas.' };

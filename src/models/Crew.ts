@@ -8,20 +8,25 @@ const CrewSchema = new Schema({
   creadoPor: { type: String, required: true },
 }, {
   toJSON: {
+    virtuals: true,
     transform(doc, ret) {
-      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
     },
   },
   toObject: {
+    virtuals: true,
     transform(doc, ret) {
-      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
     },
   }
 });
+
+CrewSchema.virtual('id').get(function() {
+  return this._id.toHexString();
+});
+
 
 const Crew = models.Crew || model('Crew', CrewSchema);
 

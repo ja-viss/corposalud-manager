@@ -7,19 +7,23 @@ const ActivityLogSchema = new Schema({
   detalles: { type: String },
 }, {
   toJSON: {
+    virtuals: true,
     transform(doc, ret) {
-      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
     },
   },
   toObject: {
+    virtuals: true,
     transform(doc, ret) {
-      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
     },
   }
+});
+
+ActivityLogSchema.virtual('id').get(function() {
+  return this._id.toHexString();
 });
 
 const ActivityLog = models.ActivityLog || model('ActivityLog', ActivityLogSchema);

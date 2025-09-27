@@ -14,19 +14,23 @@ const UserSchema = new Schema({
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 }, {
   toJSON: {
+    virtuals: true,
     transform(doc, ret) {
-      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
     },
   },
   toObject: {
+    virtuals: true,
     transform(doc, ret) {
-      ret.id = ret._id.toString();
       delete ret._id;
       delete ret.__v;
     },
   }
+});
+
+UserSchema.virtual('id').get(function() {
+  return this._id.toHexString();
 });
 
 const User = models.User || model('User', UserSchema);
