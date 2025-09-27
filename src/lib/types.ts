@@ -7,6 +7,8 @@ export interface User {
   cedula: string;
   email: string;
   telefono: string;
+  username: string;
+  contrasena: string;
   role: UserRole;
   fechaCreacion: string;
   creadoPor: string;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +11,72 @@ import { Logo } from '@/components/logo';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import { createUser, loginUser, loginObrero } from "@/app/actions";
+import type { UserRole } from '@/lib/types';
+
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push('/dashboard');
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+    
+    const result = await loginUser({ username, password });
+    if (result.success) {
+      toast({ title: "Éxito", description: result.message });
+      router.push('/dashboard');
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.message });
+    }
+  };
+
+  const handleObreroLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const cedula = formData.get("cedula") as string;
+
+    const result = await loginObrero(cedula);
+     if (result.success) {
+      toast({ title: "Éxito", description: result.message });
+      router.push('/dashboard'); // O a una página específica para obreros
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.message });
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(e.currentTarget);
+      const data = Object.fromEntries(formData.entries());
+
+      if (data.contrasena !== data.confirmarContrasena) {
+          toast({ variant: "destructive", title: "Error", description: "Las contraseñas no coinciden." });
+          return;
+      }
+
+      const result = await createUser({
+          nombre: data.nombre as string,
+          apellido: data.apellido as string,
+          cedula: data.cedula as string,
+          email: data.email as string,
+          telefono: data.telefono as string,
+          username: data.username as string,
+          contrasena: data.contrasena as string,
+          role: data.role as UserRole,
+      });
+
+      if (result.success) {
+          toast({ title: "Éxito", description: result.message });
+          setOpen(false);
+      } else {
+          toast({ variant: "destructive", title: "Error", description: result.message });
+      }
   };
 
   return (
@@ -41,11 +101,11 @@ export default function LoginPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Usuario</Label>
-                  <Input id="username" type="text" placeholder="su-usuario" required defaultValue="admin"/>
+                  <Input id="username" name="username" type="text" placeholder="su-usuario" required defaultValue="admin"/>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input id="password" type="password" required defaultValue="password"/>
+                  <Input id="password" name="password" type="password" required defaultValue="password"/>
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-4">
@@ -56,7 +116,7 @@ export default function LoginPage() {
         </TabsContent>
         <TabsContent value="worker">
           <Card>
-            <form onSubmit={handleLogin}>
+            <form onSubmit={handleObreroLogin}>
               <CardHeader>
                 <CardTitle>Acceso de Obrero</CardTitle>
                 <CardDescription>
@@ -65,8 +125,8 @@ export default function LoginPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="space-y-2">
-                  <Label htmlFor="cedula">Cédula de Identidad</Label>
-                  <Input id="cedula" placeholder="V-12345678" required />
+                  <Label htmlFor="cedula-obrero">Cédula de Identidad</Label>
+                  <Input id="cedula-obrero" name="cedula" placeholder="V-12345678" required />
                 </div>
               </CardContent>
               <CardFooter>
@@ -77,7 +137,7 @@ export default function LoginPage() {
         </TabsContent>
       </Tabs>
       <div className="mt-4">
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1">
                 <PlusCircle className="h-3.5 w-3.5" />
@@ -93,49 +153,63 @@ export default function LoginPage() {
                   Complete el formulario para agregar un nuevo usuario al sistema.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="nombre" className="text-right">Nombre</Label>
-                  <Input id="nombre" className="col-span-3" />
+              <form onSubmit={handleCreateUser}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="nombre" className="text-right">Nombre</Label>
+                    <Input id="nombre" name="nombre" className="col-span-3" required />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="apellido" className="text-right">Apellido</Label>
+                    <Input id="apellido" name="apellido" className="col-span-3" required />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="cedula" className="text-right">Cédula</Label>
+                    <Input id="cedula" name="cedula" className="col-span-3" required/>
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">Email</Label>
+                    <Input id="email" name="email" type="email" className="col-span-3" required/>
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="telefono" className="text-right">Teléfono</Label>
+                    <Input id="telefono" name="telefono" className="col-span-3" required/>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="username-create" className="text-right">Usuario</Label>
+                    <Input id="username-create" name="username" className="col-span-3" required/>
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="contrasena" className="text-right">Contraseña</Label>
+                    <Input id="contrasena" name="contrasena" type="password" className="col-span-3" required/>
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="confirmarContrasena" className="text-right">Confirmar</Label>
+                    <Input id="confirmarContrasena" name="confirmarContrasena" type="password" className="col-span-3" required/>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="role" className="text-right">
+                      Rol
+                    </Label>
+                    <Select name="role" required>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Seleccione un rol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Admin">Admin</SelectItem>
+                        <SelectItem value="Moderador">Moderador</SelectItem>
+                        <SelectItem value="Obrero">Obrero</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="apellido" className="text-right">Apellido</Label>
-                  <Input id="apellido" className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="cedula" className="text-right">Cédula</Label>
-                  <Input id="cedula" className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">Email</Label>
-                  <Input id="email" type="email" className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="telefono" className="text-right">Teléfono</Label>
-                  <Input id="telefono" className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="role" className="text-right">
-                    Rol
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Seleccione un rol" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="Moderador">Moderador</SelectItem>
-                      <SelectItem value="Obrero">Obrero</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">Cancelar</Button>
-                </DialogClose>
-                <Button type="submit">Guardar Usuario</Button>
-              </DialogFooter>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">Cancelar</Button>
+                  </DialogClose>
+                  <Button type="submit">Guardar Usuario</Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
       </div>
