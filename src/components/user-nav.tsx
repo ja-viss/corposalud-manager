@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ThemeToggle } from "./theme-toggle";
 
 export function UserNav() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -38,38 +39,41 @@ export function UserNav() {
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src="https://picsum.photos/seed/1/100/100" alt="Avatar" data-ai-hint="person portrait" />
-              <AvatarFallback>AD</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">Admin</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                admin@corposalud.com
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <Link href="/perfil">
-              <DropdownMenuItem>
-                Perfil
-              </DropdownMenuItem>
-            </Link>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowLogoutConfirm(true); }}>
-            Cerrar sesión
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src="https://picsum.photos/seed/1/100/100" alt="Avatar" data-ai-hint="person portrait" />
+                <AvatarFallback>AD</AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">Admin</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  admin@corposalud.com
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <Link href="/perfil">
+                <DropdownMenuItem>
+                  Perfil
+                </DropdownMenuItem>
+              </Link>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowLogoutConfirm(true); }}>
+              Cerrar sesión
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent>
