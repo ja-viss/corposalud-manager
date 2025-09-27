@@ -11,18 +11,16 @@ import Crew from '@/models/Crew';
 export async function getActivityLogs(limit?: number) {
     try {
         await dbConnect();
-        const query = ActivityLog.find({}).sort({ fecha: -1 });
+        const query = ActivityLog.find({}).sort({ fecha: -1 }).lean();
         if (limit) {
             query.limit(limit);
         }
         const logs = await query;
-        const plainLogs = logs.map(log => {
-             const logObject = log.toObject({ getters: true });
-            logObject.id = logObject._id.toString();
-            // delete logObject._id; // No es necesario con toObject y transform
-            // delete logObject.__v;
-            return logObject;
-        });
+        const plainLogs = logs.map(log => ({
+            ...log,
+            id: log._id.toString(),
+            fecha: log.fecha.toISOString(),
+        }));
         return { success: true, data: plainLogs as ActivityLogType[] };
     } catch (error) {
         console.error('Error al obtener los logs de actividad:', error);
@@ -38,6 +36,7 @@ export async function getUsers() {
         const plainUsers = users.map(user => ({
             ...user,
             id: user._id.toString(),
+            fechaCreacion: user.fechaCreacion.toISOString(),
         }));
         return { success: true, data: plainUsers as UserType[] };
     } catch (error) {
