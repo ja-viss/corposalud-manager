@@ -7,13 +7,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from '@/components/logo';
+import { verifyDbConnection } from '@/app/actions';
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     router.push('/dashboard');
+  };
+
+  const handleVerifyConnection = async () => {
+    const result = await verifyDbConnection();
+    if (result.success) {
+      toast({
+        title: "Éxito",
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -45,7 +64,7 @@ export default function LoginPage() {
                   <Input id="password" type="password" required defaultValue="password"/>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex-col gap-4">
                 <Button type="submit" className="w-full">Iniciar Sesión</Button>
               </CardFooter>
             </form>
@@ -73,6 +92,11 @@ export default function LoginPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      <div className="mt-4">
+        <Button variant="outline" onClick={handleVerifyConnection}>
+          Verificar Conexión a la Base de Datos
+        </Button>
+      </div>
     </div>
   );
 }
