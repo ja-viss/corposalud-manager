@@ -101,11 +101,11 @@ export default function LoginPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Usuario</Label>
-                  <Input id="username" name="username" type="text" placeholder="su-usuario" required defaultValue="admin"/>
+                  <Input id="username" name="username" type="text" placeholder="su-usuario" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input id="password" name="password" type="password" required defaultValue="password"/>
+                  <Input id="password" name="password" type="password" required />
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-4">
