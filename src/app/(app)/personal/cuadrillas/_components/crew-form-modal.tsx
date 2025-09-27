@@ -24,9 +24,8 @@ interface CrewFormModalProps {
 }
 
 const formSchema = z.object({
-    nombre: z.string().min(2, "El nombre es demasiado corto"),
-    moderadores: z.array(z.string()),
-    obreros: z.array(z.string()),
+    moderadores: z.array(z.string()).min(1, "Debe seleccionar al menos un moderador."),
+    obreros: z.array(z.string()).min(4, "Debe seleccionar al menos 4 obreros.").max(40, "No puede seleccionar más de 40 obreros."),
 });
 
 export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalProps) {
@@ -38,7 +37,6 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            nombre: "",
             moderadores: [],
             obreros: [],
         },
@@ -59,19 +57,19 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
     useEffect(() => {
         if (isEditing && crew) {
             form.reset({
-                nombre: crew.nombre,
                 moderadores: crew.moderadores.map(m => m.id),
                 obreros: crew.obreros.map(o => o.id),
             });
         } else {
-            form.reset({ nombre: "", moderadores: [], obreros: [] });
+            form.reset({ moderadores: [], obreros: [] });
         }
     }, [crew, isEditing, form, isOpen]);
 
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
+        const payload = { ...values, nombre: crew?.nombre };
         if (isEditing && crew) {
-            const result = await updateCrew(crew.id, values);
+            const result = await updateCrew(crew.id, payload);
             if (result.success) {
                 toast({ title: "Éxito", description: result.message });
                 onSave();
@@ -79,7 +77,7 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
                 toast({ variant: "destructive", title: "Error", description: result.message });
             }
         } else {
-            const result = await createCrew(values);
+            const result = await createCrew(payload);
             if (result.success) {
                 toast({ title: "Éxito", description: result.message });
                 onSave();
@@ -93,17 +91,13 @@ export function CrewFormModal({ isOpen, onClose, crew, onSave }: CrewFormModalPr
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle>{isEditing ? "Editar Cuadrilla" : "Crear Nueva Cuadrilla"}</DialogTitle>
+                    <DialogTitle>{isEditing ? `Editar ${crew?.nombre}` : "Crear Nueva Cuadrilla"}</DialogTitle>
                     <DialogDescription>
-                        Complete el formulario para {isEditing ? "actualizar la" : "crear una nueva"} cuadrilla.
+                        Seleccione los miembros para {isEditing ? "actualizar la" : "crear una nueva"} cuadrilla. El nombre se asignará automáticamente.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="nombre" render={({ field }) => (
-                            <FormItem><FormLabel>Nombre de la Cuadrilla</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
                             <FormField control={form.control} name="moderadores" render={({ field }) => (
                                 <FormItem>

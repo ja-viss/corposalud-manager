@@ -211,11 +211,23 @@ export async function getCrews() {
     }
 }
 
-export async function createCrew(crewData: { nombre: string; moderadores: string[]; obreros: string[] }) {
+async function getNextCrewNumber() {
+    const lastCrew = await Crew.findOne().sort({ fechaCreacion: -1 });
+    if (!lastCrew) return 1;
+    const lastNumber = parseInt(lastCrew.nombre.split(' - N°')[1] || '0');
+    return lastNumber + 1;
+}
+
+export async function createCrew(crewData: { moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
+
+        const crewNumber = await getNextCrewNumber();
+        const crewName = `Cuadrilla - N°${crewNumber}`;
+
         const newCrew = new Crew({
             ...crewData,
+            nombre: crewName,
             creadoPor: 'Admin', // Asumir que el admin lo crea
         });
         await newCrew.save();
@@ -227,7 +239,7 @@ export async function createCrew(crewData: { nombre: string; moderadores: string
     }
 }
 
-export async function updateCrew(crewId: string, crewData: { nombre: string; moderadores: string[]; obreros: string[] }) {
+export async function updateCrew(crewId: string, crewData: { nombre?: string; moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
         const crew = await Crew.findByIdAndUpdate(crewId, crewData, { new: true });
