@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,40 +12,58 @@ import type { User } from "@/lib/types";
 import { getUsers, deleteUser } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
-
+import { UserFormModal } from "./_components/user-form-modal";
 
 export default function UsuariosPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchUsers() {
-      setLoading(true);
-      const result = await getUsers();
-      if (result.success && result.data) {
-        setUsers(result.data);
-      } else {
-        toast({ variant: "destructive", title: "Error", description: result.message });
-      }
-      setLoading(false);
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    const result = await getUsers();
+    if (result.success && result.data) {
+      setUsers(result.data);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: result.message });
     }
-    fetchUsers();
+    setLoading(false);
   }, [toast]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleDelete = async () => {
     if (showDeleteConfirm) {
       const result = await deleteUser(showDeleteConfirm.id);
        if (result.success) {
         toast({ title: "Éxito", description: result.message });
-        setUsers(users.filter(u => u.id !== showDeleteConfirm.id));
+        fetchUsers(); // Refresh users list
       } else {
         toast({ variant: "destructive", title: "Error", description: result.message });
       }
       setShowDeleteConfirm(null);
     }
   };
+
+  const handleOpenModalForCreate = () => {
+    setEditingUser(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenModalForEdit = (user: User) => {
+    setEditingUser(user);
+    setIsModalOpen(true);
+  };
+  
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingUser(null);
+  }
 
   return (
     <>
@@ -54,6 +72,12 @@ export default function UsuariosPage() {
             <h2 className="text-2xl font-bold tracking-tight">Usuarios</h2>
             <p className="text-muted-foreground">Gestione los usuarios del sistema.</p>
         </div>
+        <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
+          <PlusCircle className="h-3.5 w-3.5" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            Crear Usuario
+          </span>
+        </Button>
       </div>
       <Card>
         <CardContent className="p-0">
@@ -110,7 +134,7 @@ export default function UsuariosPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem>Editar</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleOpenModalForEdit(user)}>Editar</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => setShowDeleteConfirm(user)}
@@ -129,6 +153,18 @@ export default function UsuariosPage() {
         </CardContent>
       </Card>
       
+      {isModalOpen && (
+        <UserFormModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            user={editingUser}
+            onSave={() => {
+                handleCloseModal();
+                fetchUsers();
+            }}
+        />
+      )}
+
       <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

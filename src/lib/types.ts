@@ -8,7 +8,7 @@ export interface User {
   email: string;
   telefono: string;
   username: string;
-  contrasena: string;
+  contrasena?: string; // Optional on client-side
   role: UserRole;
   fechaCreacion: string;
   creadoPor: string;
@@ -18,8 +18,8 @@ export interface User {
 export interface Crew {
     id: string;
     nombre: string;
-    moderadores: User[];
-    obreros: User[];
+    moderadores: Pick<User, 'id' | 'nombre' | 'apellido'>[];
+    obreros: Pick<User, 'id' | 'nombre' | 'apellido'>[];
     fechaCreacion: string;
     creadoPor: string;
 }
