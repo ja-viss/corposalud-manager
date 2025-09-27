@@ -20,7 +20,7 @@ export async function getActivityLogs(limit?: number) {
         const plainLogs = logs.map(log => ({
             ...log,
             id: log._id.toString(),
-            fecha: log.fecha.toISOString(),
+            fecha: new Date(log.fecha).toISOString(),
         }));
         return { success: true, data: plainLogs as ActivityLogType[] };
     } catch (error) {
@@ -38,7 +38,7 @@ export async function getUsers(filter: { role?: UserRole } = {}) {
         const plainUsers = users.map(user => ({
             ...user,
             id: user._id.toString(),
-            fechaCreacion: user.fechaCreacion.toISOString(),
+            fechaCreacion: new Date(user.fechaCreacion).toISOString(),
         }));
         return { success: true, data: plainUsers as UserType[] };
     } catch (error) {
@@ -58,7 +58,7 @@ export async function getUserById(userId: string) {
         const plainUser = {
             ...user,
             id: user._id.toString(),
-            fechaCreacion: user.fechaCreacion.toISOString(),
+            fechaCreacion: new Date(user.fechaCreacion).toISOString(),
         };
         return { success: true, data: plainUser as UserType };
     } catch (error) {
