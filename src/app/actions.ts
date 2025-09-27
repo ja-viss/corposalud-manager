@@ -209,18 +209,20 @@ export async function getCrews() {
     try {
         await dbConnect();
         const crews = await Crew.find({})
-            .populate('moderadores', 'nombre apellido')
-            .populate('obreros', 'nombre apellido')
+            .populate('moderadores', 'id nombre apellido')
+            .populate('obreros', 'id nombre apellido')
             .sort({ fechaCreacion: -1 })
-            .lean();
+            .lean({ virtuals: true });
 
-        const plainCrews = crews.map(crew => ({
-            ...crew,
-            id: crew._id.toString(),
-            fechaCreacion: crew.fechaCreacion.toISOString(),
-            moderadores: crew.moderadores.map((m: any) => ({ ...m, id: m._id.toString() })),
-            obreros: crew.obreros.map((o: any) => ({ ...o, id: o._id.toString() })),
-        }));
+        const plainCrews = crews.map(crew => {
+            const plainCrew = JSON.parse(JSON.stringify(crew));
+            return {
+                ...plainCrew,
+                id: plainCrew._id.toString(),
+                fechaCreacion: new Date(plainCrew.fechaCreacion).toISOString(),
+            };
+        });
+        
         return { success: true, data: plainCrews as CrewType[] };
     } catch (error) {
         console.error('Error al obtener cuadrillas:', error);
