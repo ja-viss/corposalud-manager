@@ -6,6 +6,7 @@ import ActivityLog from '@/models/ActivityLog';
 import type { User as UserType, ActivityLog as ActivityLogType } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
+import Crew from '@/models/Crew';
 
 export async function getActivityLogs(limit?: number) {
     try {
@@ -18,8 +19,8 @@ export async function getActivityLogs(limit?: number) {
         const plainLogs = logs.map(log => {
              const logObject = log.toObject({ getters: true });
             logObject.id = logObject._id.toString();
-            delete logObject._id;
-            delete logObject.__v;
+            // delete logObject._id; // No es necesario con toObject y transform
+            // delete logObject.__v;
             return logObject;
         });
         return { success: true, data: plainLogs as ActivityLogType[] };
@@ -33,14 +34,11 @@ export async function getActivityLogs(limit?: number) {
 export async function getUsers() {
     try {
         await dbConnect();
-        const users = await User.find({}).sort({ fechaCreacion: -1 });
-        const plainUsers = users.map(user => {
-            const userObject = user.toObject({ getters: true });
-            userObject.id = userObject._id.toString();
-            delete userObject._id;
-            delete userObject.__v;
-            return userObject;
-        })
+        const users = await User.find({}).sort({ fechaCreacion: -1 }).lean();
+        const plainUsers = users.map(user => ({
+            ...user,
+            id: user._id.toString(),
+        }));
         return { success: true, data: plainUsers as UserType[] };
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -57,10 +55,17 @@ export async function deleteUser(userId: string) {
             return { success: false, message: "Usuario no encontrado." };
         }
 
-        // Add logic here to check if user is in a crew before deleting
+        // Check if user is a member of any crew
+        const crewWithUser = await Crew.findOne({
+          $or: [{ moderadores: userId }, { obreros: userId }],
+        });
+
+        if (crewWithUser) {
+          return { success: false, message: 'No se puede eliminar un usuario que pertenece a una cuadrilla.' };
+        }
         
         await User.findByIdAndDelete(userId);
-        await logActivity('user-deletion:' + userId, 'Sistema');
+        await logActivity(`user-deletion:${user.username}`, 'Sistema');
         return { success: true, message: "Usuario eliminado exitosamente." };
 
     } catch (error) {
@@ -84,13 +89,13 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
         const newUser = new User({
             ...userData,
             contrasena: hashedPassword,
-            creadoPor: 'Sistema', // Or the user who is creating it
+            creadoPor: 'Admin', // Or the user who is creating it
             fechaCreacion: new Date(),
             status: 'active',
         });
 
         await newUser.save();
-        await logActivity(`user-creation:${newUser.username}`, 'Sistema');
+        await logActivity(`user-creation:${newUser.username}`, 'Admin');
         return { success: true, message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
@@ -114,7 +119,7 @@ export async function loginUser(credentials: {username: string, password: string
             return { success: false, message: 'Contraseña incorrecta.' };
         }
         
-        await logActivity(`user-login:${user.username}`, 'Sistema');
+        await logActivity(`user-login:${user.username}`, user.username);
         return { success: true, message: 'Inicio de sesión exitoso.' };
 
     } catch (error) {
