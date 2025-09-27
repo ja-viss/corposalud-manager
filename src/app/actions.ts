@@ -3,7 +3,7 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType } from '@/lib/types';
+import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
@@ -30,7 +30,7 @@ export async function getActivityLogs(limit?: number) {
 }
 
 
-export async function getUsers(filter: { role?: 'Moderador' | 'Obrero' } = {}) {
+export async function getUsers(filter: { role?: UserRole } = {}) {
     try {
         await dbConnect();
         const query = User.find(filter).sort({ fechaCreacion: -1 }).lean();
@@ -75,6 +75,10 @@ export async function deleteUser(userId: string) {
         const user = await User.findById(userId);
         if (!user) {
             return { success: false, message: "Usuario no encontrado." };
+        }
+        
+        if (user.role === 'Admin') {
+            return { success: false, message: 'No se puede eliminar a un administrador.' };
         }
 
         // Check if user is a member of any crew
@@ -122,7 +126,8 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
 
         await newUser.save();
         await logActivity(`user-creation:${newUser.username}`, 'Admin');
-        return { success: true, data: newUser.toJSON(), message: 'Usuario creado exitosamente.' };
+        const plainNewUser = JSON.parse(JSON.stringify(newUser));
+        return { success: true, data: plainNewUser, message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
         console.error('Error al crear usuario:', error);
@@ -152,7 +157,8 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
         await userToUpdate.save();
         
         await logActivity(`user-update:${userToUpdate.username}`, 'Admin');
-        return { success: true, data: userToUpdate.toJSON(), message: 'Usuario actualizado exitosamente.' };
+        const plainUpdatedUser = JSON.parse(JSON.stringify(userToUpdate));
+        return { success: true, data: plainUpdatedUser, message: 'Usuario actualizado exitosamente.' };
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
         return { success: false, message: 'Error al actualizar el usuario.' };
@@ -212,7 +218,7 @@ export async function getCrews() {
             .populate('moderadores', 'id nombre apellido')
             .populate('obreros', 'id nombre apellido')
             .sort({ fechaCreacion: -1 })
-            .lean({ virtuals: true });
+            .lean();
 
         const plainCrews = crews.map(crew => {
             const plainCrew = JSON.parse(JSON.stringify(crew));
