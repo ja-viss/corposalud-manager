@@ -9,9 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Crew } from "@/lib/types";
 
+// Mock data remains for now until crew creation functionality is implemented
 const mockCrews: Crew[] = [
-  { id: '1', nombre: 'Cuadrilla - N°1', moderadores: [{ id: '2', nombre: 'Ana', apellido: 'Gomez', cedula: 'V-87654321', email: 'ana.gomez@email.com', telefono: '0412-8765432', role: 'Moderador', fechaCreacion: '2023-02-20', creadoPor: 'Juan Perez', status: 'active' }], obreros: [{ id: '3', nombre: 'Carlos', apellido: 'Ruiz', cedula: 'V-11223344', email: 'carlos.ruiz@email.com', telefono: '0416-1122334', role: 'Obrero', fechaCreacion: '2023-03-10', creadoPor: 'Ana Gomez', status: 'active' }, { id: '5', nombre: 'Luis', apellido: 'Martinez', cedula: 'V-33445566', email: 'luis.martinez@email.com', telefono: '0414-3344556', role: 'Obrero', fechaCreacion: '2023-04-01', creadoPor: 'Juan Perez', status: 'active' }], fechaCreacion: '2023-05-01', creadoPor: 'Juan Perez' },
-  { id: '2', nombre: 'Cuadrilla - N°2', moderadores: [{ id: '2', nombre: 'Ana', apellido: 'Gomez', cedula: 'V-87654321', email: 'ana.gomez@email.com', telefono: '0412-8765432', role: 'Moderador', fechaCreacion: '2023-02-20', creadoPor: 'Juan Perez', status: 'active' }], obreros: [], fechaCreacion: '2023-05-15', creadoPor: 'Juan Perez' },
+  { id: '1', nombre: 'Cuadrilla - N°1', moderadores: [], obreros: [], fechaCreacion: '2023-05-01', creadoPor: 'Juan Perez' },
+  { id: '2', nombre: 'Cuadrilla - N°2', moderadores: [], obreros: [], fechaCreacion: '2023-05-15', creadoPor: 'Juan Perez' },
 ];
 
 export default function CuadrillasPage() {

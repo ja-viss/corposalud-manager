@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,27 +8,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { User, UserRole } from "@/lib/types";
+import type { User } from "@/lib/types";
+import { getUsers, deleteUser } from "@/app/actions";
+import { useToast } from "@/hooks/use-toast";
 
-const mockUsers: User[] = [
-  { id: '1', nombre: 'Juan', apellido: 'Perez', cedula: 'V-12345678', email: 'juan.perez@email.com', telefono: '0414-1234567', role: 'Admin', fechaCreacion: '2023-01-15', creadoPor: 'System', status: 'active' },
-  { id: '2', nombre: 'Ana', apellido: 'Gomez', cedula: 'V-87654321', email: 'ana.gomez@email.com', telefono: '0412-8765432', role: 'Moderador', fechaCreacion: '2023-02-20', creadoPor: 'Juan Perez', status: 'active' },
-  { id: '3', nombre: 'Carlos', apellido: 'Ruiz', cedula: 'V-11223344', email: 'carlos.ruiz@email.com', telefono: '0416-1122334', role: 'Obrero', fechaCreacion: '2023-03-10', creadoPor: 'Ana Gomez', status: 'active' },
-  { id: '4', nombre: 'Maria', apellido: 'Gonzalez', cedula: 'V-22334455', email: 'maria.gonzalez@email.com', telefono: '0424-2233445', role: 'Obrero', fechaCreacion: '2023-03-10', creadoPor: 'Ana Gomez', status: 'inactive' },
-  { id: '5', nombre: 'Luis', apellido: 'Martinez', cedula: 'V-33445566', email: 'luis.martinez@email.com', telefono: '0414-3344556', role: 'Obrero', fechaCreacion: '2023-04-01', creadoPor: 'Juan Perez', status: 'active' },
-];
 
 export default function UsuariosPage() {
+  const [users, setUsers] = useState<User[]>([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
+  const { toast } = useToast();
 
-  const handleDelete = () => {
+  useEffect(() => {
+    async function fetchUsers() {
+      const result = await getUsers();
+      if (result.success && result.data) {
+        setUsers(result.data);
+      } else {
+        toast({ variant: "destructive", title: "Error", description: result.message });
+      }
+    }
+    fetchUsers();
+  }, [toast]);
+
+  const handleDelete = async () => {
     if (showDeleteConfirm) {
-      // Perform delete action here
-      console.log(`Deleting user ${showDeleteConfirm.nombre}`);
+      const result = await deleteUser(showDeleteConfirm.id);
+       if (result.success) {
+        toast({ title: "Éxito", description: result.message });
+        setUsers(users.filter(u => u.id !== showDeleteConfirm.id));
+      } else {
+        toast({ variant: "destructive", title: "Error", description: result.message });
+      }
       setShowDeleteConfirm(null);
     }
   };
@@ -57,7 +67,7 @@ export default function UsuariosPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockUsers.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.nombre} {user.apellido}</TableCell>
                   <TableCell>{user.cedula}</TableCell>
@@ -69,7 +79,7 @@ export default function UsuariosPage() {
                   <TableCell>
                     <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600' : ''}>{user.status}</Badge>
                   </TableCell>
-                  <TableCell>{user.fechaCreacion}</TableCell>
+                  <TableCell>{new Date(user.fechaCreacion).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

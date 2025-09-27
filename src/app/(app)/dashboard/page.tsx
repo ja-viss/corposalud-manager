@@ -6,8 +6,32 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Users, Building, ClipboardList, UserCheck, UserX } from "lucide-react";
+import dbConnect from "@/lib/db";
+import User from "@/models/User";
 
-export default function DashboardPage() {
+async function getDashboardStats() {
+  await dbConnect();
+  const totalUsers = await User.countDocuments();
+  const activeUsers = await User.countDocuments({ status: 'active' });
+  const inactiveUsers = totalUsers - activeUsers;
+  
+  // These are placeholders for now
+  const activeCrews = 42; 
+  const reportsGenerated = 316;
+
+  return {
+    totalUsers,
+    activeCrews,
+    reportsGenerated,
+    activeUsers,
+    inactiveUsers,
+  };
+}
+
+
+export default async function DashboardPage() {
+  const stats = await getDashboardStats();
+
   return (
     <div className="flex-1 space-y-4 py-8">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -18,8 +42,8 @@ export default function DashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,257</div>
-            <p className="text-xs text-muted-foreground">+120 desde el último mes</p>
+            <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">+0 desde el último mes</p>
           </CardContent>
         </Card>
         <Card>
@@ -28,8 +52,8 @@ export default function DashboardPage() {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42</div>
-            <p className="text-xs text-muted-foreground">+3 creadas esta semana</p>
+            <div className="text-2xl font-bold">{stats.activeCrews}</div>
+            <p className="text-xs text-muted-foreground">+0 creadas esta semana</p>
           </CardContent>
         </Card>
         <Card>
@@ -38,18 +62,20 @@ export default function DashboardPage() {
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">316</div>
-            <p className="text-xs text-muted-foreground">+45 hoy</p>
+            <div className="text-2xl font-bold">{stats.reportsGenerated}</div>
+            <p className="text-xs text-muted-foreground">+0 hoy</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Obreros Activos</CardTitle>
+            <CardTitle className="text-sm font-medium">Personal Activo</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,150</div>
-            <p className="text-xs text-muted-foreground">91% del total</p>
+            <div className="text-2xl font-bold">{stats.activeUsers}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.totalUsers > 0 ? `${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% del total` : '0% del total'}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -58,8 +84,10 @@ export default function DashboardPage() {
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">107</div>
-            <p className="text-xs text-muted-foreground">9% del total</p>
+            <div className="text-2xl font-bold">{stats.inactiveUsers}</div>
+             <p className="text-xs text-muted-foreground">
+               {stats.totalUsers > 0 ? `${Math.round((stats.inactiveUsers / stats.totalUsers) * 100)}% del total` : '0% del total'}
+             </p>
           </CardContent>
         </Card>
       </div>
@@ -73,20 +101,8 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center">
               <div className="ml-4 space-y-1">
-                <p className="text-sm font-medium leading-none">Nueva cuadrilla "Cuadrilla - N°43" creada.</p>
-                <p className="text-sm text-muted-foreground">Creado por: Admin - Hace 15 minutos</p>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <div className="ml-4 space-y-1">
-                <p className="text-sm font-medium leading-none">Reporte "Reporte - N°317" generado.</p>
-                <p className="text-sm text-muted-foreground">Generado por: Moderador_1 - Hace 1 hora</p>
-              </div>
-            </div>
-             <div className="flex items-center">
-              <div className="ml-4 space-y-1">
-                <p className="text-sm font-medium leading-none">Usuario "Maria Gonzalez" (Obrero) agregado.</p>
-                <p className="text-sm text-muted-foreground">Creado por: Admin - Hace 3 horas</p>
+                <p className="text-sm font-medium leading-none">Aplicación conectada a la base de datos.</p>
+                <p className="text-sm text-muted-foreground">Realizado por: jhonvivasproject</p>
               </div>
             </div>
           </div>

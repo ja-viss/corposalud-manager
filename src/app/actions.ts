@@ -5,14 +5,43 @@ import User from '@/models/User';
 import type { User as UserType } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 
-export async function verifyDbConnection() {
-  try {
-    await dbConnect();
-    return { success: true, message: 'Conexión a la base de datos exitosa.' };
-  } catch (error) {
-    console.error('Error de conexión a la base de datos:', error);
-    return { success: false, message: 'Error al conectar con la base de datos.' };
-  }
+export async function getUsers() {
+    try {
+        await dbConnect();
+        const users = await User.find({}).sort({ fechaCreacion: -1 });
+        const plainUsers = users.map(user => {
+            const userObject = user.toObject({ getters: true });
+            userObject.id = userObject._id.toString();
+            delete userObject._id;
+            delete userObject.__v;
+            return userObject;
+        })
+        return { success: true, data: plainUsers as UserType[] };
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        return { success: false, message: 'Error al obtener los usuarios.' };
+    }
+}
+
+export async function deleteUser(userId: string) {
+    try {
+        await dbConnect();
+        
+        // Find user first to check dependencies, e.g. if they are in a crew
+        const user = await User.findById(userId);
+        if (!user) {
+            return { success: false, message: "Usuario no encontrado." };
+        }
+
+        // Add logic here to check if user is in a crew before deleting
+        
+        await User.findByIdAndDelete(userId);
+        return { success: true, message: "Usuario eliminado exitosamente." };
+
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        return { success: false, message: "Error al eliminar el usuario." };
+    }
 }
 
 export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion' | 'creadoPor' | 'status'> & { username: string, contrasena: string }) {
@@ -30,8 +59,8 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
         const newUser = new User({
             ...userData,
             contrasena: hashedPassword,
-            creadoPor: 'System', // O el usuario que lo está creando
-            fechaCreacion: new Date().toISOString(),
+            creadoPor: 'Admin', // O el usuario que lo está creando
+            fechaCreacion: new Date(),
             status: 'active',
         });
 

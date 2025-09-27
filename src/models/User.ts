@@ -12,6 +12,21 @@ const UserSchema = new Schema({
   fechaCreacion: { type: Date, default: Date.now },
   creadoPor: { type: String, required: true },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+}, {
+  toJSON: {
+    transform(doc, ret) {
+      ret.id = ret._id.toString();
+      delete ret._id;
+      delete ret.__v;
+    },
+  },
+  toObject: {
+    transform(doc, ret) {
+      ret.id = ret._id.toString();
+      delete ret._id;
+      delete ret.__v;
+    },
+  }
 });
 
 const User = models.User || model('User', UserSchema);
