@@ -9,6 +9,11 @@ import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
 import mongoose from 'mongoose';
 
+// Helper function to safely serialize data
+function safeSerialize<T>(data: T): T {
+    return JSON.parse(JSON.stringify(data));
+}
+
 export async function getActivityLogs(limit?: number) {
     try {
         await dbConnect();
@@ -16,8 +21,8 @@ export async function getActivityLogs(limit?: number) {
         if (limit) {
             query.limit(limit);
         }
-        const logs = await query.lean();
-        return { success: true, data: logs as ActivityLogType[] };
+        const logs = await query.exec();
+        return { success: true, data: safeSerialize(logs) as ActivityLogType[] };
     } catch (error) {
         console.error('Error al obtener los logs de actividad:', error);
         return { success: false, message: 'Error al obtener los logs de actividad.' };
@@ -28,8 +33,8 @@ export async function getActivityLogs(limit?: number) {
 export async function getUsers(filter: { role?: UserRole } = {}) {
     try {
         await dbConnect();
-        const users = await User.find(filter).sort({ fechaCreacion: -1 }).lean();
-        return { success: true, data: users as UserType[] };
+        const users = await User.find(filter).sort({ fechaCreacion: -1 }).exec();
+        return { success: true, data: safeSerialize(users) as UserType[] };
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
         return { success: false, message: 'Error al obtener los usuarios.' };
@@ -40,11 +45,11 @@ export async function getUsers(filter: { role?: UserRole } = {}) {
 export async function getUserById(userId: string) {
     try {
         await dbConnect();
-        const user = await User.findById(userId).lean();
+        const user = await User.findById(userId).exec();
         if (!user) {
             return { success: false, message: 'Usuario no encontrado' };
         }
-        return { success: true, data: user as UserType };
+        return { success: true, data: safeSerialize(user) as UserType };
     } catch (error) {
         console.error('Error fetching user by ID:', error);
         return { success: false, message: 'Error al obtener el usuario' };
@@ -109,7 +114,7 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
 
         await newUser.save();
         await logActivity(`user-creation:${newUser.username}`, 'Admin');
-        return { success: true, data: newUser.toJSON(), message: 'Usuario creado exitosamente.' };
+        return { success: true, data: safeSerialize(newUser), message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
         console.error('Error al crear usuario:', error);
@@ -130,14 +135,14 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
             delete updateData.contrasena;
         }
 
-        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).lean();
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).exec();
         
         if (!updatedUser) {
             return { success: false, message: 'Usuario no encontrado.' };
         }
 
         await logActivity(`user-update:${updatedUser.username}`, 'Admin');
-        return { success: true, data: updatedUser, message: 'Usuario actualizado exitosamente.' };
+        return { success: true, data: safeSerialize(updatedUser), message: 'Usuario actualizado exitosamente.' };
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
         return { success: false, message: 'Error al actualizar el usuario.' };
@@ -197,9 +202,9 @@ export async function getCrews() {
             .populate('moderadores', 'id nombre apellido')
             .populate('obreros', 'id nombre apellido')
             .sort({ fechaCreacion: -1 })
-            .lean({ virtuals: true });
+            .exec();
         
-        return { success: true, data: crews as CrewType[] };
+        return { success: true, data: safeSerialize(crews) as CrewType[] };
     } catch (error) {
         console.error('Error al obtener cuadrillas:', error);
         return { success: false, message: 'Error al obtener las cuadrillas.' };
