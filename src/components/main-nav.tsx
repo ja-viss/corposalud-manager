@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, ClipboardList, MessageSquare } from "lucide-react";
+import { Home, Users, HardHat, ClipboardList, MessageSquare, BookText } from "lucide-react";
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -11,9 +11,11 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/personal", label: "Personal", icon: Users },
+  { href: "/personal/usuarios", label: "Usuarios", icon: Users },
+  { href: "/personal/cuadrillas", label: "Cuadrillas", icon: HardHat },
   { href: "/reportes", label: "Reportes", icon: ClipboardList },
   { href: "/canales", label: "Canales", icon: MessageSquare },
+  { href: "/bitacora", label: "Bitácora", icon: BookText },
 ];
 
 export function MainNav() {
