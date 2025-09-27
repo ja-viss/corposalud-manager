@@ -8,6 +8,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Crew } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { format } from 'date-fns';
 
 // Mock data remains for now until crew creation functionality is implemented
 const mockCrews: Crew[] = [
@@ -28,27 +30,27 @@ export default function CuadrillasPage() {
 
   return (
     <>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h2 className="text-2xl font-bold tracking-tight">Cuadrillas</h2>
+            <p className="text-muted-foreground">Gestione las cuadrillas de trabajo.</p>
+        </div>
+        <Button size="sm" className="gap-1">
+          <PlusCircle className="h-3.5 w-3.5" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            Crear Cuadrilla
+          </span>
+        </Button>
+      </div>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Cuadrillas</CardTitle>
-            <CardDescription>Gestione las cuadrillas de trabajo.</CardDescription>
-          </div>
-          <Button size="sm" className="gap-1">
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-              Crear Cuadrilla
-            </span>
-          </Button>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Miembros</TableHead>
-                <TableHead>Moderador(es)</TableHead>
-                <TableHead>Creado el</TableHead>
+                <TableHead className="hidden md:table-cell">Miembros</TableHead>
+                <TableHead className="hidden lg:table-cell">Creado por</TableHead>
+                <TableHead className="hidden lg:table-cell">Creado el</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -58,9 +60,11 @@ export default function CuadrillasPage() {
               {mockCrews.map((crew) => (
                 <TableRow key={crew.id}>
                   <TableCell className="font-medium">{crew.nombre}</TableCell>
-                  <TableCell>{crew.moderadores.length + crew.obreros.length}</TableCell>
-                  <TableCell>{crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}</TableCell>
-                  <TableCell>{crew.fechaCreacion}</TableCell>
+                  <TableCell className="hidden md:table-cell">{crew.moderadores.length + crew.obreros.length}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <Badge variant="outline">{crew.creadoPor}</Badge>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

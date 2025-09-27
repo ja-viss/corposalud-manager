@@ -5,7 +5,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Users, Building, ClipboardList, UserCheck, UserX } from "lucide-react";
+import { Users, Building, ClipboardList, UserCheck, UserX, Activity } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 
@@ -33,9 +33,9 @@ export default async function DashboardPage() {
   const stats = await getDashboardStats();
 
   return (
-    <div className="flex-1 space-y-4 py-8">
+    <div className="flex-1 space-y-8 py-8">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Personal Total</CardTitle>
@@ -92,17 +92,38 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-       <Card className="mt-6">
+       <Card>
         <CardHeader>
           <CardTitle>Actividad Reciente</CardTitle>
           <CardDescription>Un resumen de las últimas acciones en el sistema.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <div className="ml-4 space-y-1">
+          <div className="space-y-6">
+            <div className="flex items-start">
+               <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
                 <p className="text-sm font-medium leading-none">Aplicación conectada a la base de datos.</p>
-                <p className="text-sm text-muted-foreground">Realizado por: jhonvivasproject</p>
+                <p className="text-sm text-muted-foreground">Realizado por: jhonvivasproject - Hace 5 minutos</p>
+              </div>
+            </div>
+             <div className="flex items-start">
+               <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
+                <UserCheck className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">Nuevo usuario creado: Admin</p>
+                <p className="text-sm text-muted-foreground">Realizado por: Sistema - Hace 20 minutos</p>
+              </div>
+            </div>
+             <div className="flex items-start">
+               <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
+                <ClipboardList className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">Reporte "Reporte - N°315" generado.</p>
+                <p className="text-sm text-muted-foreground">Realizado por: Admin - Hace 1 hora</p>
               </div>
             </div>
           </div>

@@ -8,12 +8,12 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
     const activeTab = pathname.includes('/cuadrillas') ? 'cuadrillas' : 'usuarios';
 
     return (
-        <div className="space-y-6 py-8">
-            <div className="flex items-center justify-between">
+        <div className="space-y-8 py-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">Gestión de Personal</h1>
             </div>
             <Tabs value={activeTab} className="w-full">
-                <TabsList>
+                <TabsList className="grid w-full max-w-md grid-cols-2">
                     <Link href="/personal/usuarios" passHref>
                         <TabsTrigger value="usuarios">Usuarios</TabsTrigger>
                     </Link>
@@ -21,8 +21,11 @@ export default function PersonalLayout({ children }: { children: React.ReactNode
                         <TabsTrigger value="cuadrillas">Cuadrillas</TabsTrigger>
                     </Link>
                 </TabsList>
+                 <TabsContent value={activeTab} className="mt-6">
+                    {children}
+                </TabsContent>
             </Tabs>
-            {children}
+           
         </div>
     )
 }

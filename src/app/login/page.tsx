@@ -80,138 +80,142 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-muted/40 p-4">
-       <div className="mb-8">
-        <Logo />
-      </div>
-      <Tabs defaultValue="user" className="w-full max-w-md">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="user">Personal</TabsTrigger>
-          <TabsTrigger value="worker">Obrero</TabsTrigger>
-        </TabsList>
-        <TabsContent value="user">
-          <Card>
-            <form onSubmit={handleLogin}>
-              <CardHeader>
-                <CardTitle>Acceso de Personal</CardTitle>
-                <CardDescription>
-                  Ingrese su usuario y contraseña para acceder al sistema.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Usuario</Label>
-                  <Input id="username" name="username" type="text" placeholder="su-usuario" required defaultValue="admin"/>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña</Label>
-                  <Input id="password" name="password" type="password" required defaultValue="password"/>
-                </div>
-              </CardContent>
-              <CardFooter className="flex-col gap-4">
-                <Button type="submit" className="w-full">Iniciar Sesión</Button>
-              </CardFooter>
-            </form>
-          </Card>
-        </TabsContent>
-        <TabsContent value="worker">
-          <Card>
-            <form onSubmit={handleObreroLogin}>
-              <CardHeader>
-                <CardTitle>Acceso de Obrero</CardTitle>
-                <CardDescription>
-                  Ingrese su número de Cédula para acceder al sistema.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="space-y-2">
-                  <Label htmlFor="cedula-obrero">Cédula de Identidad</Label>
-                  <Input id="cedula-obrero" name="cedula" placeholder="V-12345678" required />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" className="w-full">Ingresar</Button>
-              </CardFooter>
-            </form>
-          </Card>
-        </TabsContent>
-      </Tabs>
-      <div className="mt-4">
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Crear Usuario
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                <DialogDescription>
-                  Complete el formulario para agregar un nuevo usuario al sistema.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateUser}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nombre" className="text-right">Nombre</Label>
-                    <Input id="nombre" name="nombre" className="col-span-3" required />
+    <div className="dark">
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
+        <div className="mb-8">
+          <Logo />
+        </div>
+        <Tabs defaultValue="user" className="w-full max-w-md">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="user">Personal</TabsTrigger>
+            <TabsTrigger value="worker">Obrero</TabsTrigger>
+          </TabsList>
+          <TabsContent value="user">
+            <Card>
+              <form onSubmit={handleLogin}>
+                <CardHeader>
+                  <CardTitle>Acceso de Personal</CardTitle>
+                  <CardDescription>
+                    Ingrese su usuario y contraseña para acceder al sistema.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Usuario</Label>
+                    <Input id="username" name="username" type="text" placeholder="su-usuario" required defaultValue="admin"/>
                   </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="apellido" className="text-right">Apellido</Label>
-                    <Input id="apellido" name="apellido" className="col-span-3" required />
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Contraseña</Label>
+                    <Input id="password" name="password" type="password" required defaultValue="password"/>
                   </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="cedula" className="text-right">Cédula</Label>
-                    <Input id="cedula" name="cedula" className="col-span-3" required/>
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">Email</Label>
-                    <Input id="email" name="email" type="email" className="col-span-3" required/>
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="telefono" className="text-right">Teléfono</Label>
-                    <Input id="telefono" name="telefono" className="col-span-3" required/>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="username-create" className="text-right">Usuario</Label>
-                    <Input id="username-create" name="username" className="col-span-3" required/>
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="contrasena" className="text-right">Contraseña</Label>
-                    <Input id="contrasena" name="contrasena" type="password" className="col-span-3" required/>
-                  </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="confirmarContrasena" className="text-right">Confirmar</Label>
-                    <Input id="confirmarContrasena" name="confirmarContrasena" type="password" className="col-span-3" required/>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="role" className="text-right">
-                      Rol
-                    </Label>
-                    <Select name="role" required>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Seleccione un rol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Moderador">Moderador</SelectItem>
-                        <SelectItem value="Obrero">Obrero</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">Cancelar</Button>
-                  </DialogClose>
-                  <Button type="submit">Guardar Usuario</Button>
-                </DialogFooter>
+                </CardContent>
+                <CardFooter className="flex-col gap-4">
+                  <Button type="submit" className="w-full">Iniciar Sesión</Button>
+                </CardFooter>
               </form>
-            </DialogContent>
-          </Dialog>
+            </Card>
+          </TabsContent>
+          <TabsContent value="worker">
+            <Card>
+              <form onSubmit={handleObreroLogin}>
+                <CardHeader>
+                  <CardTitle>Acceso de Obrero</CardTitle>
+                  <CardDescription>
+                    Ingrese su número de Cédula para acceder al sistema.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="cedula-obrero">Cédula de Identidad</Label>
+                    <Input id="cedula-obrero" name="cedula" placeholder="V-12345678" required />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" className="w-full">Ingresar</Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        <div className="mt-4">
+          <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Crear Usuario
+                  </span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                  <DialogDescription>
+                    Complete el formulario para agregar un nuevo usuario al sistema.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateUser}>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="nombre">Nombre</Label>
+                        <Input id="nombre" name="nombre" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="apellido">Apellido</Label>
+                        <Input id="apellido" name="apellido" required />
+                      </div>
+                    </div>
+                     <div className="space-y-2">
+                      <Label htmlFor="cedula">Cédula</Label>
+                      <Input id="cedula" name="cedula" required/>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input id="email" name="email" type="email" required/>
+                        </div>
+                         <div className="space-y-2">
+                          <Label htmlFor="telefono">Teléfono</Label>
+                          <Input id="telefono" name="telefono" required/>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="username-create">Usuario</Label>
+                      <Input id="username-create" name="username" required/>
+                    </div>
+                     <div className="space-y-2">
+                      <Label htmlFor="contrasena">Contraseña</Label>
+                      <Input id="contrasena" name="contrasena" type="password" required/>
+                    </div>
+                     <div className="space-y-2">
+                      <Label htmlFor="confirmarContrasena">Confirmar Contraseña</Label>
+                      <Input id="confirmarContrasena" name="confirmarContrasena" type="password" required/>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Rol</Label>
+                      <Select name="role" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un rol" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Moderador">Moderador</SelectItem>
+                          <SelectItem value="Obrero">Obrero</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">Cancelar</Button>
+                    </DialogClose>
+                    <Button type="submit">Guardar Usuario</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+        </div>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { User } from "@/lib/types";
 import { getUsers, deleteUser } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
+import { format } from 'date-fns';
 
 
 export default function UsuariosPage() {
@@ -45,22 +46,22 @@ export default function UsuariosPage() {
 
   return (
     <>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h2 className="text-2xl font-bold tracking-tight">Usuarios</h2>
+            <p className="text-muted-foreground">Gestione los usuarios del sistema.</p>
+        </div>
+      </div>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Usuarios</CardTitle>
-            <CardDescription>Gestione los usuarios del sistema.</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead>Cédula</TableHead>
+                <TableHead className="hidden md:table-cell">Cédula</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Creado el</TableHead>
+                <TableHead className="hidden lg:table-cell">Creado el</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -69,17 +70,20 @@ export default function UsuariosPage() {
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.nombre} {user.apellido}</TableCell>
-                  <TableCell>{user.cedula}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="font-medium">{user.nombre} {user.apellido}</div>
+                    <div className="text-xs text-muted-foreground md:hidden">{user.cedula}</div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{user.cedula}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === 'Admin' ? 'destructive' : user.role === 'Moderador' ? 'secondary' : 'outline'}>
                       {user.role}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600' : ''}>{user.status}</Badge>
+                    <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
                   </TableCell>
-                  <TableCell>{new Date(user.fechaCreacion).toLocaleDateString()}</TableCell>
+                  <TableCell className="hidden lg:table-cell">{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
