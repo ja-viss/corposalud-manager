@@ -17,9 +17,11 @@ export async function getActivityLogs(limit?: number) {
         }
         const logs = await query;
         const plainLogs = logs.map(log => ({
-            ...log,
             id: log._id.toString(),
+            action: log.action,
+            realizadoPor: log.realizadoPor,
             fecha: log.fecha.toISOString(),
+            detalles: log.detalles,
         }));
         return { success: true, data: plainLogs as ActivityLogType[] };
     } catch (error) {
@@ -34,9 +36,18 @@ export async function getUsers() {
         await dbConnect();
         const users = await User.find({}).sort({ fechaCreacion: -1 }).lean();
         const plainUsers = users.map(user => ({
-            ...user,
             id: user._id.toString(),
+            nombre: user.nombre,
+            apellido: user.apellido,
+            cedula: user.cedula,
+            email: user.email,
+            telefono: user.telefono,
+            username: user.username,
+            contrasena: user.contrasena,
+            role: user.role,
             fechaCreacion: user.fechaCreacion.toISOString(),
+            creadoPor: user.creadoPor,
+            status: user.status,
         }));
         return { success: true, data: plainUsers as UserType[] };
     } catch (error) {
