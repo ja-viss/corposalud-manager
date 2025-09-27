@@ -23,3 +23,11 @@ export interface Crew {
     fechaCreacion: string;
     creadoPor: string;
 }
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  realizadoPor: string;
+  fecha: string;
+  detalles?: string;
+}

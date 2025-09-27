@@ -2,8 +2,33 @@
 
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
-import type { User as UserType } from '@/lib/types';
+import ActivityLog from '@/models/ActivityLog';
+import type { User as UserType, ActivityLog as ActivityLogType } from '@/lib/types';
 import bcrypt from 'bcryptjs';
+import { logActivity } from '@/lib/activity-log';
+
+export async function getActivityLogs(limit?: number) {
+    try {
+        await dbConnect();
+        const query = ActivityLog.find({}).sort({ fecha: -1 });
+        if (limit) {
+            query.limit(limit);
+        }
+        const logs = await query;
+        const plainLogs = logs.map(log => {
+             const logObject = log.toObject({ getters: true });
+            logObject.id = logObject._id.toString();
+            delete logObject._id;
+            delete logObject.__v;
+            return logObject;
+        });
+        return { success: true, data: plainLogs as ActivityLogType[] };
+    } catch (error) {
+        console.error('Error al obtener los logs de actividad:', error);
+        return { success: false, message: 'Error al obtener los logs de actividad.' };
+    }
+}
+
 
 export async function getUsers() {
     try {
@@ -27,7 +52,6 @@ export async function deleteUser(userId: string) {
     try {
         await dbConnect();
         
-        // Find user first to check dependencies, e.g. if they are in a crew
         const user = await User.findById(userId);
         if (!user) {
             return { success: false, message: "Usuario no encontrado." };
@@ -36,6 +60,7 @@ export async function deleteUser(userId: string) {
         // Add logic here to check if user is in a crew before deleting
         
         await User.findByIdAndDelete(userId);
+        await logActivity('user-deletion:' + userId, 'Sistema');
         return { success: true, message: "Usuario eliminado exitosamente." };
 
     } catch (error) {
@@ -59,12 +84,13 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
         const newUser = new User({
             ...userData,
             contrasena: hashedPassword,
-            creadoPor: 'Admin', // O el usuario que lo está creando
+            creadoPor: 'Sistema', // Or the user who is creating it
             fechaCreacion: new Date(),
             status: 'active',
         });
 
         await newUser.save();
+        await logActivity(`user-creation:${newUser.username}`, 'Sistema');
         return { success: true, message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
@@ -87,7 +113,8 @@ export async function loginUser(credentials: {username: string, password: string
         if (!isMatch) {
             return { success: false, message: 'Contraseña incorrecta.' };
         }
-
+        
+        await logActivity(`user-login:${user.username}`, 'Sistema');
         return { success: true, message: 'Inicio de sesión exitoso.' };
 
     } catch (error) {
@@ -106,6 +133,7 @@ export async function loginObrero(cedula: string) {
             return { success: false, message: 'Obrero no encontrado con esa cédula.' };
         }
 
+        await logActivity(`worker-login:${cedula}`, 'Sistema');
         return { success: true, message: 'Inicio de sesión de obrero exitoso.' };
 
     } catch (error) {
