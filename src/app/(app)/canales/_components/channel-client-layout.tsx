@@ -53,11 +53,10 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
     if (channelResult.success && channelResult.data) {
         setChannels(channelResult.data);
         
-        if (selectedChannel) {
-            const updatedSelectedChannel = channelResult.data.find(c => c.id === selectedChannel.id);
-            if (!updatedSelectedChannel) {
-                setSelectedChannel(null);
-            }
+        // If a channel was deleted, selectedChannel will be stale.
+        // Check if the currently selected channel still exists in the new list.
+        if (selectedChannel && !channelResult.data.find(c => c.id === selectedChannel.id)) {
+            setSelectedChannel(null); // Deselect if it no longer exists
         }
     } else {
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron actualizar los canales.' });
@@ -70,6 +69,10 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
     setIsModalOpen(false);
   };
   
+  const handleChannelDeleted = () => {
+    refreshChannels();
+  }
+
   const handleSelectChannel = (channel: Channel) => {
     setSelectedChannel(channel);
   }
@@ -133,6 +136,7 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
                     channel={selectedChannel} 
                     currentUser={currentUser} 
                     allUsers={allUsers}
+                    onChannelDeleted={handleChannelDeleted}
                 />
             </div>
           </div>

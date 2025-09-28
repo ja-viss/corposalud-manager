@@ -3,23 +3,26 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Paperclip, Send, Trash2 } from 'lucide-react';
+import { Paperclip, Send, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getMessages, sendMessage, deleteMessage } from '@/app/actions';
+import { getMessages, sendMessage, deleteMessage, deleteChannel } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { PopulatedMessage, Channel, User } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useRouter } from 'next/navigation';
 
 
 interface ChatViewProps {
   channel: Channel | null;
   currentUser: User | null;
   allUsers: User[];
+  onChannelDeleted: () => void;
 }
 
 const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers: User[]) => {
@@ -30,13 +33,15 @@ const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers:
     return otherUser ? `${otherUser.nombre} ${otherUser.apellido}` : "Usuario Eliminado";
 }
 
-export function ChatView({ channel, currentUser, allUsers }: ChatViewProps) {
+export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: ChatViewProps) {
   const [messages, setMessages] = useState<PopulatedMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<PopulatedMessage | null>(null);
+  const [showDeleteChannelConfirm, setShowDeleteChannelConfirm] = useState<Channel | null>(null);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const fetchMessages = useCallback(async () => {
     if (!channel) return;
@@ -88,10 +93,24 @@ export function ChatView({ channel, currentUser, allUsers }: ChatViewProps) {
       setShowDeleteConfirm(null);
     }
   };
+  
+  const handleDeleteChannel = async () => {
+    if (showDeleteChannelConfirm && currentUser) {
+      const result = await deleteChannel(showDeleteChannelConfirm.id, currentUser.id);
+      if (result.success) {
+        toast({ title: 'Éxito', description: result.message });
+        onChannelDeleted();
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+      setShowDeleteChannelConfirm(null);
+    }
+  };
+
 
   if (!channel || !currentUser) {
     return (
-      <div className="flex flex-col h-full items-center justify-center bg-muted/20">
+      <div className="flex-col h-full items-center justify-center bg-muted/20 hidden md:flex">
         <div className="text-center">
           <p className="text-lg font-medium text-muted-foreground">Seleccione un canal</p>
           <p className="text-sm text-muted-foreground">Elija una conversación de la lista para empezar a chatear.</p>
@@ -131,6 +150,8 @@ export function ChatView({ channel, currentUser, allUsers }: ChatViewProps) {
     }
     return channel.nombre;
   }
+  
+  const canDeleteChannel = channel.isDeletable && currentUser.role === 'Admin';
 
 
   return (
@@ -138,6 +159,24 @@ export function ChatView({ channel, currentUser, allUsers }: ChatViewProps) {
       <div className="flex flex-col h-full bg-muted/20">
         <header className="flex items-center justify-between p-4 border-b bg-card">
           <h2 className="text-lg font-semibold">{getChannelTitle()}</h2>
+          {canDeleteChannel && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                  <span className="sr-only">Opciones del canal</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onSelect={() => setShowDeleteChannelConfirm(channel)}
+                >
+                  Eliminar Conversación
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </header>
         
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -224,6 +263,21 @@ export function ChatView({ channel, currentUser, allUsers }: ChatViewProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteMessage} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+       <AlertDialog open={!!showDeleteChannelConfirm} onOpenChange={() => setShowDeleteChannelConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro de que desea eliminar esta conversación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción es irreversible. Se eliminará permanentemente la conversación y todos sus mensajes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteChannel} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

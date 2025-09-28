@@ -473,6 +473,44 @@ export async function createGroupChannel(name: string, memberIds: string[], crea
     }
 }
 
+export async function deleteChannel(channelId: string, userId: string) {
+    try {
+        await dbConnect();
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return { success: false, message: "Usuario no autorizado." };
+        }
+
+        const channel = await Channel.findById(channelId);
+        if (!channel) {
+            return { success: false, message: "Canal no encontrado." };
+        }
+
+        if (!channel.isDeletable) {
+            return { success: false, message: "Este canal no puede ser eliminado." };
+        }
+        
+        // Only admins can delete channels
+        if (user.role !== 'Admin') {
+            return { success: false, message: "No tienes permiso para eliminar este canal." };
+        }
+        
+        // Delete all messages in the channel
+        await Message.deleteMany({ channelId: channel._id });
+
+        // Delete the channel itself
+        await Channel.findByIdAndDelete(channelId);
+
+        await logActivity(`channel-deletion:${channel.nombre}`, user.username);
+        return { success: true, message: "La conversación ha sido eliminada exitosamente." };
+
+    } catch (error) {
+        console.error('Error al eliminar canal:', error);
+        return { success: false, message: 'Error al eliminar el canal.' };
+    }
+}
+
 
 export async function getMessages(channelId: string) {
     try {
