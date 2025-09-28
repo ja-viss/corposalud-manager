@@ -27,21 +27,26 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
   const { toast } = useToast();
 
   useEffect(() => {
-    if (channels.length > 0) {
-      setSelectedChannel(channels[0]);
+    // Set the selected channel only if there isn't one already and there are channels available
+    if (!selectedChannel && initialChannels.length > 0) {
+      setSelectedChannel(initialChannels[0]);
     }
-  }, [channels]);
+  }, [initialChannels, selectedChannel]);
 
   const refreshChannels = useCallback(async () => {
     setLoading(true);
     const channelResult = await getChannels();
     if (channelResult.success && channelResult.data) {
       setChannels(channelResult.data);
+      // If the currently selected channel no longer exists, reset it.
+      if (selectedChannel && !channelResult.data.find(c => c.id === selectedChannel.id)) {
+        setSelectedChannel(channelResult.data[0] || null);
+      }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron actualizar los canales.' });
     }
     setLoading(false);
-  }, [toast]);
+  }, [toast, selectedChannel]);
 
   const handleChannelCreated = () => {
     refreshChannels();
@@ -87,4 +92,3 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
     </>
   );
 }
-
