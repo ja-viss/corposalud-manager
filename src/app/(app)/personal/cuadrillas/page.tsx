@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -7,12 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import type { Crew } from "@/lib/types";
+import type { Crew, User } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
-import { getCrews, deleteCrew } from "@/app/actions";
+import { getCrews, deleteCrew, getUserById } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { CrewFormModal } from "./_components/crew-form-modal";
+import { getCookie } from "cookies-next";
+import { cookies } from 'next/headers';
 
 export default function CuadrillasPage() {
   const [crews, setCrews] = useState<Crew[]>([]);
@@ -20,6 +23,7 @@ export default function CuadrillasPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Crew | null>(null);
   const [editingCrew, setEditingCrew] = useState<Crew | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   const fetchCrews = useCallback(async () => {
@@ -32,10 +36,21 @@ export default function CuadrillasPage() {
     }
     setLoading(false);
   }, [toast]);
+  
+  const fetchCurrentUser = useCallback(async () => {
+    const userId = getCookie('session-id');
+    if (userId) {
+        const userResult = await getUserById(userId);
+        if (userResult.success && userResult.data) {
+            setCurrentUser(userResult.data);
+        }
+    }
+  }, []);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchCrews();
-  }, [fetchCrews]);
+  }, [fetchCrews, fetchCurrentUser]);
 
   const handleDelete = async () => {
     if (showDeleteConfirm) {
@@ -64,20 +79,29 @@ export default function CuadrillasPage() {
     setIsModalOpen(false);
     setEditingCrew(null);
   }
+  
+  const canManageCrews = currentUser?.role === 'Admin' || currentUser?.role === 'Moderador';
+
 
   return (
     <>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight">Cuadrillas</h2>
-            <p className="text-muted-foreground">Gestione las cuadrillas de trabajo.</p>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {canManageCrews ? 'Cuadrillas' : 'Mis Cuadrillas'}
+            </h2>
+            <p className="text-muted-foreground">
+              {canManageCrews ? 'Gestione las cuadrillas de trabajo.' : 'Estas son las cuadrillas en las que estás asignado.'}
+            </p>
         </div>
-        <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
-          <PlusCircle className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Crear Cuadrilla
-          </span>
-        </Button>
+        {canManageCrews && (
+          <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
+            <PlusCircle className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              Crear Cuadrilla
+            </span>
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -88,21 +112,23 @@ export default function CuadrillasPage() {
                 <TableHead className="hidden md:table-cell">Miembros</TableHead>
                 <TableHead className="hidden lg:table-cell">Creado por</TableHead>
                 <TableHead className="hidden lg:table-cell">Creado el</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                {canManageCrews && (
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
                     Cargando cuadrillas...
                   </TableCell>
                 </TableRow>
               ) : crews.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
                     No se encontraron cuadrillas.
                   </TableCell>
                 </TableRow>
@@ -117,26 +143,28 @@ export default function CuadrillasPage() {
                        {crew.creadoPor}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={() => setShowDeleteConfirm(crew)}
-                          >
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {canManageCrews && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onSelect={() => setShowDeleteConfirm(crew)}
+                            >
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
