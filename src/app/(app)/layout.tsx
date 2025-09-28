@@ -50,7 +50,7 @@ export default async function AppLayout({
         collapsible="icon"
         className="border-r border-sidebar-border"
       >
-        <SidebarHeader>
+        <SidebarHeader className="items-center">
           <Logo />
         </SidebarHeader>
         <SidebarContent>
