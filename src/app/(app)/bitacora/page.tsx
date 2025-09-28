@@ -183,7 +183,7 @@ export default function BitacoraPage() {
            <p className="text-sm text-muted-foreground text-center">Cargando bitácora...</p>
         ) : logs.length > 0 ? (
             logs.map(log => (
-                <Card key={log.id}>
+                <Card key={log.id} className="w-full">
                     <CardContent className="p-4">
                         <div className="flex items-start gap-4">
                             <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary mt-1">
