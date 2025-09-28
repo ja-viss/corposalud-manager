@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Admin' | 'Moderador' | 'Obrero';
 
 export interface User {
@@ -43,10 +44,22 @@ export interface Channel {
   fechaCreacion: string;
 }
 
+export type SenderInfo = Pick<User, 'id' | 'nombre' | 'apellido' | 'username' | 'role'>;
+
 export interface Message {
   id: string;
   channelId: string;
-  senderId: Pick<User, 'id' | 'nombre' | 'apellido' | 'username' | 'role'> | null;
+  senderId: string | SenderInfo;
   content: string;
   fecha: string;
 }
+
+export interface PopulatedMessage {
+    id: string;
+    channelId: string;
+    senderId: SenderInfo | null;
+    content: string;
+    fecha: string;
+}
+
+    

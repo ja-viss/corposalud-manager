@@ -14,17 +14,16 @@ interface CreateChannelModalProps {
     isOpen: boolean;
     onClose: () => void;
     users: User[];
+    currentUser: User;
     onChannelCreated: () => void;
 }
 
-export function CreateChannelModal({ isOpen, onClose, users, onChannelCreated }: CreateChannelModalProps) {
+export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChannelCreated }: CreateChannelModalProps) {
     const { toast } = useToast();
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     
-    // In a real app, get current user's ID from session.
-    // Using a placeholder for now.
-    const currentUserId = "66a9179973719e2730932822"; // Placeholder for Admin user ID
+    const currentUserId = currentUser.id;
 
     async function handleCreate() {
         if (!selectedUserId) {
@@ -82,3 +81,5 @@ export function CreateChannelModal({ isOpen, onClose, users, onChannelCreated }:
         </Dialog>
     );
 }
+
+    

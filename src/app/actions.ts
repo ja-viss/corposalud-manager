@@ -4,7 +4,7 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType } from '@/lib/types';
+import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
@@ -171,7 +171,6 @@ export async function loginUser(credentials: {username: string, password: string
         
         await logActivity(`user-login:${user.username}`, user.username);
         
-        // Create session cookie
         const serializedUser = safeSerialize(user);
         cookies().set('session-id', serializedUser.id, {
             httpOnly: true,
@@ -200,7 +199,6 @@ export async function loginObrero(cedula: string) {
 
         await logActivity(`worker-login:${cedula}`, 'Sistema');
         
-        // Create session cookie
         const serializedUser = safeSerialize(user);
         cookies().set('session-id', serializedUser.id, {
             httpOnly: true,
@@ -390,6 +388,28 @@ export async function createDirectChannel(userId1: string, userId2: string) {
     }
 }
 
+function processMessage(message: any): PopulatedMessage {
+    const sender = message.senderId;
+    let finalSender = null;
+    if (sender && typeof sender === 'object' && 'id' in sender) {
+        finalSender = {
+            id: sender.id,
+            nombre: sender.nombre,
+            apellido: sender.apellido,
+            username: sender.username,
+            role: sender.role,
+        };
+    }
+    
+    return {
+        id: message.id,
+        channelId: message.channelId,
+        content: message.content,
+        fecha: message.fecha.toISOString(),
+        senderId: finalSender
+    };
+}
+
 
 export async function getMessages(channelId: string) {
     try {
@@ -397,8 +417,28 @@ export async function getMessages(channelId: string) {
         const messages = await Message.find({ channelId })
             .populate('senderId', 'nombre apellido username role')
             .sort({ fecha: 1 })
+            .lean() // Use .lean() for faster, plain JS objects
             .exec();
-        return { success: true, data: safeSerialize(messages) as MessageType[] };
+        
+        // Manually serialize and structure the data
+        const processedMessages = messages.map(msg => {
+            const sender = msg.senderId as any; // Cast sender to any
+            return {
+                id: msg._id.toString(),
+                channelId: msg.channelId.toString(),
+                content: msg.content,
+                fecha: msg.fecha.toISOString(),
+                senderId: sender ? {
+                    id: sender._id.toString(),
+                    nombre: sender.nombre,
+                    apellido: sender.apellido,
+                    username: sender.username,
+                    role: sender.role,
+                } : null
+            };
+        });
+            
+        return { success: true, data: processedMessages as PopulatedMessage[] };
     } catch (error) {
         console.error('Error al obtener mensajes:', error);
         return { success: false, message: 'Error al obtener mensajes del canal.' };
@@ -416,12 +456,31 @@ export async function sendMessage(channelId: string, senderId: string, content: 
         });
         await newMessage.save();
         
-        // Repopulate to ensure all fields, including the new ones, are present
         const populatedMessage = await Message.findById(newMessage._id)
             .populate('senderId', 'nombre apellido username role')
+            .lean()
             .exec();
 
-        return { success: true, data: safeSerialize(populatedMessage), message: "Mensaje enviado." };
+        if (!populatedMessage) {
+            return { success: false, message: 'Error al recuperar el mensaje enviado.' };
+        }
+
+        const sender = populatedMessage.senderId as any;
+        const processedMessage: PopulatedMessage = {
+             id: populatedMessage._id.toString(),
+             channelId: populatedMessage.channelId.toString(),
+             content: populatedMessage.content,
+             fecha: populatedMessage.fecha.toISOString(),
+             senderId: sender ? {
+                 id: sender._id.toString(),
+                 nombre: sender.nombre,
+                 apellido: sender.apellido,
+                 username: sender.username,
+                 role: sender.role,
+             } : null
+        };
+        
+        return { success: true, data: processedMessage, message: "Mensaje enviado." };
     } catch (error) {
         console.error('Error al enviar mensaje:', error);
         return { success: false, message: 'Error al enviar el mensaje.' };
@@ -451,3 +510,6 @@ export async function deleteMessage(messageId: string) {
     
 
 
+
+
+    

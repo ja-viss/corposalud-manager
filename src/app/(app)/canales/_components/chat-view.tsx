@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getMessages, sendMessage, deleteMessage } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import type { Channel, Message } from '@/lib/types';
+import type { PopulatedMessage, Channel, User } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -17,13 +17,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 interface ChatViewProps {
   channel: Channel | null;
+  currentUser: User | null;
 }
 
-export function ChatView({ channel }: ChatViewProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+export function ChatView({ channel, currentUser }: ChatViewProps) {
+  const [messages, setMessages] = useState<PopulatedMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Message | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<PopulatedMessage | null>(null);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -54,12 +55,9 @@ export function ChatView({ channel }: ChatViewProps) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !channel) return;
+    if (!newMessage.trim() || !channel || !currentUser) return;
 
-    // In a real app, you'd get this from the user's session
-    const senderId = "66a9179973719e2730932822"; // Placeholder for Admin user ID
-
-    const result = await sendMessage(channel.id, senderId, newMessage);
+    const result = await sendMessage(channel.id, currentUser.id, newMessage);
     if (result.success && result.data) {
       setMessages((prev) => [...prev, result.data!]);
       setNewMessage('');
@@ -154,12 +152,13 @@ export function ChatView({ channel }: ChatViewProps) {
               className="pr-20"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              disabled={!currentUser}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-2">
               <Button type="button" variant="ghost" size="icon" className="text-muted-foreground">
                 <Paperclip className="h-5 w-5" />
               </Button>
-              <Button type="submit" variant="ghost" size="icon" className="text-primary">
+              <Button type="submit" variant="ghost" size="icon" className="text-primary" disabled={!currentUser}>
                 <Send className="h-5 w-5" />
               </Button>
             </div>
@@ -184,3 +183,5 @@ export function ChatView({ channel }: ChatViewProps) {
     </>
   );
 }
+
+    
