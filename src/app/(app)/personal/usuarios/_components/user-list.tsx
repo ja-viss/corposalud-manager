@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { MoreHorizontal, PlusCircle, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,6 @@ import type { User } from "@/lib/types";
 import { getUsers, deleteUser } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
-import { UserFormModal } from "./user-form-modal";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -40,8 +40,6 @@ export function UserList({ initialUsers }: UserListProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchUsers = useCallback(async () => {
@@ -71,21 +69,6 @@ export function UserList({ initialUsers }: UserListProps) {
       setShowDeleteConfirm(null);
     }
   };
-
-  const handleOpenModalForCreate = () => {
-    setEditingUser(null);
-    setIsModalOpen(true);
-  };
-
-  const handleOpenModalForEdit = (user: User) => {
-    setEditingUser(user);
-    setIsModalOpen(true);
-  };
-  
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingUser(null);
-  }
 
   const handleExportPDF = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
@@ -138,11 +121,13 @@ export function UserList({ initialUsers }: UserListProps) {
                     Exportar a PDF
                 </span>
             </Button>
-            <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Crear Usuario
-            </span>
+            <Button size="sm" asChild className="gap-1">
+              <Link href="/personal/usuarios/nuevo">
+                <PlusCircle className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Crear Usuario
+                </span>
+              </Link>
             </Button>
         </div>
       </div>
@@ -201,7 +186,9 @@ export function UserList({ initialUsers }: UserListProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => handleOpenModalForEdit(user)}>Editar</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/personal/usuarios/${user.id}/editar`}>Editar</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => setShowDeleteConfirm(user)}
@@ -243,7 +230,9 @@ export function UserList({ initialUsers }: UserListProps) {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => handleOpenModalForEdit(user)}>Editar</DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/personal/usuarios/${user.id}/editar`}>Editar</Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="text-destructive"
                                     onSelect={() => setShowDeleteConfirm(user)}
@@ -275,18 +264,6 @@ export function UserList({ initialUsers }: UserListProps) {
         )}
       </div>
       
-      {isModalOpen && (
-        <UserFormModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            user={editingUser}
-            onSave={() => {
-                handleCloseModal();
-                fetchUsers();
-            }}
-        />
-      )}
-
       <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
