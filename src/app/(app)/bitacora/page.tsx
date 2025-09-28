@@ -17,6 +17,7 @@ import { es } from 'date-fns/locale';
 import type { ActivityLog } from "@/lib/types";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -130,36 +131,78 @@ export default function BitacoraPage() {
           </span>
         </Button>
       </div>
-
-       <Card>
-        <CardHeader>
+      
+      <CardHeader className="px-0 pt-0">
           <CardTitle>Actividad Reciente</CardTitle>
           <CardDescription>Un resumen de las últimas acciones en el sistema.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {loading ? (
-                <p className="text-sm text-muted-foreground">Cargando bitácora...</p>
-            ) : logs.length > 0 ? (
-              logs.map(log => (
-                 <div className="flex items-start" key={log.id}>
-                  <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
-                    {getLogIcon(log.action)}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{formatLogMessage(log)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Realizado por: {log.realizadoPor} - {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No hay actividad registrada todavía.</p>
-            )}
-          </div>
+      </CardHeader>
+      
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
+        <CardContent className="p-0">
+          <Table>
+              <TableHeader>
+                  <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Acción</TableHead>
+                      <TableHead>Realizado Por</TableHead>
+                      <TableHead>Fecha</TableHead>
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {loading ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">Cargando bitácora...</TableCell>
+                    </TableRow>
+                  ) : logs.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">No hay actividad registrada todavía.</TableCell>
+                    </TableRow>
+                  ) : (
+                    logs.map(log => (
+                       <TableRow key={log.id}>
+                          <TableCell>
+                             <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                {getLogIcon(log.action)}
+                              </div>
+                          </TableCell>
+                          <TableCell className="font-medium">{formatLogMessage(log)}</TableCell>
+                          <TableCell>{log.realizadoPor}</TableCell>
+                          <TableCell>{formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+              </TableBody>
+          </Table>
         </CardContent>
       </Card>
+      
+      {/* Mobile Card View */}
+      <div className="grid gap-4 md:hidden">
+        {loading ? (
+           <p className="text-sm text-muted-foreground text-center">Cargando bitácora...</p>
+        ) : logs.length > 0 ? (
+            logs.map(log => (
+                <Card key={log.id}>
+                    <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                            <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary mt-1">
+                                {getLogIcon(log.action)}
+                            </div>
+                            <div className="space-y-1 flex-1">
+                                <p className="text-sm font-medium leading-tight">{formatLogMessage(log)}</p>
+                                <p className="text-xs text-muted-foreground pt-1">
+                                  {log.realizadoPor} • {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
+                                </p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+        ) : (
+          <p className="text-sm text-muted-foreground text-center">No hay actividad registrada todavía.</p>
+        )}
+      </div>
     </div>
   );
 }
