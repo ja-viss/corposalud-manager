@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
 import { loginUser, loginObrero } from "@/app/actions";
 
@@ -56,7 +56,13 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
       <div className="mb-8">
-        <Logo />
+        <Image
+          src="/image_logo.png"
+          alt="Logo"
+          width={80}
+          height={80}
+          className="rounded-lg"
+        />
       </div>
       <Tabs defaultValue="user" className="w-full max-w-md">
         <TabsList className="grid w-full grid-cols-2">
