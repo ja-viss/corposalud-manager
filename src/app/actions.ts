@@ -416,7 +416,10 @@ export async function sendMessage(channelId: string, senderId: string, content: 
         });
         await newMessage.save();
         
-        const populatedMessage = await Message.findById(newMessage._id).populate('senderId', 'nombre apellido username role').exec();
+        // Repopulate to ensure all fields, including the new ones, are present
+        const populatedMessage = await Message.findById(newMessage._id)
+            .populate('senderId', 'nombre apellido username role')
+            .exec();
 
         return { success: true, data: safeSerialize(populatedMessage), message: "Mensaje enviado." };
     } catch (error) {
@@ -446,4 +449,5 @@ export async function deleteMessage(messageId: string) {
     
 
     
+
 

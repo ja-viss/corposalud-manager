@@ -56,7 +56,8 @@ export function ChatView({ channel }: ChatViewProps) {
     e.preventDefault();
     if (!newMessage.trim() || !channel) return;
 
-    const senderId = "66a9179973719e2730932822"; 
+    // In a real app, you'd get this from the user's session
+    const senderId = "66a9179973719e2730932822"; // Placeholder for Admin user ID
 
     const result = await sendMessage(channel.id, senderId, newMessage);
     if (result.success && result.data) {
@@ -110,10 +111,9 @@ export function ChatView({ channel }: ChatViewProps) {
                </div>
             ) : (
               messages.map((msg) => {
-                const senderName = msg.senderId ? `${msg.senderId.nombre} ${msg.senderId.apellido} (${msg.senderId.role})` : "Usuario Eliminado";
-                const senderInitials = msg.senderId && msg.senderId.nombre && msg.senderId.apellido 
-                  ? `${msg.senderId.nombre.charAt(0)}${msg.senderId.apellido.charAt(0)}` 
-                  : "UE";
+                const sender = msg.senderId;
+                const senderName = sender ? `${sender.nombre} ${sender.apellido} (${sender.role})` : "Usuario Eliminado";
+                const senderInitials = sender ? `${sender.nombre.charAt(0)}${sender.apellido.charAt(0)}` : "UE";
 
                 return (
                   <div key={msg.id} className="flex items-start gap-3 group relative">
