@@ -38,10 +38,9 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
   const { toast } = useToast();
 
   useEffect(() => {
-    // On desktop, select the first channel by default if one isn't already selected
+    // On desktop, select the "Anuncios Generales" channel by default if one isn't already selected
     const isMobile = window.innerWidth < 768;
     if (!isMobile && !selectedChannel && channels.length > 0) {
-      // Find the "Anuncios Generales" channel to select by default
       const generalChannel = channels.find(c => c.nombre === "Anuncios Generales");
       setSelectedChannel(generalChannel || channels[0]);
     }
@@ -54,7 +53,6 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
     if (channelResult.success && channelResult.data) {
         setChannels(channelResult.data);
         
-        // If the selected channel still exists, keep it selected. Otherwise, deselect it.
         if (selectedChannel) {
             const updatedSelectedChannel = channelResult.data.find(c => c.id === selectedChannel.id);
             if (!updatedSelectedChannel) {
@@ -106,7 +104,7 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
               {!selectedChannel && <p className="text-muted-foreground">Comunicación unidireccional con el personal.</p>}
             </div>
         </div>
-        {!selectedChannel && canCreateDirectMessage && (
+        {canCreateDirectMessage && (
           <Button size="sm" className="gap-1" onClick={() => setIsModalOpen(true)}>
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
