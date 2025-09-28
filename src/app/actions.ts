@@ -303,7 +303,7 @@ export async function deleteCrew(crewId: string) {
 
 
 // Acciones de Canales
-export async function getChannels() {
+export async function getChannels(userId?: string, userRole?: UserRole) {
     try {
         await dbConnect();
 
@@ -342,9 +342,14 @@ export async function getChannels() {
                 { upsert: true, new: true }
             );
         }
+        
+        // Step 3: Fetch channels based on user role
+        let query = {};
+        if (userRole === 'Obrero' && userId) {
+            query = { members: new mongoose.Types.ObjectId(userId) };
+        }
 
-        // Step 3: Fetch all channels to return
-        const channels = await Channel.find({}).sort({ 'type': 1, 'nombre': 1 }).exec();
+        const channels = await Channel.find(query).sort({ 'type': 1, 'nombre': 1 }).exec();
         
         return { success: true, data: safeSerialize(channels) as ChannelType[] };
     } catch (error) {
@@ -387,29 +392,6 @@ export async function createDirectChannel(userId1: string, userId2: string) {
         return { success: false, message: 'Error al crear el canal directo.' };
     }
 }
-
-function processMessage(message: any): PopulatedMessage {
-    const sender = message.senderId;
-    let finalSender = null;
-    if (sender && typeof sender === 'object' && 'id' in sender) {
-        finalSender = {
-            id: sender.id,
-            nombre: sender.nombre,
-            apellido: sender.apellido,
-            username: sender.username,
-            role: sender.role,
-        };
-    }
-    
-    return {
-        id: message.id,
-        channelId: message.channelId,
-        content: message.content,
-        fecha: message.fecha.toISOString(),
-        senderId: finalSender
-    };
-}
-
 
 export async function getMessages(channelId: string) {
     try {

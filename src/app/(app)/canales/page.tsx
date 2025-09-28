@@ -25,7 +25,10 @@ export default async function CanalesPage() {
         redirect('/login');
     }
 
-    const [channelResult, usersResult] = await Promise.all([getChannels(), getUsers()]);
+    const [channelResult, usersResult] = await Promise.all([
+        getChannels(currentUser.id, currentUser.role), 
+        getUsers()
+    ]);
 
     const channels = channelResult.success ? channelResult.data || [] : [];
     const allUsers = usersResult.success ? usersResult.data || [] : [];
