@@ -40,6 +40,7 @@ export interface Channel {
   crewId?: string;
   isDeletable: boolean;
   fechaCreacion: string;
+  lastMessageAt: string;
 }
 
 export type SenderInfo = Pick<User, 'id' | 'nombre' | 'apellido' | 'username' | 'role'>;

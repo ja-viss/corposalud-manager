@@ -400,7 +400,7 @@ export async function getChannels(userId?: string, userRole?: UserRole) {
         }
         
         const userObjectId = new mongoose.Types.ObjectId(userId);
-        const channels = await Channel.find({ members: userObjectId }).sort({ 'type': 1, 'nombre': 1 }).exec();
+        const channels = await Channel.find({ members: userObjectId }).sort({ lastMessageAt: -1 }).exec();
         
         return { success: true, data: safeSerialize(channels) as ChannelType[] };
     } catch (error) {
@@ -556,6 +556,9 @@ export async function sendMessage(channelId: string, senderId: string, content: 
             content
         });
         await newMessage.save();
+
+        // Update the channel's lastMessageAt timestamp
+        await Channel.findByIdAndUpdate(channelId, { lastMessageAt: new Date() });
         
         const populatedMessage = await Message.findById(newMessage._id)
             .populate('senderId', 'nombre apellido username role')

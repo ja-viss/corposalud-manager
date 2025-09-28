@@ -7,6 +7,7 @@ const ChannelSchema = new Schema({
   crewId: { type: Schema.Types.ObjectId, ref: 'Crew', sparse: true },
   isDeletable: { type: Boolean, default: true },
   fechaCreacion: { type: Date, default: Date.now },
+  lastMessageAt: { type: Date, default: Date.now, index: true },
 }, {
   toJSON: {
     virtuals: true,
