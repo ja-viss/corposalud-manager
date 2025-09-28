@@ -267,6 +267,24 @@ export async function getCrews() {
     }
 }
 
+export async function getCrewById(crewId: string) {
+    try {
+        await dbConnect();
+        const crew = await Crew.findById(crewId)
+            .populate('moderadores', 'id nombre apellido')
+            .populate('obreros', 'id nombre apellido')
+            .exec();
+
+        if (!crew) {
+            return { success: false, message: 'Cuadrilla no encontrada' };
+        }
+        return { success: true, data: safeSerialize(crew) as CrewType };
+    } catch (error) {
+        console.error('Error fetching crew by ID:', error);
+        return { success: false, message: 'Error al obtener la cuadrilla' };
+    }
+}
+
 async function getNextCrewNumber() {
     const lastCrew = await Crew.findOne().sort({ 'nombre': -1 });
     if (!lastCrew || !lastCrew.nombre.includes('N°')) return 1;
@@ -564,11 +582,5 @@ export async function generateReport(data: {
         return { success: false, message: 'Error al generar el reporte.' };
     }
 }
-    
-
-
-
 
     
-
-

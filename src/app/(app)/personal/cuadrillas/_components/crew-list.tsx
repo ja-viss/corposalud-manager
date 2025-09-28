@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { MoreHorizontal, PlusCircle, FileDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,6 @@ import type { Crew } from "@/lib/types";
 import { format } from 'date-fns';
 import { getCrews, deleteCrew } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
-import { CrewFormModal } from "./crew-form-modal";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { Badge } from "@/components/ui/badge";
@@ -41,8 +41,6 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
   const [crews, setCrews] = useState<Crew[]>(initialCrews);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Crew | null>(null);
-  const [editingCrew, setEditingCrew] = useState<Crew | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchCrews = useCallback(async () => {
@@ -72,21 +70,6 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
       setShowDeleteConfirm(null);
     }
   };
-
-  const handleOpenModalForCreate = () => {
-    setEditingCrew(null);
-    setIsModalOpen(true);
-  };
-
-  const handleOpenModalForEdit = (crew: Crew) => {
-    setEditingCrew(crew);
-    setIsModalOpen(true);
-  };
-  
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingCrew(null);
-  }
 
   const handleExportPDF = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
@@ -136,11 +119,13 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
           </div>
           <div className="flex items-center gap-2">
              {canManageCrews && (
-              <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Crear Cuadrilla
-                </span>
+              <Button size="sm" asChild className="gap-1">
+                <Link href="/personal/cuadrillas/nuevo">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Crear Cuadrilla
+                    </span>
+                </Link>
               </Button>
             )}
             <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || crews.length === 0}>
@@ -204,7 +189,9 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                            <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/personal/cuadrillas/${crew.id}/editar`}>Editar</Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive"
                               onSelect={() => setShowDeleteConfirm(crew)}
@@ -245,7 +232,9 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                    <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                      <Link href={`/personal/cuadrillas/${crew.id}/editar`}>Editar</Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                     className="text-destructive"
                                     onSelect={() => setShowDeleteConfirm(crew)}
@@ -276,18 +265,6 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
          )}
       </div>
 
-      {isModalOpen && (
-        <CrewFormModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          crew={editingCrew}
-          onSave={() => {
-            handleCloseModal();
-            fetchCrews();
-          }}
-        />
-      )}
-
       <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -305,3 +282,5 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
     </>
   );
 }
+
+    
