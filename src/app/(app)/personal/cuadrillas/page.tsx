@@ -86,10 +86,10 @@ export default function CuadrillasPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              {canManageCrews ? 'Cuadrillas' : 'Mis Cuadrillas'}
+              {canManageCrews ? 'Gestione las cuadrillas de trabajo.' : 'Mis Cuadrillas'}
             </h2>
             <p className="text-muted-foreground">
-              {canManageCrews ? 'Gestione las cuadrillas de trabajo.' : 'Estas son las cuadrillas en las que estás asignado.'}
+              {canManageCrews ? 'Cree y administre las cuadrillas.' : 'Estas son las cuadrillas en las que estás asignado.'}
             </p>
         </div>
         {canManageCrews && (
