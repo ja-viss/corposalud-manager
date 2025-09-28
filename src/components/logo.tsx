@@ -7,7 +7,7 @@ export function Logo() {
         <Building className="h-5 w-5" />
       </div>
       <span className="text-lg group-data-[collapsible=icon]:hidden whitespace-nowrap">
-        Corposalud Manager
+        CORPOTACHIRA MANAGER
       </span>
     </div>
   );

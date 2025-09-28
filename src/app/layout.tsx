@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: 'Corposalud Manager',
-  description: 'Gestión de personal y operaciones de Corposalud',
+  title: 'CORPOTACHIRA MANAGER',
+  description: 'Gestión de personal y operaciones de Corpotachira',
 };
 
 export default function RootLayout({

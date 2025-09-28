@@ -21,7 +21,7 @@ export default function PerfilPage() {
                     </Avatar>
                     <div className="space-y-1">
                         <h2 className="text-2xl font-semibold">Admin Principal</h2>
-                        <p className="text-muted-foreground">admin@corposalud.com</p>
+                        <p className="text-muted-foreground">admin@corpotachira.com</p>
                     </div>
                 </div>
 
