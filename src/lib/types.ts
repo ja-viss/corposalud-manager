@@ -62,4 +62,16 @@ export interface PopulatedMessage {
     fecha: string;
 }
 
+export interface Report {
+  id: string;
+  nombre: string;
+  tipo: 'Maestro' | 'Actividad';
+  generadoPor: string;
+  fechaCreacion: string;
+  rangoFechas: {
+    from: string;
+    to: string;
+  };
+  url?: string;
+}
     

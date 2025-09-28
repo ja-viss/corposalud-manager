@@ -4,12 +4,13 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage } from '@/lib/types';
+import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage, Report as ReportType } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
 import Channel from '@/models/Channel';
 import Message from '@/models/Message';
+import Report from '@/models/Report';
 import mongoose from 'mongoose';
 import { cookies } from 'next/headers';
 
@@ -486,12 +487,58 @@ export async function deleteMessage(messageId: string) {
     }
 }
     
+// Acciones de Reportes
+export async function getReports() {
+    try {
+        await dbConnect();
+        const reports = await Report.find({}).sort({ fechaCreacion: -1 }).exec();
+        return { success: true, data: safeSerialize(reports) as ReportType[] };
+    } catch (error) {
+        console.error('Error al obtener reportes:', error);
+        return { success: false, message: 'Error al obtener los reportes.' };
+    }
+}
+
+async function getNextReportNumber() {
+    const lastReport = await Report.findOne().sort({ 'nombre': -1 });
+    if (!lastReport || !lastReport.nombre.includes('N°')) return 1;
+    try {
+        const lastNumber = parseInt(lastReport.nombre.split(' - N°')[1] || '0', 10);
+        return lastNumber + 1;
+    } catch {
+        return 1;
+    }
+}
+
+export async function generateReport(data: {
+    tipo: 'Maestro' | 'Actividad',
+    rangoFechas: { from: Date, to: Date },
+    generadoPor: string
+}) {
+    try {
+        await dbConnect();
+
+        const reportNumber = await getNextReportNumber();
+        const reportName = `Reporte - N°${reportNumber}`;
+
+        const newReport = new Report({
+            ...data,
+            nombre: reportName,
+            fechaCreacion: new Date(),
+        });
+        await newReport.save();
+
+        await logActivity(`report-generation:${reportName}`, data.generadoPor);
+        return { success: true, data: safeSerialize(newReport), message: 'Reporte generado exitosamente.' };
+    } catch (error) {
+        console.error('Error al generar reporte:', error);
+        return { success: false, message: 'Error al generar el reporte.' };
+    }
+}
+    
+
+
+
 
     
 
-    
-
-
-
-
-    

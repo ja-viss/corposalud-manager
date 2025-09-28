@@ -1,67 +1,114 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, MoreHorizontal, Download } from "lucide-react";
+import { PlusCircle, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { getReports } from "@/app/actions";
+import type { Report } from "@/lib/types";
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { GenerateReportModal } from "./_components/generate-report-modal";
 
 export default function ReportesPage() {
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchReports = useCallback(async () => {
+    setLoading(true);
+    const result = await getReports();
+    if (result.success && result.data) {
+      setReports(result.data);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: "No se pudieron cargar los reportes." });
+    }
+    setLoading(false);
+  }, [toast]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
   return (
-    <div className="space-y-8 py-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">Reportes</h1>
-        <Button size="sm" className="gap-1">
-          <PlusCircle className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Generar Reporte
-          </span>
-        </Button>
+    <>
+      <div className="space-y-8 py-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Reportes</h1>
+          <Button size="sm" className="gap-1" onClick={() => setIsModalOpen(true)}>
+            <PlusCircle className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+              Generar Reporte
+            </span>
+          </Button>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Reportes Generados</CardTitle>
+            <CardDescription>Lista de todos los reportes maestros y de actividad.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Rango de Fechas</TableHead>
+                  <TableHead className="hidden md:table-cell">Generado Por</TableHead>
+                  <TableHead className="hidden lg:table-cell">Fecha Creación</TableHead>
+                  <TableHead><span className="sr-only">Acciones</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">Cargando reportes...</TableCell>
+                  </TableRow>
+                ) : reports.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">No se han generado reportes todavía.</TableCell>
+                  </TableRow>
+                ) : (
+                  reports.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell className="font-medium">{report.nombre}</TableCell>
+                      <TableCell>
+                        <Badge variant={report.tipo === 'Maestro' ? 'default' : 'secondary'}>{report.tipo}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(report.rangoFechas.from), 'dd/MM/yy')} - {format(new Date(report.rangoFechas.to), 'dd/MM/yy')}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{report.generadoPor}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {format(new Date(report.fechaCreacion), "dd/MM/yyyy HH:mm")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => alert(`Descargando ${report.nombre}`)}>
+                          <Download className="h-4 w-4"/>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Reportes Generados</CardTitle>
-          <CardDescription>Lista de todos los reportes maestros y de actividad.</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID Reporte</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="hidden md:table-cell">Generado Por</TableHead>
-                <TableHead className="hidden lg:table-cell">Fecha</TableHead>
-                <TableHead><span className="sr-only">Acciones</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">
-                  <div>Reporte - N°317</div>
-                  <div className="text-xs text-muted-foreground md:hidden">Por: Moderador_1</div>
-                </TableCell>
-                <TableCell><Badge variant="outline">Actividad</Badge></TableCell>
-                <TableCell className="hidden md:table-cell">Moderador_1</TableCell>
-                <TableCell className="hidden lg:table-cell">2024-07-30 10:00 AM</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon"><Download className="h-4 w-4"/></Button>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">
-                   <div>Reporte - N°316</div>
-                   <div className="text-xs text-muted-foreground md:hidden">Por: Admin</div>
-                </TableCell>
-                <TableCell><Badge>Maestro</Badge></TableCell>
-                <TableCell className="hidden md:table-cell">Admin</TableCell>
-                <TableCell className="hidden lg:table-cell">2024-07-29 05:30 PM</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon"><Download className="h-4 w-4"/></Button>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+
+      <GenerateReportModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onReportGenerated={() => {
+          setIsModalOpen(false);
+          fetchReports();
+        }}
+      />
+    </>
   );
 }
