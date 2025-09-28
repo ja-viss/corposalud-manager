@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createUser, updateUser } from "@/app/actions";
 import type { User, UserRole } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface UserFormModalProps {
     isOpen: boolean;
@@ -107,8 +108,8 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-xl max-h-[90vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4">
                     <DialogTitle>{isEditing ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
                     <DialogDescription>
                         Complete el formulario para {isEditing ? "actualizar el" : "agregar un nuevo"} usuario.
@@ -116,54 +117,68 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
                 </DialogHeader>
                 <ScrollArea className="flex-1 min-h-0">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pr-6" id="user-form">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="nombre" render={({ field }) => (
-                                    <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="apellido" render={({ field }) => (
-                                    <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="cedula" render={({ field }) => (
-                                    <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="telefono" render={({ field }) => (
-                                    <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="email" className="md:col-span-2" render={({ field }) => (
-                                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="username" render={({ field }) => (
-                                    <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="contrasena" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Contraseña</FormLabel>
-                                        <FormControl><Input type="password" placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="role" className="md:col-span-2" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Rol</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Admin">Admin</SelectItem>
-                                                <SelectItem value="Moderador">Moderador</SelectItem>
-                                                <SelectItem value="Obrero">Obrero</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                            </div>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-6 pb-6" id="user-form">
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Información Personal</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="nombre" render={({ field }) => (
+                                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="apellido" render={({ field }) => (
+                                            <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="cedula" render={({ field }) => (
+                                            <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="telefono" render={({ field }) => (
+                                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </CardContent>
+                                </Card>
+                                 <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Información de la Cuenta</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="email" render={({ field }) => (
+                                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="username" render={({ field }) => (
+                                            <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="contrasena" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Contraseña</FormLabel>
+                                                <FormControl><Input type="password" placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="role" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Rol</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Admin">Admin</SelectItem>
+                                                        <SelectItem value="Moderador">Moderador</SelectItem>
+                                                        <SelectItem value="Obrero">Obrero</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </CardContent>
+                                </Card>
+                           </div>
                         </form>
                     </Form>
                 </ScrollArea>
-                <DialogFooter className="pt-4">
+                <DialogFooter className="p-6 pt-4 border-t">
                     <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                     <Button type="submit" form="user-form">Guardar Usuario</Button>
                 </DialogFooter>
