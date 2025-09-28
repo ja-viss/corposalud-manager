@@ -186,10 +186,10 @@ export default function BitacoraPage() {
                 <Card key={log.id} className="w-full">
                     <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                            <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary mt-1">
+                            <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary mt-1 shrink-0">
                                 {getLogIcon(log.action)}
                             </div>
-                            <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex-1 space-y-1 min-w-0">
                                 <p className="text-sm font-medium leading-tight">{formatLogMessage(log)}</p>
                                 <p className="text-xs text-muted-foreground pt-1">
                                   {log.realizadoPor} • {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
