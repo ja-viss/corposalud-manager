@@ -46,7 +46,7 @@ export interface Channel {
 export interface Message {
   id: string;
   channelId: string;
-  senderId: Pick<User, 'id' | 'nombre' | 'apellido' | 'username'>;
+  senderId: Pick<User, 'id' | 'nombre' | 'apellido' | 'username' | 'role'> | null;
   content: string;
   fecha: string;
 }

@@ -98,7 +98,9 @@ export function ChatView({ channel }: ChatViewProps) {
           ) : (
             messages.map((msg) => {
               const senderName = msg.senderId ? `${msg.senderId.nombre} ${msg.senderId.apellido}` : "Usuario Eliminado";
-              const senderInitials = msg.senderId ? `${msg.senderId.nombre.charAt(0)}${msg.senderId.apellido.charAt(0)}` : "UE";
+              const senderInitials = msg.senderId && msg.senderId.nombre && msg.senderId.apellido 
+                ? `${msg.senderId.nombre.charAt(0)}${msg.senderId.apellido.charAt(0)}` 
+                : "UE";
 
               return (
                 <div key={msg.id} className="flex items-start gap-3">

@@ -395,7 +395,7 @@ export async function getMessages(channelId: string) {
     try {
         await dbConnect();
         const messages = await Message.find({ channelId })
-            .populate('senderId', 'nombre apellido username')
+            .populate('senderId', 'nombre apellido username role')
             .sort({ fecha: 1 })
             .exec();
         return { success: true, data: safeSerialize(messages) as MessageType[] };
@@ -416,7 +416,7 @@ export async function sendMessage(channelId: string, senderId: string, content: 
         });
         await newMessage.save();
         
-        const populatedMessage = await Message.findById(newMessage._id).populate('senderId', 'nombre apellido username').exec();
+        const populatedMessage = await Message.findById(newMessage._id).populate('senderId', 'nombre apellido username role').exec();
 
         return { success: true, data: safeSerialize(populatedMessage), message: "Mensaje enviado." };
     } catch (error) {
