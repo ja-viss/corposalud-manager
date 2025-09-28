@@ -189,7 +189,7 @@ export default function BitacoraPage() {
                             <div className="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary mt-1">
                                 {getLogIcon(log.action)}
                             </div>
-                            <div className="space-y-1 flex-1">
+                            <div className="space-y-1 flex-1 min-w-0">
                                 <p className="text-sm font-medium leading-tight">{formatLogMessage(log)}</p>
                                 <p className="text-xs text-muted-foreground pt-1">
                                   {log.realizadoPor} • {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
