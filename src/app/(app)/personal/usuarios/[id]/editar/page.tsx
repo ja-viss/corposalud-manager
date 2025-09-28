@@ -1,6 +1,6 @@
 
 import { getUserById } from "@/app/actions";
-import { UserForm } from "../_components/user-form";
+import { UserForm } from "../../_components/user-form";
 
 export default async function EditarUsuarioPage({ params }: { params: { id: string } }) {
   const { id } = params;
