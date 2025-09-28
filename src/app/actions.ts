@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import dbConnect from '@/lib/db';
@@ -355,19 +356,23 @@ export async function getChannels(userId?: string, userRole?: UserRole) {
     try {
         await dbConnect();
 
-        // Step 1: Ensure base channels exist (General, Moderadores, Obreros)
-        const baseChannelNames = ["Anuncios Generales", "Moderadores", "Obreros"];
-        for (const name of baseChannelNames) {
-            const role = name === 'Anuncios Generales' ? undefined : (name.slice(0, -1) as UserRole);
-            const members = await User.find(role ? { role } : {}).select('_id');
+        // Step 1: Ensure base channels exist and sync members
+        const baseChannels = [
+            { name: "Anuncios Generales", type: 'GENERAL', roles: ['Admin', 'Moderador', 'Obrero'] },
+            { name: "Moderadores", type: 'ROLE', roles: ['Admin', 'Moderador'] },
+            { name: "Obreros", type: 'ROLE', roles: ['Admin', 'Moderador', 'Obrero'] }
+        ];
+
+        for (const ch of baseChannels) {
+            const members = await User.find({ role: { $in: ch.roles } }).select('_id');
             const memberIds = members.map(m => m._id);
 
             await Channel.findOneAndUpdate(
-                { nombre: name },
+                { nombre: ch.name },
                 { 
-                    nombre: name,
-                    type: role ? 'ROLE' : 'GENERAL',
-                    members: memberIds,
+                    nombre: ch.name,
+                    type: ch.type,
+                    $addToSet: { members: memberIds }, // Use $addToSet to avoid duplicates
                     isDeletable: false
                 },
                 { upsert: true, new: true }
@@ -391,13 +396,13 @@ export async function getChannels(userId?: string, userRole?: UserRole) {
             );
         }
         
-        // Step 3: Fetch channels based on user role
-        let query = {};
-        if (userRole === 'Obrero' && userId) {
-            query = { members: new mongoose.Types.ObjectId(userId) };
+        // Step 3: Fetch channels where the current user is a member
+        if (!userId) {
+            return { success: false, message: 'ID de usuario no proporcionado.' };
         }
-
-        const channels = await Channel.find(query).sort({ 'type': 1, 'nombre': 1 }).exec();
+        
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const channels = await Channel.find({ members: userObjectId }).sort({ 'type': 1, 'nombre': 1 }).exec();
         
         return { success: true, data: safeSerialize(channels) as ChannelType[] };
     } catch (error) {
@@ -410,30 +415,38 @@ export async function createDirectChannel(userId1: string, userId2: string) {
     try {
         await dbConnect();
         
+        const user1 = await User.findById(userId1);
         const user2 = await User.findById(userId2);
-        if (!user2) {
-            return { success: false, message: "El usuario seleccionado no existe." };
+        
+        if (!user1 || !user2) {
+            return { success: false, message: "Uno de los usuarios no existe." };
         }
 
         // Check if a direct channel between these two users already exists
         const existingChannel = await Channel.findOne({
             type: 'DIRECT',
-            members: { $all: [userId1, userId2], $size: 2 }
+            members: { $all: [user1._id, user2._id], $size: 2 }
         });
 
         if (existingChannel) {
             return { success: true, data: safeSerialize(existingChannel), message: "El canal directo ya existe." };
         }
-
+        
+        // Create a user-friendly name depending on who is creating the channel
+        const channelNameForUser1 = `Conversación con ${user2.nombre} ${user2.apellido}`;
+        // We can't set a different name for each user in the same channel document.
+        // The name will be updated on the client-side based on the other participant.
+        // For the DB, we can use a generic or one-sided name.
+        
         const newChannel = new Channel({
-            nombre: `Conversación con ${user2.nombre} ${user2.apellido}`,
+            nombre: channelNameForUser1, // This name will be seen by userId1
             type: 'DIRECT',
-            members: [userId1, userId2],
+            members: [user1._id, user2._id],
             isDeletable: true,
         });
 
         await newChannel.save();
-        await logActivity(`channel-creation:direct:${user2.username}`, 'Sistema');
+        await logActivity(`channel-creation:direct:${user2.username}`, user1.username);
         return { success: true, data: safeSerialize(newChannel), message: 'Canal directo creado exitosamente.' };
     } catch (error) {
         console.error('Error al crear canal directo:', error);

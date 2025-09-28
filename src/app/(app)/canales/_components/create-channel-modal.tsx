@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from 'react';
@@ -41,6 +42,7 @@ export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChan
             toast({ variant: "destructive", title: "Error", description: result.message });
         }
         setIsLoading(false);
+        onClose();
     }
     
     const availableUsers = users.filter(u => u.id !== currentUserId);

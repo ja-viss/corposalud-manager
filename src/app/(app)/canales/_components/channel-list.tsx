@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Users, User, Building, Hash } from 'lucide-react';
-import type { Channel } from '@/lib/types';
+import type { Channel, User as UserType } from '@/lib/types';
 import { cn } from "@/lib/utils";
 
 interface ChannelListProps {
@@ -12,6 +13,8 @@ interface ChannelListProps {
   selectedChannel: Channel | null;
   onSelectChannel: (channel: Channel) => void;
   loading: boolean;
+  currentUser: UserType;
+  allUsers: UserType[];
 }
 
 const getChannelIcon = (type: Channel['type']) => {
@@ -24,7 +27,16 @@ const getChannelIcon = (type: Channel['type']) => {
   }
 };
 
-export function ChannelList({ channels, selectedChannel, onSelectChannel, loading }: ChannelListProps) {
+const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers: UserType[]) => {
+    if (channel.type !== 'DIRECT') return channel.nombre;
+    const otherMemberId = channel.members.find(id => id !== currentUserId);
+    if (!otherMemberId) return "Conversación";
+    const otherUser = allUsers.find(u => u.id === otherMemberId);
+    return otherUser ? `${otherUser.nombre} ${otherUser.apellido}` : "Usuario Eliminado";
+}
+
+
+export function ChannelList({ channels, selectedChannel, onSelectChannel, loading, currentUser, allUsers }: ChannelListProps) {
   const channelGroups = {
     general: channels.filter(c => c.type === 'GENERAL' || c.type === 'ROLE'),
     cuadrillas: channels.filter(c => c.type === 'CREW'),
@@ -93,7 +105,7 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
                                 onClick={() => onSelectChannel(channel)}
                                 >
                                 {getChannelIcon(channel.type)}
-                                {channel.nombre}
+                                {getDirectChannelName(channel, currentUser.id, allUsers)}
                                 </Button>
                             ))}
                         </div>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -18,9 +19,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface ChatViewProps {
   channel: Channel | null;
   currentUser: User | null;
+  allUsers: User[];
 }
 
-export function ChatView({ channel, currentUser }: ChatViewProps) {
+const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers: User[]) => {
+    if (channel.type !== 'DIRECT') return channel.nombre;
+    const otherMemberId = channel.members.find(id => id !== currentUserId);
+    if (!otherMemberId) return "Conversación";
+    const otherUser = allUsers.find(u => u.id === otherMemberId);
+    return otherUser ? `${otherUser.nombre} ${otherUser.apellido}` : "Usuario Eliminado";
+}
+
+export function ChatView({ channel, currentUser, allUsers }: ChatViewProps) {
   const [messages, setMessages] = useState<PopulatedMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -79,7 +89,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     }
   };
 
-  if (!channel) {
+  if (!channel || !currentUser) {
     return (
       <div className="flex flex-col h-full items-center justify-center bg-muted/20">
         <div className="text-center">
@@ -91,16 +101,43 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
   }
 
   const isObreroInNonDirectChannel = currentUser?.role === 'Obrero' && channel.type !== 'DIRECT';
-  const isInputDisabled = !currentUser || isObreroInNonDirectChannel;
-  const inputPlaceholder = isObreroInNonDirectChannel
-    ? "Solo puedes responder en mensajes directos."
-    : "Escriba su mensaje...";
+  
+  const canPostInChannel = () => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'Admin') return true;
+    if (currentUser.role === 'Moderador') return true;
+    if (currentUser.role === 'Obrero') {
+        // Obreros can only post in direct messages and their own crew channels
+        return channel.type === 'DIRECT' || (channel.type === 'CREW' && channel.members.includes(currentUser.id));
+    }
+    return false;
+  }
+  
+  const isInputDisabled = !canPostInChannel();
+
+  const getInputPlaceholder = () => {
+    if (isInputDisabled) {
+        if (channel.nombre === "Anuncios Generales" || channel.nombre === "Obreros" || channel.nombre === "Moderadores") {
+             return `Solo los administradores y moderadores pueden enviar mensajes aquí.`;
+        }
+        return "No tienes permiso para enviar mensajes en este canal.";
+    }
+    return "Escriba su mensaje...";
+  }
+
+  const getChannelTitle = () => {
+    if (channel.type === 'DIRECT') {
+        return getDirectChannelName(channel, currentUser.id, allUsers);
+    }
+    return channel.nombre;
+  }
+
 
   return (
     <>
       <div className="flex flex-col h-full bg-muted/20">
         <header className="flex items-center justify-between p-4 border-b bg-card">
-          <h2 className="text-lg font-semibold">{channel.nombre}</h2>
+          <h2 className="text-lg font-semibold">{getChannelTitle()}</h2>
         </header>
         
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
@@ -119,6 +156,8 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
                 const senderName = sender ? `${sender.nombre} ${sender.apellido} (${sender.role})` : "Usuario Eliminado";
                 const senderInitials = sender ? `${sender.nombre.charAt(0)}${sender.apellido.charAt(0)}` : "UE";
 
+                const canDelete = currentUser.role === 'Admin' || (currentUser.role === 'Moderador' && channel.type !== 'DIRECT') || msg.senderId?.id === currentUser.id;
+
                 return (
                   <div key={msg.id} className="flex items-start gap-3 group relative">
                     <Avatar className="h-8 w-8">
@@ -135,15 +174,17 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
                         <p>{msg.content}</p>
                       </div>
                     </div>
-                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-0 right-0 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100"
-                        onClick={() => setShowDeleteConfirm(msg)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Eliminar mensaje</span>
-                      </Button>
+                     {canDelete && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-0 right-0 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100"
+                            onClick={() => setShowDeleteConfirm(msg)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Eliminar mensaje</span>
+                        </Button>
+                      )}
                   </div>
                 );
               })
@@ -154,7 +195,7 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
         <footer className="p-4 border-t bg-card">
           <form onSubmit={handleSendMessage} className="relative">
             <Input
-              placeholder={inputPlaceholder}
+              placeholder={getInputPlaceholder()}
               className="pr-20"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
