@@ -6,7 +6,7 @@ export function Logo() {
       <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <Building className="h-5 w-5" />
       </div>
-      <span className="text-lg group-data-[collapsible=icon]:hidden whitespace-nowrap">
+      <span className="text-base group-data-[collapsible=icon]:hidden">
         CORPOTACHIRA MANAGER
       </span>
     </div>
