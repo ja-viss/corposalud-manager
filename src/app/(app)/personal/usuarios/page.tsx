@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +14,13 @@ import { getUsers, deleteUser } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { UserFormModal } from "./_components/user-form-modal";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
+
 
 export default function UsuariosPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -65,6 +73,23 @@ export default function UsuariosPage() {
     setEditingUser(null);
   }
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    doc.text("Listado de Usuarios", 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: [['Nombre', 'Cédula', 'Email', 'Rol', 'Status']],
+      body: users.map(user => [
+        `${user.nombre} ${user.apellido}`,
+        user.cedula,
+        user.email,
+        user.role,
+        user.status
+      ]),
+    });
+    doc.save('listado-usuarios.pdf');
+  };
+
   return (
     <>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -72,12 +97,20 @@ export default function UsuariosPage() {
             <h2 className="text-2xl font-bold tracking-tight">Usuarios</h2>
             <p className="text-muted-foreground">Gestione los usuarios del sistema.</p>
         </div>
-        <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
-          <PlusCircle className="h-3.5 w-3.5" />
-          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Crear Usuario
-          </span>
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || users.length === 0}>
+                <FileDown className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Exportar a PDF
+                </span>
+            </Button>
+            <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
+            <PlusCircle className="h-3.5 w-3.5" />
+            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                Crear Usuario
+            </span>
+            </Button>
+        </div>
       </div>
       <Card>
         <CardContent className="p-0">

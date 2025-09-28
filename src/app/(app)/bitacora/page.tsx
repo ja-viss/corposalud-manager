@@ -1,3 +1,7 @@
+
+"use client";
+
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -5,11 +9,18 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Users, Building, ClipboardList, UserCheck, UserX, Activity, User, KeyRound, LogIn, FileText, PlusCircle } from "lucide-react";
+import { Users, Building, ClipboardList, UserCheck, UserX, Activity, User, KeyRound, LogIn, FileText, PlusCircle, FileDown } from "lucide-react";
+import { Button } from '@/components/ui/button';
 import { getActivityLogs } from "@/app/actions";
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { ActivityLog } from "@/lib/types";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
 
 const iconMap: { [key: string]: React.ReactNode } = {
   'user-creation': <UserCheck className="h-5 w-5" />,
@@ -46,13 +57,49 @@ function formatLogMessage(log: ActivityLog): string {
   }
 }
 
-export default async function BitacoraPage() {
-  const logResult = await getActivityLogs();
-  const logs = logResult.success ? logResult.data : [];
+export default function BitacoraPage() {
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLogs() {
+      setLoading(true);
+      const logResult = await getActivityLogs();
+      if (logResult.success && logResult.data) {
+        setLogs(logResult.data);
+      }
+      setLoading(false);
+    }
+    fetchLogs();
+  }, []);
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    doc.text("Bitácora de Actividad", 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: [['Acción', 'Realizado Por', 'Fecha']],
+      body: logs.map(log => [
+        formatLogMessage(log),
+        log.realizadoPor,
+        format(new Date(log.fecha), "dd/MM/yyyy HH:mm:ss", { locale: es })
+      ]),
+    });
+    doc.save('bitacora-actividad.pdf');
+  };
 
   return (
     <div className="flex-1 space-y-8 py-8">
-      <h1 className="text-3xl font-bold tracking-tight">Bitácora de Actividad</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Bitácora de Actividad</h1>
+        <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || logs.length === 0}>
+          <FileDown className="h-3.5 w-3.5" />
+          <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+            Exportar a PDF
+          </span>
+        </Button>
+      </div>
+
        <Card>
         <CardHeader>
           <CardTitle>Actividad Reciente</CardTitle>
@@ -60,7 +107,9 @@ export default async function BitacoraPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {logs && logs.length > 0 ? (
+            {loading ? (
+                <p className="text-sm text-muted-foreground">Cargando bitácora...</p>
+            ) : logs.length > 0 ? (
               logs.map(log => (
                  <div className="flex items-start" key={log.id}>
                   <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
