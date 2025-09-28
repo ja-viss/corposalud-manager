@@ -428,3 +428,6 @@ export async function sendMessage(channelId: string, senderId: string, content: 
         return { success: false, message: 'Error al enviar el mensaje.' };
     }
 }
+
+
+    
