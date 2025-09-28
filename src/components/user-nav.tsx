@@ -2,7 +2,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cookies } from 'next/headers';
 
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
