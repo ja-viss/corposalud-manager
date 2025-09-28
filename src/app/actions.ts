@@ -95,9 +95,13 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
     try {
         await dbConnect();
 
-        const existingUser = await User.findOne({ $or: [{ username: userData.username }, { cedula: userData.cedula }] });
+        const existingUser = await User.findOne({ $or: [{ username: userData.username }, { email: userData.email }, { cedula: userData.cedula }] });
         if (existingUser) {
-            return { success: false, message: 'El nombre de usuario o la cédula ya existen.' };
+            let message = 'Ya existe un usuario con los mismos datos:';
+            if (existingUser.username === userData.username) message += ' Nombre de usuario.';
+            if (existingUser.email === userData.email) message += ' Email.';
+            if (existingUser.cedula === userData.cedula) message += ' Cédula.';
+            return { success: false, message };
         }
         
         if (!userData.contrasena) {
