@@ -8,10 +8,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 interface PersonalClientLayoutProps {
     children: React.ReactNode;
     showUserTab: boolean;
-    canManagePersonal: boolean;
 }
 
-export function PersonalClientLayout({ children, showUserTab, canManagePersonal }: PersonalClientLayoutProps) {
+export function PersonalClientLayout({ children, showUserTab }: PersonalClientLayoutProps) {
     const pathname = usePathname();
     
     let activeTab = 'cuadrillas';
@@ -34,14 +33,8 @@ export function PersonalClientLayout({ children, showUserTab, canManagePersonal 
                         <TabsTrigger value="cuadrillas">Cuadrillas</TabsTrigger>
                     </Link>
                 </TabsList>
-                <div className="mt-6">
-                    {React.Children.map(children, child => {
-                        if (React.isValidElement(child)) {
-                            // @ts-ignore
-                            return React.cloneElement(child, { canManageCrews: canManagePersonal });
-                        }
-                        return child;
-                    })}
+                <div className="mt-6 w-full">
+                    {children}
                 </div>
             </Tabs>
         </div>

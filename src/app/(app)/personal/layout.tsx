@@ -38,7 +38,6 @@ export default async function PersonalLayout({ children }: { children: React.Rea
             
             <PersonalClientLayout 
                 showUserTab={user.role === 'Admin'}
-                canManagePersonal={canManagePersonal}
             >
                 {children}
             </PersonalClientLayout>
