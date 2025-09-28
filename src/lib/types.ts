@@ -1,5 +1,3 @@
-
-
 export type UserRole = 'Admin' | 'Moderador' | 'Obrero';
 
 export interface User {
@@ -37,7 +35,7 @@ export interface ActivityLog {
 export interface Channel {
   id: string;
   nombre: string;
-  type: 'GENERAL' | 'CREW' | 'ROLE' | 'DIRECT';
+  type: 'GENERAL' | 'CREW' | 'ROLE' | 'DIRECT' | 'GROUP';
   members: string[];
   crewId?: string;
   isDeletable: boolean;

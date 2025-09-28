@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import dbConnect from '@/lib/db';
@@ -432,14 +430,10 @@ export async function createDirectChannel(userId1: string, userId2: string) {
             return { success: true, data: safeSerialize(existingChannel), message: "El canal directo ya existe." };
         }
         
-        // Create a user-friendly name depending on who is creating the channel
         const channelNameForUser1 = `Conversación con ${user2.nombre} ${user2.apellido}`;
-        // We can't set a different name for each user in the same channel document.
-        // The name will be updated on the client-side based on the other participant.
-        // For the DB, we can use a generic or one-sided name.
         
         const newChannel = new Channel({
-            nombre: channelNameForUser1, // This name will be seen by userId1
+            nombre: channelNameForUser1,
             type: 'DIRECT',
             members: [user1._id, user2._id],
             isDeletable: true,
@@ -453,6 +447,32 @@ export async function createDirectChannel(userId1: string, userId2: string) {
         return { success: false, message: 'Error al crear el canal directo.' };
     }
 }
+
+export async function createGroupChannel(name: string, memberIds: string[], createdBy: string) {
+    try {
+        await dbConnect();
+        
+        const creator = await User.findById(createdBy);
+        if (!creator) {
+            return { success: false, message: "Usuario creador no encontrado." };
+        }
+
+        const newChannel = new Channel({
+            nombre: name,
+            type: 'GROUP',
+            members: memberIds,
+            isDeletable: true,
+        });
+
+        await newChannel.save();
+        await logActivity(`channel-creation:group:${name}`, creator.username);
+        return { success: true, data: safeSerialize(newChannel), message: 'Grupo creado exitosamente.' };
+    } catch (error) {
+        console.error('Error al crear canal de grupo:', error);
+        return { success: false, message: 'Error al crear el grupo.' };
+    }
+}
+
 
 export async function getMessages(channelId: string) {
     try {
@@ -595,5 +615,3 @@ export async function generateReport(data: {
         return { success: false, message: 'Error al generar el reporte.' };
     }
 }
-
-    

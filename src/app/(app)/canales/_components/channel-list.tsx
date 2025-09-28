@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,6 +21,7 @@ const getChannelIcon = (type: Channel['type']) => {
     case 'ROLE': return <Users className="h-4 w-4" />;
     case 'CREW': return <Building className="h-4 w-4" />;
     case 'DIRECT': return <User className="h-4 w-4" />;
+    case 'GROUP': return <Users className="h-4 w-4" />;
     default: return <Hash className="h-4 w-4" />;
   }
 };
@@ -40,13 +39,14 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
   const channelGroups = {
     general: channels.filter(c => c.type === 'GENERAL' || c.type === 'ROLE'),
     cuadrillas: channels.filter(c => c.type === 'CREW'),
+    grupos: channels.filter(c => c.type === 'GROUP'),
     directos: channels.filter(c => c.type === 'DIRECT'),
   };
 
   return (
     <div className="h-full border-r">
       <ScrollArea className="h-full">
-        <div className="p-2 space-y-2">
+        <div className="p-2 space-y-4">
             {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="h-9 w-full rounded-md bg-muted animate-pulse" />
@@ -76,6 +76,25 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
                          <div>
                             <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Cuadrillas</h3>
                             {channelGroups.cuadrillas.map(channel => (
+                                <Button
+                                key={channel.id}
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start gap-2",
+                                    selectedChannel?.id === channel.id && "bg-muted font-semibold"
+                                )}
+                                onClick={() => onSelectChannel(channel)}
+                                >
+                                {getChannelIcon(channel.type)}
+                                {channel.nombre}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+                    {channelGroups.grupos.length > 0 && (
+                         <div>
+                            <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Grupos</h3>
+                            {channelGroups.grupos.map(channel => (
                                 <Button
                                 key={channel.id}
                                 variant="ghost"
