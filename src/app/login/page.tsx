@@ -59,8 +59,8 @@ export default function LoginPage() {
         <Image
           src="/image_logo.png"
           alt="Logo"
-          width={80}
-          height={80}
+          width={120}
+          height={120}
           className="rounded-lg"
         />
       </div>

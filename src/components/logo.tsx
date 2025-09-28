@@ -6,8 +6,8 @@ export function Logo() {
        <Image
         src="/image_logo.png"
         alt="Logo"
-        width={32}
-        height={32}
+        width={64}
+        height={64}
         className="rounded-lg"
       />
     </div>
