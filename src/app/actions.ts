@@ -11,6 +11,7 @@ import Crew from '@/models/Crew';
 import Channel from '@/models/Channel';
 import Message from '@/models/Message';
 import mongoose from 'mongoose';
+import { cookies } from 'next/headers';
 
 // Helper function to safely serialize data
 function safeSerialize<T>(data: T): T {
@@ -173,7 +174,17 @@ export async function loginUser(credentials: {username: string, password: string
         }
         
         await logActivity(`user-login:${user.username}`, user.username);
-        return { success: true, message: 'Inicio de sesión exitoso.' };
+        
+        // Create session cookie
+        const serializedUser = safeSerialize(user);
+        cookies().set('session-id', serializedUser.id, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+        });
+
+        return { success: true, message: 'Inicio de sesión exitoso.', data: serializedUser };
 
     } catch (error) {
         console.error('Error al iniciar sesión:', error);
@@ -192,12 +203,26 @@ export async function loginObrero(cedula: string) {
         }
 
         await logActivity(`worker-login:${cedula}`, 'Sistema');
-        return { success: true, message: 'Inicio de sesión de obrero exitoso.' };
+        
+        // Create session cookie
+        const serializedUser = safeSerialize(user);
+        cookies().set('session-id', serializedUser.id, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+        });
+
+        return { success: true, message: 'Inicio de sesión de obrero exitoso.', data: serializedUser };
 
     } catch (error) {
         console.error('Error al iniciar sesión de obrero:', error);
         return { success: false, message: 'Error al iniciar sesión.' };
     }
+}
+
+export async function logout() {
+    cookies().delete('session-id');
 }
 
 

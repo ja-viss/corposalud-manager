@@ -2,6 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { cookies } from 'next/headers';
+
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,17 +27,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ThemeToggle } from "./theme-toggle";
+import type { User } from "@/lib/types";
+import { logout } from "@/app/actions";
 
-export function UserNav() {
+interface UserNavProps {
+  user: User;
+}
+
+export function UserNav({ user }: UserNavProps) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const router = useRouter();
 
-  const handleLogout = () => {
-    // This would be replaced with a server action to sign out
-    console.log("Logging out...");
+  const handleLogout = async () => {
+    await logout();
     setShowLogoutConfirm(false);
     router.push("/login");
+    router.refresh(); // To ensure server components re-evaluate
   };
+
+  const userInitials = user ? `${user.nombre.charAt(0)}${user.apellido.charAt(0)}` : "U";
 
   return (
     <>
@@ -45,17 +55,17 @@ export function UserNav() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://picsum.photos/seed/1/100/100" alt="Avatar" data-ai-hint="person portrait" />
-                <AvatarFallback>AD</AvatarFallback>
+                <AvatarImage src={`https://picsum.photos/seed/${user.id}/100/100`} alt="Avatar" data-ai-hint="person portrait" />
+                <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Admin</p>
+                <p className="text-sm font-medium leading-none">{user.nombre} {user.apellido}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  admin@corposalud.com
+                  {user.email}
                 </p>
               </div>
             </DropdownMenuLabel>

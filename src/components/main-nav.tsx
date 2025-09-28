@@ -13,19 +13,20 @@ import type { User } from "@/lib/types";
 const allNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home, roles: ['Admin', 'Moderador', 'Obrero'] },
   { href: "/personal/usuarios", label: "Usuarios", icon: Users, roles: ['Admin'] },
-  { href: "/personal/cuadrillas", label: "Cuadrillas", icon: HardHat, roles: ['Admin', 'Moderador', 'Obrero'] },
+  { href: "/personal/cuadrillas", label: "Cuadrillas", icon: HardHat, roles: ['Admin', 'Moderador'] },
   { href: "/reportes", label: "Reportes", icon: ClipboardList, roles: ['Admin', 'Moderador', 'Obrero'] },
   { href: "/canales", label: "Canales", icon: MessageSquare, roles: ['Admin', 'Moderador', 'Obrero'] },
   { href: "/bitacora", label: "Bitácora", icon: BookText, roles: ['Admin'] },
 ];
 
-export function MainNav() {
-  const pathname = usePathname();
-  // This is a placeholder for the logged-in user.
-  // In a real app, you'd get this from a session or context.
-  const currentUserRole: User['role'] = "Admin"; 
+interface MainNavProps {
+  userRole: User['role'];
+}
 
-  const navItems = allNavItems.filter(item => item.roles.includes(currentUserRole));
+export function MainNav({ userRole }: MainNavProps) {
+  const pathname = usePathname();
+
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   return (
     <SidebarMenu>

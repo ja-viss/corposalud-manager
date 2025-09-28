@@ -110,9 +110,11 @@ export default function CuadrillasPage() {
                 crews.map((crew) => (
                   <TableRow key={crew.id}>
                     <TableCell className="font-medium">{crew.nombre}</TableCell>
-                    <TableCell className="hidden md:table-cell">{crew.moderadores.length + crew.obreros.length}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {crew.moderadores.length + crew.obreros.length}
+                    </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline">{crew.creadoPor}</Badge>
+                       {crew.creadoPor}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</TableCell>
                     <TableCell>

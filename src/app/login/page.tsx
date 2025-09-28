@@ -14,9 +14,12 @@ import { loginUser, loginObrero } from "@/app/actions";
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     const formData = new FormData(e.currentTarget);
     const username = formData.get("username") as string;
     const password = formData.get("password") as string;
@@ -25,23 +28,28 @@ export default function LoginPage() {
     if (result.success) {
       toast({ title: "Éxito", description: result.message });
       router.push('/dashboard');
+      router.refresh();
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
     }
+    setLoading(false);
   };
 
   const handleObreroLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     const formData = new FormData(e.currentTarget);
     const cedula = formData.get("cedula") as string;
 
     const result = await loginObrero(cedula);
      if (result.success) {
       toast({ title: "Éxito", description: result.message });
-      router.push('/dashboard'); // O a una página específica para obreros
+      router.push('/dashboard'); 
+      router.refresh();
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
     }
+    setLoading(false);
   };
 
 
@@ -67,15 +75,17 @@ export default function LoginPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Usuario</Label>
-                  <Input id="username" name="username" type="text" placeholder="su-usuario" required />
+                  <Input id="username" name="username" type="text" placeholder="su-usuario" required disabled={loading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input id="password" name="password" type="password" required />
+                  <Input id="password" name="password" type="password" required disabled={loading} />
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-4">
-                <Button type="submit" className="w-full">Iniciar Sesión</Button>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                </Button>
               </CardFooter>
             </form>
           </Card>
@@ -92,11 +102,13 @@ export default function LoginPage() {
               <CardContent className="space-y-2">
                 <div className="space-y-2">
                   <Label htmlFor="cedula-obrero">Cédula de Identidad</Label>
-                  <Input id="cedula-obrero" name="cedula" placeholder="V-12345678" required />
+                  <Input id="cedula-obrero" name="cedula" placeholder="V-12345678" required disabled={loading} />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full">Ingresar</Button>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Ingresando...' : 'Ingresar'}
+                  </Button>
               </CardFooter>
             </form>
           </Card>
