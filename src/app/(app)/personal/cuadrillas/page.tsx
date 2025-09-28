@@ -114,12 +114,6 @@ export default function CuadrillasPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || crews.length === 0}>
-                        <FileDown className="h-3.5 w-3.5" />
-                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                            Exportar a PDF
-                        </span>
-                    </Button>
                     {canManageCrews && (
                         <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
                             <PlusCircle className="h-3.5 w-3.5" />
@@ -128,6 +122,12 @@ export default function CuadrillasPage() {
                             </span>
                         </Button>
                     )}
+                    <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || crews.length === 0}>
+                        <FileDown className="h-3.5 w-3.5" />
+                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Exportar a PDF
+                        </span>
+                    </Button>
                 </div>
             </div>
             
