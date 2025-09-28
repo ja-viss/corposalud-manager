@@ -183,18 +183,22 @@ export default function BitacoraPage() {
            <p className="text-sm text-muted-foreground text-center">Cargando bitácora...</p>
         ) : logs.length > 0 ? (
             logs.map(log => (
-                <Card key={log.id} className="w-full">
-                    <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start gap-3">
-                            <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mt-1 shrink-0">
-                                {getLogIcon(log.action)}
-                            </div>
-                            <p className="text-sm font-medium leading-tight pt-1">{formatLogMessage(log)}</p>
-                        </div>
-                        <div className="text-xs text-muted-foreground pt-2 border-t text-right">
+                <Card key={log.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-1">
+                        {getLogIcon(log.action)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium break-words">
+                          {formatLogMessage(log)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
                           {log.realizadoPor} • {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
-                        </div>
-                    </CardContent>
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
                 </Card>
             ))
         ) : (
