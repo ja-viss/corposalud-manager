@@ -105,16 +105,18 @@ export default function CuadrillasPage() {
     return (
         <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">
-                        {canManageCrews ? 'Gestione las cuadrillas de trabajo.' : 'Mis Cuadrillas'}
-                    </h2>
-                    <p className="text-muted-foreground">
-                        {canManageCrews ? 'Cree y administre las cuadrillas.' : 'Estas son las cuadrillas en las que estás asignado.'}
-                    </p>
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            {canManageCrews ? 'Gestione las cuadrillas de trabajo.' : 'Mis Cuadrillas'}
+                        </h2>
+                        <p className="text-muted-foreground">
+                            {canManageCrews ? 'Cree y administre las cuadrillas.' : 'Estas son las cuadrillas en las que estás asignado.'}
+                        </p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {canManageCrews && (
+                     {canManageCrews && (
                         <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
                             <PlusCircle className="h-3.5 w-3.5" />
                             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -230,3 +232,5 @@ export default function CuadrillasPage() {
         </>
     );
 }
+
+    
