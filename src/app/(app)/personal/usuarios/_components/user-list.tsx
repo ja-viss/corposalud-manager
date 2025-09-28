@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { MoreHorizontal, PlusCircle, FileDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -146,16 +146,17 @@ export function UserList({ initialUsers }: UserListProps) {
             </Button>
         </div>
       </div>
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
-                <TableHead className="hidden md:table-cell">Cédula</TableHead>
+                <TableHead>Cédula</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="hidden lg:table-cell">Creado el</TableHead>
+                <TableHead>Creado el</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -178,10 +179,9 @@ export function UserList({ initialUsers }: UserListProps) {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
-                      <div className="font-medium">{user.nombre} {user.apellido}</div>
-                      <div className="text-xs text-muted-foreground md:hidden">{user.cedula}</div>
+                      {user.nombre} {user.apellido}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{user.cedula}</TableCell>
+                    <TableCell>{user.cedula}</TableCell>
                     <TableCell>
                       <Badge variant={user.role === 'Admin' ? 'destructive' : user.role === 'Moderador' ? 'secondary' : 'outline'}>
                         {user.role}
@@ -190,7 +190,7 @@ export function UserList({ initialUsers }: UserListProps) {
                     <TableCell>
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -218,6 +218,62 @@ export function UserList({ initialUsers }: UserListProps) {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Mobile Card View */}
+      <div className="grid gap-4 md:hidden">
+        {loading && initialUsers.length === 0 ? (
+            <p className="text-center text-muted-foreground">Cargando usuarios...</p>
+        ) : users.length === 0 ? (
+            <p className="text-center text-muted-foreground">No se encontraron usuarios.</p>
+        ) : (
+            users.map((user) => (
+                <Card key={user.id}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <CardTitle className="text-lg">
+                                {user.nombre} {user.apellido}
+                                <p className="text-sm font-normal text-muted-foreground">C.I: {user.cedula}</p>
+                            </CardTitle>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuItem onSelect={() => handleOpenModalForEdit(user)}>Editar</DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="text-destructive"
+                                    onSelect={() => setShowDeleteConfirm(user)}
+                                >
+                                    Eliminar
+                                </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Rol:</span>
+                            <Badge variant={user.role === 'Admin' ? 'destructive' : user.role === 'Moderador' ? 'secondary' : 'outline'}>
+                                {user.role}
+                            </Badge>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Status:</span>
+                            <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Creado:</span>
+                            <span>{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+        )}
+      </div>
       
       {isModalOpen && (
         <UserFormModal

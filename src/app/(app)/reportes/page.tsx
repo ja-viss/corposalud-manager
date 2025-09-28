@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download } from "lucide-react";
+import { PlusCircle, Download, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getReports } from "@/app/actions";
@@ -47,7 +48,8 @@ export default function ReportesPage() {
           </Button>
         </div>
         
-        <Card>
+        {/* Desktop Table View */}
+        <Card className="hidden md:block">
           <CardHeader>
             <CardTitle>Reportes Generados</CardTitle>
             <CardDescription>Lista de todos los reportes maestros y de actividad.</CardDescription>
@@ -59,8 +61,8 @@ export default function ReportesPage() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Rango de Fechas</TableHead>
-                  <TableHead className="hidden md:table-cell">Generado Por</TableHead>
-                  <TableHead className="hidden lg:table-cell">Fecha Creación</TableHead>
+                  <TableHead>Generado Por</TableHead>
+                  <TableHead>Fecha Creación</TableHead>
                   <TableHead><span className="sr-only">Acciones</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -83,8 +85,8 @@ export default function ReportesPage() {
                       <TableCell>
                         {format(new Date(report.rangoFechas.from), 'dd/MM/yy')} - {format(new Date(report.rangoFechas.to), 'dd/MM/yy')}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{report.generadoPor}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
+                      <TableCell>{report.generadoPor}</TableCell>
+                      <TableCell>
                         {format(new Date(report.fechaCreacion), "dd/MM/yyyy HH:mm")}
                       </TableCell>
                       <TableCell className="text-right">
@@ -99,6 +101,52 @@ export default function ReportesPage() {
             </Table>
           </CardContent>
         </Card>
+        
+        {/* Mobile Card View */}
+        <div className="grid gap-4 md:hidden">
+            <CardHeader className="px-0 pt-0">
+                <CardTitle>Reportes Generados</CardTitle>
+                <CardDescription>Lista de todos los reportes maestros y de actividad.</CardDescription>
+            </CardHeader>
+             {loading ? (
+                <p className="text-center text-muted-foreground">Cargando reportes...</p>
+             ) : reports.length === 0 ? (
+                <p className="text-center text-muted-foreground">No se han generado reportes todavía.</p>
+             ) : (
+                reports.map((report) => (
+                    <Card key={report.id}>
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <CardTitle className="text-lg">
+                                    {report.nombre}
+                                    <p className="text-sm font-normal text-muted-foreground">
+                                        {format(new Date(report.rangoFechas.from), 'dd/MM/yy')} - {format(new Date(report.rangoFechas.to), 'dd/MM/yy')}
+                                    </p>
+                                </CardTitle>
+                                <Button variant="ghost" size="icon" onClick={() => alert(`Descargando ${report.nombre}`)}>
+                                    <Download className="h-5 w-5"/>
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Tipo:</span>
+                                <Badge variant={report.tipo === 'Maestro' ? 'default' : 'secondary'}>{report.tipo}</Badge>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Generado por:</span>
+                                <span>{report.generadoPor}</span>
+                            </div>
+                             <div className="flex justify-between">
+                                <span className="text-muted-foreground">Fecha:</span>
+                                <span>{format(new Date(report.fechaCreacion), "dd/MM/yyyy HH:mm")}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))
+            )}
+        </div>
+
       </div>
 
       <GenerateReportModal 

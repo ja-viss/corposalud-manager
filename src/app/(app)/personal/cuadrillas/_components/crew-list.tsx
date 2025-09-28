@@ -2,9 +2,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { MoreHorizontal, PlusCircle, FileDown } from "lucide-react";
+import { MoreHorizontal, PlusCircle, FileDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CrewFormModal } from "./crew-form-modal";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Badge } from "@/components/ui/badge";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -30,7 +31,6 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
   return [255 * f(0), 255 * f(8), 255 * f(4)];
 }
-
 
 interface CrewListProps {
   initialCrews: Crew[];
@@ -151,78 +151,131 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
             </Button>
           </div>
         </div>
-      <div className="w-full">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead className="hidden md:table-cell">Miembros</TableHead>
-                    <TableHead className="hidden lg:table-cell">Creado por</TableHead>
-                    <TableHead className="hidden lg:table-cell">Creado el</TableHead>
+      
+      {/* Desktop Table View */}
+      <Card className="hidden md:block">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Miembros</TableHead>
+                <TableHead>Creado por</TableHead>
+                <TableHead>Creado el</TableHead>
+                {canManageCrews && (
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
+                    Cargando cuadrillas...
+                  </TableCell>
+                </TableRow>
+              ) : crews.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
+                    No se encontraron cuadrillas.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                crews.map((crew) => (
+                  <TableRow key={crew.id}>
+                    <TableCell className="font-medium">{crew.nombre}</TableCell>
+                    <TableCell>
+                      {crew.moderadores.length + crew.obreros.length}
+                    </TableCell>
+                    <TableCell>
+                       {crew.creadoPor}
+                    </TableCell>
+                    <TableCell>{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</TableCell>
                     {canManageCrews && (
-                      <TableHead>
-                        <span className="sr-only">Actions</span>
-                      </TableHead>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onSelect={() => setShowDeleteConfirm(crew)}
+                            >
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     )}
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
-                        Cargando cuadrillas...
-                      </TableCell>
-                    </TableRow>
-                  ) : crews.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
-                        No se encontraron cuadrillas.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    crews.map((crew) => (
-                      <TableRow key={crew.id}>
-                        <TableCell className="font-medium">{crew.nombre}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {crew.moderadores.length + crew.obreros.length}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                           {crew.creadoPor}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</TableCell>
-                        {canManageCrews && (
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Toggle menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onSelect={() => setShowDeleteConfirm(crew)}
-                                >
-                                  Eliminar
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-      </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
       
+      {/* Mobile Card View */}
+      <div className="grid gap-4 md:hidden">
+         {loading ? (
+            <p className="text-center text-muted-foreground">Cargando cuadrillas...</p>
+         ) : crews.length === 0 ? (
+            <p className="text-center text-muted-foreground">No se encontraron cuadrillas.</p>
+         ) : (
+            crews.map((crew) => (
+                <Card key={crew.id}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <CardTitle className="text-lg">{crew.nombre}</CardTitle>
+                             {canManageCrews && (
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                    <DropdownMenuItem onSelect={() => handleOpenModalForEdit(crew)}>Ver/Editar</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                    className="text-destructive"
+                                    onSelect={() => setShowDeleteConfirm(crew)}
+                                    >
+                                    Eliminar
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" /> Miembros:</span>
+                            <Badge variant="secondary">{crew.moderadores.length + crew.obreros.length}</Badge>
+                        </div>
+                         <div className="flex justify-between">
+                            <span className="text-muted-foreground">Creado por:</span>
+                            <span>{crew.creadoPor}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fecha:</span>
+                            <span>{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+         )}
+      </div>
+
       {isModalOpen && (
         <CrewFormModal
           isOpen={isModalOpen}
