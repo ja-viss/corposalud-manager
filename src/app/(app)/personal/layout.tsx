@@ -1,8 +1,6 @@
 
-import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getUserById } from '@/app/actions';
 import type { User } from '@/lib/types';
 import { PersonalClientLayout } from './_components/personal-client-layout';
@@ -38,7 +36,10 @@ export default async function PersonalLayout({ children }: { children: React.Rea
                 {canManagePersonal ? 'Gestión de Personal' : 'Mis Cuadrillas'}
             </h1>
             
-            <PersonalClientLayout showUserTab={user.role === 'Admin'}>
+            <PersonalClientLayout 
+                showUserTab={user.role === 'Admin'}
+                canManagePersonal={canManagePersonal}
+            >
                 {children}
             </PersonalClientLayout>
         </div>

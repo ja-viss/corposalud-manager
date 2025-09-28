@@ -2,18 +2,18 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface PersonalClientLayoutProps {
     children: React.ReactNode;
     showUserTab: boolean;
+    canManagePersonal: boolean;
 }
 
-export function PersonalClientLayout({ children, showUserTab }: PersonalClientLayoutProps) {
+export function PersonalClientLayout({ children, showUserTab, canManagePersonal }: PersonalClientLayoutProps) {
     const pathname = usePathname();
     
-    // Determine the active tab based on the current path.
-    // If the user tab is not shown, default to 'cuadrillas'.
     let activeTab = 'cuadrillas';
     if (showUserTab && pathname.includes('/usuarios')) {
         activeTab = 'usuarios';
@@ -35,7 +35,13 @@ export function PersonalClientLayout({ children, showUserTab }: PersonalClientLa
                     </Link>
                 </TabsList>
                 <div className="mt-6">
-                    {children}
+                    {React.Children.map(children, child => {
+                        if (React.isValidElement(child)) {
+                            // @ts-ignore
+                            return React.cloneElement(child, { canManageCrews: canManagePersonal });
+                        }
+                        return child;
+                    })}
                 </div>
             </Tabs>
         </div>

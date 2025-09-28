@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -7,21 +8,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import type { Crew, User } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
+import type { Crew } from "@/lib/types";
 import { format } from 'date-fns';
-import { getCrews, deleteCrew, getUserById } from "@/app/actions";
+import { getCrews, deleteCrew } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { CrewFormModal } from "./_components/crew-form-modal";
-import { getCookie } from "cookies-next";
 
-export default function CuadrillasPage() {
+interface CuadrillasPageProps {
+  canManageCrews?: boolean;
+}
+
+export default function CuadrillasPage({ canManageCrews = false }: CuadrillasPageProps) {
   const [crews, setCrews] = useState<Crew[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Crew | null>(null);
   const [editingCrew, setEditingCrew] = useState<Crew | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
 
   const fetchCrews = useCallback(async () => {
@@ -35,20 +37,9 @@ export default function CuadrillasPage() {
     setLoading(false);
   }, [toast]);
   
-  const fetchCurrentUser = useCallback(async () => {
-    const userId = getCookie('session-id');
-    if (userId) {
-        const userResult = await getUserById(userId);
-        if (userResult.success && userResult.data) {
-            setCurrentUser(userResult.data);
-        }
-    }
-  }, []);
-
   useEffect(() => {
-    fetchCurrentUser();
     fetchCrews();
-  }, [fetchCrews, fetchCurrentUser]);
+  }, [fetchCrews]);
 
   const handleDelete = async () => {
     if (showDeleteConfirm) {
@@ -77,9 +68,6 @@ export default function CuadrillasPage() {
     setIsModalOpen(false);
     setEditingCrew(null);
   }
-  
-  const canManageCrews = currentUser?.role === 'Admin' || currentUser?.role === 'Moderador';
-
 
   return (
     <>
