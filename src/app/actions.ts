@@ -70,10 +70,6 @@ export async function deleteUser(userId: string) {
             return { success: false, message: "Usuario no encontrado." };
         }
         
-        if (user.role === 'Admin') {
-            return { success: false, message: 'No se puede eliminar a un administrador.' };
-        }
-
         const crewWithUser = await Crew.findOne({
           $or: [{ moderadores: userId }, { obreros: userId }],
         });
@@ -429,5 +425,7 @@ export async function sendMessage(channelId: string, senderId: string, content: 
     }
 }
 
+
+    
 
     

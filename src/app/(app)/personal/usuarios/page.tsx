@@ -138,7 +138,6 @@ export default function UsuariosPage() {
                           <DropdownMenuItem
                             className="text-destructive"
                             onSelect={() => setShowDeleteConfirm(user)}
-                            disabled={user.role === 'Admin'}
                           >
                             Eliminar
                           </DropdownMenuItem>
@@ -172,7 +171,7 @@ export default function UsuariosPage() {
             <AlertDialogDescription>
               Esta acción es irreversible. Se eliminará permanentemente al usuario {showDeleteConfirm?.nombre} {showDeleteConfirm?.apellido}.
               <br/><br/>
-              <strong>Nota:</strong> Un usuario no puede ser eliminado si está asignado a una cuadrilla o si es un Administrador.
+              <strong>Nota:</strong> Un usuario no puede ser eliminado si está asignado a una cuadrilla.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -184,3 +183,5 @@ export default function UsuariosPage() {
     </>
   );
 }
+
+    
