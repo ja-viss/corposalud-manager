@@ -21,7 +21,7 @@ export function PersonalClientLayout({ children, showUserTab }: PersonalClientLa
     }
 
     return (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-6">
             <Tabs value={activeTab} className="w-full">
                 <TabsList className={`grid w-full max-w-md ${showUserTab ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {showUserTab && (
@@ -34,7 +34,7 @@ export function PersonalClientLayout({ children, showUserTab }: PersonalClientLa
                     </Link>
                 </TabsList>
                 <div className="mt-6 w-full">
-                    {children}
+                   {children}
                 </div>
             </Tabs>
         </div>
