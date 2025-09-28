@@ -426,8 +426,24 @@ export async function sendMessage(channelId: string, senderId: string, content: 
 }
 
 
+export async function deleteMessage(messageId: string) {
+    try {
+        await dbConnect();
+        const deletedMessage = await Message.findByIdAndDelete(messageId);
+        if (!deletedMessage) {
+            return { success: false, message: 'Mensaje no encontrado.' };
+        }
+        
+        await logActivity(`message-deletion:${messageId}`, 'Sistema');
+        return { success: true, message: 'Mensaje eliminado exitosamente.' };
+    } catch (error) {
+        console.error('Error al eliminar mensaje:', error);
+        return { success: false, message: 'Error al eliminar el mensaje.' };
+    }
+}
     
 
     
 
     
+

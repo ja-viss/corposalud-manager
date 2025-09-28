@@ -2,16 +2,18 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Paperclip, Send } from 'lucide-react';
+import { Paperclip, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getMessages, sendMessage } from '@/app/actions';
+import { getMessages, sendMessage, deleteMessage } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Channel, Message } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 
 interface ChatViewProps {
   channel: Channel | null;
@@ -21,6 +23,7 @@ export function ChatView({ channel }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Message | null>(null);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +44,6 @@ export function ChatView({ channel }: ChatViewProps) {
   }, [fetchMessages]);
   
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
         if (viewport) {
@@ -54,9 +56,7 @@ export function ChatView({ channel }: ChatViewProps) {
     e.preventDefault();
     if (!newMessage.trim() || !channel) return;
 
-    // This is a placeholder for the sender's ID. 
-    // In a real app, you'd get this from the authenticated user's session.
-    const senderId = "66a9179973719e2730932822"; // Placeholder for Admin user ID
+    const senderId = "66a9179973719e2730932822"; 
 
     const result = await sendMessage(channel.id, senderId, newMessage);
     if (result.success && result.data) {
@@ -64,6 +64,19 @@ export function ChatView({ channel }: ChatViewProps) {
       setNewMessage('');
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.message });
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (showDeleteConfirm) {
+      const result = await deleteMessage(showDeleteConfirm.id);
+      if (result.success) {
+        setMessages((prev) => prev.filter((msg) => msg.id !== showDeleteConfirm.id));
+        toast({ title: 'Éxito', description: 'Mensaje eliminado.' });
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message });
+      }
+      setShowDeleteConfirm(null);
     }
   };
 
@@ -79,70 +92,95 @@ export function ChatView({ channel }: ChatViewProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-muted/20">
-      <header className="flex items-center justify-between p-4 border-b bg-card">
-        <h2 className="text-lg font-semibold">{channel.nombre}</h2>
-        {/* Add actions like channel info or delete here */}
-      </header>
-      
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        <div className="space-y-4">
-          {loading ? (
-             <div className="flex justify-center items-center h-full">
-                <p>Cargando mensajes...</p>
-             </div>
-          ) : messages.length === 0 ? (
-             <div className="flex justify-center items-center h-full text-center text-muted-foreground">
-                <p>No hay mensajes en este canal todavía.<br/>Sé el primero en enviar uno.</p>
-             </div>
-          ) : (
-            messages.map((msg) => {
-              const senderName = msg.senderId ? `${msg.senderId.nombre} ${msg.senderId.apellido}` : "Usuario Eliminado";
-              const senderInitials = msg.senderId && msg.senderId.nombre && msg.senderId.apellido 
-                ? `${msg.senderId.nombre.charAt(0)}${msg.senderId.apellido.charAt(0)}` 
-                : "UE";
+    <>
+      <div className="flex flex-col h-full bg-muted/20">
+        <header className="flex items-center justify-between p-4 border-b bg-card">
+          <h2 className="text-lg font-semibold">{channel.nombre}</h2>
+        </header>
+        
+        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+          <div className="space-y-4">
+            {loading ? (
+               <div className="flex justify-center items-center h-full">
+                  <p>Cargando mensajes...</p>
+               </div>
+            ) : messages.length === 0 ? (
+               <div className="flex justify-center items-center h-full text-center text-muted-foreground">
+                  <p>No hay mensajes en este canal todavía.<br/>Sé el primero en enviar uno.</p>
+               </div>
+            ) : (
+              messages.map((msg) => {
+                const senderName = msg.senderId ? `${msg.senderId.nombre} ${msg.senderId.apellido} (${msg.senderId.role})` : "Usuario Eliminado";
+                const senderInitials = msg.senderId && msg.senderId.nombre && msg.senderId.apellido 
+                  ? `${msg.senderId.nombre.charAt(0)}${msg.senderId.apellido.charAt(0)}` 
+                  : "UE";
 
-              return (
-                <div key={msg.id} className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>{senderInitials}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <p className="font-semibold text-sm">{senderName}</p>
-                      <p className="text-xs text-muted-foreground">
-                         {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
-                      </p>
+                return (
+                  <div key={msg.id} className="flex items-start gap-3 group relative">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{senderInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <p className="font-semibold text-sm">{senderName}</p>
+                        <p className="text-xs text-muted-foreground">
+                           {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
+                        </p>
+                      </div>
+                      <div className="p-2 mt-1 rounded-lg bg-card text-sm">
+                        <p>{msg.content}</p>
+                      </div>
                     </div>
-                    <div className="p-2 mt-1 rounded-lg bg-card text-sm">
-                      <p>{msg.content}</p>
-                    </div>
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-0 right-0 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100"
+                        onClick={() => setShowDeleteConfirm(msg)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Eliminar mensaje</span>
+                      </Button>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
-      
-      <footer className="p-4 border-t bg-card">
-        <form onSubmit={handleSendMessage} className="relative">
-          <Input
-            placeholder="Escriba su mensaje..."
-            className="pr-20"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-            <Button type="button" variant="ghost" size="icon" className="text-muted-foreground">
-              <Paperclip className="h-5 w-5" />
-            </Button>
-            <Button type="submit" variant="ghost" size="icon" className="text-primary">
-              <Send className="h-5 w-5" />
-            </Button>
+                );
+              })
+            )}
           </div>
-        </form>
-      </footer>
-    </div>
+        </ScrollArea>
+        
+        <footer className="p-4 border-t bg-card">
+          <form onSubmit={handleSendMessage} className="relative">
+            <Input
+              placeholder="Escriba su mensaje..."
+              className="pr-20"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <Button type="button" variant="ghost" size="icon" className="text-muted-foreground">
+                <Paperclip className="h-5 w-5" />
+              </Button>
+              <Button type="submit" variant="ghost" size="icon" className="text-primary">
+                <Send className="h-5 w-5" />
+              </Button>
+            </div>
+          </form>
+        </footer>
+      </div>
+
+       <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro de que desea eliminar este mensaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción es irreversible y el mensaje no podrá ser recuperado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMessage} className="bg-destructive hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
