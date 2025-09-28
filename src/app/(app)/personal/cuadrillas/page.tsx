@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -15,7 +14,6 @@ import { getCrews, deleteCrew, getUserById } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { CrewFormModal } from "./_components/crew-form-modal";
 import { getCookie } from "cookies-next";
-import { cookies } from 'next/headers';
 
 export default function CuadrillasPage() {
   const [crews, setCrews] = useState<Crew[]>([]);
