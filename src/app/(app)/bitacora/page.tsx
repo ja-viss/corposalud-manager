@@ -22,6 +22,18 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
 
+// HSL to RGB conversion function
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [255 * f(0), 255 * f(8), 255 * f(4)];
+}
+
+
 const iconMap: { [key: string]: React.ReactNode } = {
   'user-creation': <UserCheck className="h-5 w-5" />,
   'user-login': <LogIn className="h-5 w-5" />,
@@ -75,6 +87,12 @@ export default function BitacoraPage() {
 
   const handleExportPDF = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
+
+    const primaryColorH = 173; // From globals.css --primary
+    const primaryColorS = 80;
+    const primaryColorL = 30;
+    const headerColor = hslToRgb(primaryColorH, primaryColorS, primaryColorL);
+
     doc.text("Bitácora de Actividad", 14, 15);
     doc.autoTable({
       startY: 20,
@@ -84,6 +102,19 @@ export default function BitacoraPage() {
         log.realizadoPor,
         format(new Date(log.fecha), "dd/MM/yyyy HH:mm:ss", { locale: es })
       ]),
+      headStyles: {
+        fillColor: headerColor,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+      styles: {
+        cellPadding: 3,
+        fontSize: 10,
+        valign: 'middle',
+        overflow: 'linebreak',
+        halign: 'left',
+      },
     });
     doc.save('bitacora-actividad.pdf');
   };

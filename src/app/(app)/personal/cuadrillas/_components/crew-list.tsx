@@ -20,13 +20,24 @@ interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
 }
 
+// HSL to RGB conversion function
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [255 * f(0), 255 * f(8), 255 * f(4)];
+}
+
+
 interface CrewListProps {
   initialCrews: Crew[];
   canManageCrews: boolean;
-  showCreateButton: boolean;
 }
 
-export function CrewList({ initialCrews, canManageCrews, showCreateButton }: CrewListProps) {
+export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
   const [crews, setCrews] = useState<Crew[]>(initialCrews);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Crew | null>(null);
@@ -79,6 +90,12 @@ export function CrewList({ initialCrews, canManageCrews, showCreateButton }: Cre
 
   const handleExportPDF = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
+
+    const primaryColorH = 173; // From globals.css --primary
+    const primaryColorS = 80;
+    const primaryColorL = 30;
+    const headerColor = hslToRgb(primaryColorH, primaryColorS, primaryColorL);
+
     doc.text("Listado de Cuadrillas", 14, 15);
     doc.autoTable({
       startY: 20,
@@ -89,6 +106,19 @@ export function CrewList({ initialCrews, canManageCrews, showCreateButton }: Cre
         crew.creadoPor,
         format(new Date(crew.fechaCreacion), "dd/MM/yyyy")
       ]),
+      headStyles: {
+        fillColor: headerColor,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: { fillColor: [240, 240, 240] },
+      styles: {
+        cellPadding: 3,
+        fontSize: 10,
+        valign: 'middle',
+        overflow: 'linebreak',
+        halign: 'left',
+      },
     });
     doc.save('listado-cuadrillas.pdf');
   };
@@ -105,7 +135,7 @@ export function CrewList({ initialCrews, canManageCrews, showCreateButton }: Cre
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {showCreateButton && (
+             {canManageCrews && (
               <Button size="sm" className="gap-1" onClick={handleOpenModalForCreate}>
                 <PlusCircle className="h-3.5 w-3.5" />
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
