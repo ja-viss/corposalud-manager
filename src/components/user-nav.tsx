@@ -1,3 +1,4 @@
+
 "use client";
 import { useState } from "react";
 import Link from "next/link";
@@ -54,7 +55,6 @@ export function UserNav({ user }: UserNavProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={`https://picsum.photos/seed/${user.id}/100/100`} alt="Avatar" data-ai-hint="person portrait" />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
             </Button>

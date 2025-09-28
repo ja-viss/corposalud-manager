@@ -221,6 +221,35 @@ export async function logout() {
 }
 
 
+export async function updatePassword(userId: string, currentPassword: string, newPassword: string) {
+    try {
+        await dbConnect();
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return { success: false, message: "Usuario no encontrado." };
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.contrasena);
+        if (!isMatch) {
+            return { success: false, message: "La contraseña actual es incorrecta." };
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        user.contrasena = hashedPassword;
+        await user.save();
+
+        await logActivity(`user-password-change:${user.username}`, user.username);
+        return { success: true, message: "Contraseña actualizada exitosamente." };
+
+    } catch (error) {
+        console.error('Error al cambiar contraseña:', error);
+        return { success: false, message: "Error al cambiar la contraseña." };
+    }
+}
+
 // Acciones de Cuadrillas
 export async function getCrews() {
     try {
@@ -541,4 +570,5 @@ export async function generateReport(data: {
 
 
     
+
 
