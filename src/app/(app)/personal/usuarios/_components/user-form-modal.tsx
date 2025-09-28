@@ -109,76 +109,78 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
-                <DialogHeader className="p-6 pb-4">
+                <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>{isEditing ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
                     <DialogDescription>
                         Complete el formulario para {isEditing ? "actualizar el" : "agregar un nuevo"} usuario.
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="flex-1 min-h-0">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-6 pb-6" id="user-form">
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Información Personal</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="nombre" render={({ field }) => (
-                                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="apellido" render={({ field }) => (
-                                            <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="cedula" render={({ field }) => (
-                                            <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="telefono" render={({ field }) => (
-                                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </CardContent>
-                                </Card>
-                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Información de la Cuenta</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="email" render={({ field }) => (
-                                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="username" render={({ field }) => (
-                                            <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="contrasena" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Contraseña</FormLabel>
-                                                <FormControl><Input type="password" placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="role" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Rol</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Admin">Admin</SelectItem>
-                                                        <SelectItem value="Moderador">Moderador</SelectItem>
-                                                        <SelectItem value="Obrero">Obrero</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </CardContent>
-                                </Card>
-                           </div>
-                        </form>
-                    </Form>
+                    <div className="p-6">
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" id="user-form">
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-lg">Información Personal</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <FormField control={form.control} name="nombre" render={({ field }) => (
+                                                <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="apellido" render={({ field }) => (
+                                                <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="cedula" render={({ field }) => (
+                                                <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="telefono" render={({ field }) => (
+                                                <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                        </CardContent>
+                                    </Card>
+                                     <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-lg">Información de la Cuenta</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <FormField control={form.control} name="email" render={({ field }) => (
+                                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="username" render={({ field }) => (
+                                                <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="contrasena" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Contraseña</FormLabel>
+                                                    <FormControl><Input type="password" placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="role" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Rol</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Admin">Admin</SelectItem>
+                                                            <SelectItem value="Moderador">Moderador</SelectItem>
+                                                            <SelectItem value="Obrero">Obrero</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </CardContent>
+                                    </Card>
+                               </div>
+                            </form>
+                        </Form>
+                    </div>
                 </ScrollArea>
-                <DialogFooter className="p-6 pt-4 border-t">
+                <DialogFooter className="p-6 border-t">
                     <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
                     <Button type="submit" form="user-form">Guardar Usuario</Button>
                 </DialogFooter>
