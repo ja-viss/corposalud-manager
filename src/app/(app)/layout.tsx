@@ -1,3 +1,4 @@
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
@@ -9,6 +10,7 @@ import {
   SidebarTrigger,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { SheetTitle } from "@/components/ui/sheet";
 import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
 import { Logo } from "@/components/logo";
@@ -50,6 +52,7 @@ export default async function AppLayout({
         collapsible="icon"
         className="border-r border-sidebar-border"
       >
+        <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
         <SidebarHeader className="items-center">
           <Logo />
         </SidebarHeader>
