@@ -40,11 +40,9 @@ async function getAdminDashboardStats() {
 async function getObreroDashboardStats(userId: string) {
     await dbConnect();
     const userCrews = await Crew.find({ obreros: userId }).populate('moderadores', 'nombre apellido').lean();
-    const logResult = await getActivityLogs(3);
     
     return {
         userCrews: JSON.parse(JSON.stringify(userCrews)) as CrewType[],
-        recentActivity: logResult.success ? logResult.data : [],
     }
 }
 
@@ -140,33 +138,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-         <Card>
-          <CardHeader>
-            <CardTitle>Actividad Reciente del Sistema</CardTitle>
-            <CardDescription>Un resumen de las últimas acciones en todo el sistema.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <div className="space-y-6">
-              {stats.recentActivity && stats.recentActivity.length > 0 ? (
-                stats.recentActivity.map(log => (
-                   <div className="flex items-start" key={log.id}>
-                    <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
-                      {getLogIcon(log.action)}
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">{formatLogMessage(log)}</p>
-                      <p className="text-sm text-muted-foreground">
-                         Realizado por: {log.realizadoPor} - {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No hay actividad registrada todavía.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
