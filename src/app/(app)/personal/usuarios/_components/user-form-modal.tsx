@@ -107,16 +107,16 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-xl max-h-[90vh]">
+            <DialogContent className="max-w-xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
                     <DialogDescription>
                         Complete el formulario para {isEditing ? "actualizar el" : "agregar un nuevo"} usuario.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="pr-6 -mr-6">
+                <ScrollArea className="flex-1 pr-6 -mr-6">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4" id="user-form">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField control={form.control} name="nombre" render={({ field }) => (
                                     <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -160,13 +160,13 @@ export function UserFormModal({ isOpen, onClose, user, onSave }: UserFormModalPr
                                     </FormItem>
                                 )} />
                             </div>
-                             <DialogFooter className="md:col-span-2 pt-4 sticky bottom-0 bg-background pb-4 -mb-4">
-                                <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
-                                <Button type="submit">Guardar Usuario</Button>
-                            </DialogFooter>
                         </form>
                     </Form>
                 </ScrollArea>
+                <DialogFooter className="pt-4">
+                    <DialogClose asChild><Button type="button" variant="secondary">Cancelar</Button></DialogClose>
+                    <Button type="submit" form="user-form">Guardar Usuario</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
