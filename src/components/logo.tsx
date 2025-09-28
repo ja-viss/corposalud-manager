@@ -1,11 +1,15 @@
-import { Building } from 'lucide-react';
+import Image from 'next/image';
 
 export function Logo() {
   return (
     <div className="flex items-center gap-2.5 text-primary font-semibold tracking-tighter">
-      <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <Building className="h-5 w-5" />
-      </div>
+       <Image
+        src="/image.png"
+        alt="CORPOTACHIRA MANAGER Logo"
+        width={32}
+        height={32}
+        className="rounded-lg"
+      />
       <span className="text-base group-data-[collapsible=icon]:hidden">
         CORPOTACHIRA MANAGER
       </span>
