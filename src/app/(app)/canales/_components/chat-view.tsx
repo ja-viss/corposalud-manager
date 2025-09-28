@@ -90,6 +90,12 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     );
   }
 
+  const isObreroInNonDirectChannel = currentUser?.role === 'Obrero' && channel.type !== 'DIRECT';
+  const isInputDisabled = !currentUser || isObreroInNonDirectChannel;
+  const inputPlaceholder = isObreroInNonDirectChannel
+    ? "Solo puedes responder en mensajes directos."
+    : "Escriba su mensaje...";
+
   return (
     <>
       <div className="flex flex-col h-full bg-muted/20">
@@ -148,17 +154,17 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
         <footer className="p-4 border-t bg-card">
           <form onSubmit={handleSendMessage} className="relative">
             <Input
-              placeholder="Escriba su mensaje..."
+              placeholder={inputPlaceholder}
               className="pr-20"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              disabled={!currentUser}
+              disabled={isInputDisabled}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-              <Button type="button" variant="ghost" size="icon" className="text-muted-foreground">
+              <Button type="button" variant="ghost" size="icon" className="text-muted-foreground" disabled={isInputDisabled}>
                 <Paperclip className="h-5 w-5" />
               </Button>
-              <Button type="submit" variant="ghost" size="icon" className="text-primary" disabled={!currentUser}>
+              <Button type="submit" variant="ghost" size="icon" className="text-primary" disabled={isInputDisabled || !newMessage.trim()}>
                 <Send className="h-5 w-5" />
               </Button>
             </div>
@@ -183,5 +189,3 @@ export function ChatView({ channel, currentUser }: ChatViewProps) {
     </>
   );
 }
-
-    
