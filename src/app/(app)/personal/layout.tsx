@@ -29,15 +29,15 @@ export default async function PersonalLayout({ children }: { children: React.Rea
         redirect('/login');
     }
 
-    const canManageUsers = user.role === 'Admin';
+    const canManagePersonal = user.role === 'Admin' || user.role === 'Moderador';
 
     return (
         <div className="space-y-8 py-8">
             <h1 className="text-3xl font-bold tracking-tight">
-                {user.role === 'Obrero' ? 'Mis Cuadrillas' : 'Gestión de Personal'}
+                {canManagePersonal ? 'Gestión de Personal' : 'Mis Cuadrillas'}
             </h1>
             
-            <PersonalClientLayout showUserTab={canManageUsers}>
+            <PersonalClientLayout showUserTab={user.role === 'Admin'}>
                 {children}
             </PersonalClientLayout>
         </div>

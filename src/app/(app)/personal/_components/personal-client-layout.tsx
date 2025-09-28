@@ -11,7 +11,15 @@ interface PersonalClientLayoutProps {
 
 export function PersonalClientLayout({ children, showUserTab }: PersonalClientLayoutProps) {
     const pathname = usePathname();
-    const activeTab = pathname.includes('/cuadrillas') ? 'cuadrillas' : 'usuarios';
+    
+    // Determine the active tab based on the current path.
+    // If the user tab is not shown, default to 'cuadrillas'.
+    let activeTab = 'cuadrillas';
+    if (showUserTab && pathname.includes('/usuarios')) {
+        activeTab = 'usuarios';
+    } else if (pathname.includes('/cuadrillas')) {
+        activeTab = 'cuadrillas';
+    }
 
     return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
