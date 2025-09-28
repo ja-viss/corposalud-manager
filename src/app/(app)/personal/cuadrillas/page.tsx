@@ -34,13 +34,11 @@ export default async function CuadrillasPage() {
     const initialCrews = initialCrewsResult.success ? initialCrewsResult.data || [] : [];
     
     const canManageCrews = user.role === 'Admin' || user.role === 'Moderador';
-    const showCreateButton = user.role === 'Admin' || user.role === 'Moderador';
 
     return (
         <CrewList 
             initialCrews={initialCrews}
             canManageCrews={canManageCrews}
-            showCreateButton={showCreateButton}
         />
     );
 }
