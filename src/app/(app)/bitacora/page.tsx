@@ -185,8 +185,8 @@ export default function BitacoraPage() {
             logs.map(log => (
                 <Card key={log.id}>
                   <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-1">
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary mt-0.5">
                         {getLogIcon(log.action)}
                       </div>
                       <div className="flex-1 min-w-0">
