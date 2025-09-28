@@ -9,13 +9,15 @@ import { Users, Building, ClipboardList, UserCheck, UserX, Activity, LogIn, File
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Crew from "@/models/Crew";
-import { getActivityLogs } from "@/app/actions";
-import type { ActivityLog } from "@/lib/types";
+import { getActivityLogs, getUserById } from "@/app/actions";
+import type { ActivityLog, Crew as CrewType } from "@/lib/types";
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 
-async function getDashboardStats() {
+async function getAdminDashboardStats() {
   await dbConnect();
   const totalUsers = await User.countDocuments();
   const activeUsers = await User.countDocuments({ status: 'active' });
@@ -34,6 +36,18 @@ async function getDashboardStats() {
     recentActivity: logResult.success ? logResult.data : [],
   };
 }
+
+async function getObreroDashboardStats(userId: string) {
+    await dbConnect();
+    const userCrews = await Crew.find({ obreros: userId }).populate('moderadores', 'nombre apellido').lean();
+    const logResult = await getActivityLogs(3);
+    
+    return {
+        userCrews: JSON.parse(JSON.stringify(userCrews)) as CrewType[],
+        recentActivity: logResult.success ? logResult.data : [],
+    }
+}
+
 
 const iconMap: { [key: string]: React.ReactNode } = {
   'user-creation': <UserCheck className="h-5 w-5" />,
@@ -69,9 +83,96 @@ function formatLogMessage(log: ActivityLog): string {
   }
 }
 
+async function getCurrentUser() {
+    const cookieStore = cookies();
+    const userId = cookieStore.get('session-id')?.value;
+    if (!userId) return null;
+    const userResult = await getUserById(userId);
+    return userResult.success ? userResult.data : null;
+}
+
 
 export default async function DashboardPage() {
-  const stats = await getDashboardStats();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  if (user.role === 'Obrero') {
+    const stats = await getObreroDashboardStats(user.id);
+    return (
+       <div className="flex-1 space-y-8 py-8">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard del Obrero</h1>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Mis Cuadrillas</CardTitle>
+              <CardDescription>Estas son las cuadrillas en las que estás asignado.</CardDescription>
+            </CardHeader>
+            <CardContent>
+               {stats.userCrews.length > 0 ? (
+                <ul className="space-y-4">
+                  {stats.userCrews.map(crew => (
+                    <li key={crew.id} className="p-3 rounded-lg border bg-card flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">{crew.nombre}</p>
+                        <p className="text-sm text-muted-foreground">
+                            Moderadores: {crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}
+                        </p>
+                      </div>
+                       <Building className="h-6 w-6 text-muted-foreground" />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aún no has sido asignado a ninguna cuadrilla.</p>
+              )}
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader>
+              <CardTitle>Mis Reportes</CardTitle>
+               <CardDescription>Resumen de tus reportes de actividad.</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <p className="text-sm text-muted-foreground">Aún no has generado reportes.</p>
+            </CardContent>
+          </Card>
+        </div>
+         <Card>
+          <CardHeader>
+            <CardTitle>Actividad Reciente del Sistema</CardTitle>
+            <CardDescription>Un resumen de las últimas acciones en todo el sistema.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <div className="space-y-6">
+              {stats.recentActivity && stats.recentActivity.length > 0 ? (
+                stats.recentActivity.map(log => (
+                   <div className="flex items-start" key={log.id}>
+                    <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
+                      {getLogIcon(log.action)}
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">{formatLogMessage(log)}</p>
+                      <p className="text-sm text-muted-foreground">
+                         Realizado por: {log.realizadoPor} - {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No hay actividad registrada todavía.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Dashboard para Admin y Moderador
+  const stats = await getAdminDashboardStats();
 
   return (
     <div className="flex-1 space-y-8 py-8">
