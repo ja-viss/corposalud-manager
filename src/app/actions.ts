@@ -31,6 +31,9 @@ async function getCurrentUserFromSession(): Promise<UserType | null> {
 export async function getActivityLogs(limit?: number) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser) return { success: false, message: "Acceso no autorizado." };
+
         const query = ActivityLog.find({}).sort({ fecha: -1 });
         if (limit) {
             query.limit(limit);
@@ -351,6 +354,21 @@ export async function getCrews() {
     } catch (error) {
         console.error('Error al obtener cuadrillas:', error);
         return { success: false, message: 'Error al obtener las cuadrillas.' };
+    }
+}
+
+export async function getUserCrews(userId: string) {
+    try {
+        await dbConnect();
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const crews = await Crew.find({
+            $or: [{ moderadores: userObjectId }, { obreros: userObjectId }]
+        }).lean().exec();
+        
+        return { success: true, data: safeSerialize(crews) as CrewType[] };
+    } catch (error) {
+        console.error('Error al obtener las cuadrillas del usuario:', error);
+        return { success: false, message: 'Error al obtener las cuadrillas del usuario.' };
     }
 }
 
@@ -764,4 +782,5 @@ export async function generateReport(data: {
         return { success: false, message: 'Error al generar el reporte.' };
     }
 }
+
 

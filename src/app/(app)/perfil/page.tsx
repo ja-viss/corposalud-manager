@@ -1,7 +1,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getUserById } from "@/app/actions";
+import { getUserById, getUserCrews } from "@/app/actions";
 import type { User } from '@/lib/types';
 import { PerfilClientPage } from "./_components/perfil-client-page";
 
@@ -27,5 +27,8 @@ export default async function PerfilPage() {
         redirect('/login');
     }
 
-    return <PerfilClientPage user={user} />;
+    const crewsResult = await getUserCrews(user.id);
+    const crews = crewsResult.success ? crewsResult.data || [] : [];
+
+    return <PerfilClientPage user={user} crews={crews} />;
 }

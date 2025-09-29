@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { updatePassword } from "@/app/actions";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import type { User } from '@/lib/types';
+import type { User, Crew } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, HardHat } from 'lucide-react';
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, "La contraseña actual es requerida."),
@@ -29,9 +29,10 @@ const passwordFormSchema = z.object({
 
 interface PerfilPageProps {
     user: User;
+    crews: Crew[];
 }
 
-export function PerfilClientPage({ user }: PerfilPageProps) {
+export function PerfilClientPage({ user, crews }: PerfilPageProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -60,12 +61,13 @@ export function PerfilClientPage({ user }: PerfilPageProps) {
   }
 
   const userInitials = user ? `${user.nombre.charAt(0)}${user.apellido.charAt(0)}` : "U";
+  const isWorkerOrModerator = user.role === 'Obrero' || user.role === 'Moderador';
 
   return (
     <div className="space-y-8 py-8">
         <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
         <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-1">
+            <div className="md:col-span-1 flex flex-col gap-8">
                  <Card>
                     <CardHeader>
                         <CardTitle>Cambiar Contraseña</CardTitle>
@@ -117,6 +119,28 @@ export function PerfilClientPage({ user }: PerfilPageProps) {
                         </Form>
                     </CardContent>
                 </Card>
+                 {isWorkerOrModerator && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Mis Cuadrillas</CardTitle>
+                            <CardDescription>Las cuadrillas a las que estás asignado actualmente.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {crews.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {crews.map(crew => (
+                                        <li key={crew.id} className="flex items-center gap-3 text-sm font-medium">
+                                            <HardHat className="h-5 w-5 text-primary" />
+                                            <span>{crew.nombre}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">Aún no has sido asignado a ninguna cuadrilla.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
             </div>
              <div className="md:col-span-2">
                 <Card>
