@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import dbConnect from '@/lib/db';
@@ -418,6 +419,15 @@ export async function createCrew(crewData: { descripcion?: string; moderadores: 
          if (!currentUser) {
             return { success: false, message: "Acceso no autorizado." };
         }
+        
+        // --- Validation: Check if any of the selected workers are already in another crew ---
+        const conflictingCrews = await Crew.find({ obreros: { $in: crewData.obreros } });
+        if (conflictingCrews.length > 0) {
+            const assignedObreros = await User.find({ _id: { $in: conflictingCrews.flatMap(c => c.obreros) } }).select('nombre apellido');
+            const assignedNames = assignedObreros.map(o => `${o.nombre} ${o.apellido}`).join(', ');
+            return { success: false, message: `Los siguientes obreros ya están en otra cuadrilla: ${assignedNames}.` };
+        }
+        // --- End Validation ---
 
         const crewNumber = await getNextCrewNumber();
         const crewName = `Cuadrilla - N°${crewNumber}`;
@@ -443,6 +453,24 @@ export async function updateCrew(crewId: string, crewData: { nombre?: string; de
          if (!currentUser) {
             return { success: false, message: "Acceso no autorizado." };
         }
+        
+        // --- Validation: Check if any of the selected workers are already in another crew ---
+        const crewObjectId = new mongoose.Types.ObjectId(crewId);
+        const conflictingCrews = await Crew.find({ 
+            _id: { $ne: crewObjectId }, // Exclude the current crew from the check
+            obreros: { $in: crewData.obreros } 
+        });
+
+        if (conflictingCrews.length > 0) {
+            const assignedObreroIds = conflictingCrews.flatMap(c => c.obreros.map(o => o.toString()));
+            const selectedObreroIds = crewData.obreros;
+            const conflictIds = selectedObreroIds.filter(id => assignedObreroIds.includes(id));
+            
+            const assignedObreros = await User.find({ _id: { $in: conflictIds } }).select('nombre apellido');
+            const assignedNames = assignedObreros.map(o => `${o.nombre} ${o.apellido}`).join(', ');
+            return { success: false, message: `Los siguientes obreros ya están en otra cuadrilla: ${assignedNames}.` };
+        }
+        // --- End Validation ---
 
         const crew = await Crew.findByIdAndUpdate(crewId, crewData, { new: true });
         if (!crew) {

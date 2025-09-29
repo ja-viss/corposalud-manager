@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,7 +12,7 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { createCrew, updateCrew, getUsers } from "@/app/actions";
+import { createCrew, updateCrew, getUsers, getCrews } from "@/app/actions";
 import type { Crew, User } from '@/lib/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -34,6 +35,7 @@ export function CrewForm({ crew }: CrewFormProps) {
     const router = useRouter();
     const isEditing = !!crew;
     const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [allCrews, setAllCrews] = useState<Crew[]>([]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -45,13 +47,20 @@ export function CrewForm({ crew }: CrewFormProps) {
     });
 
     useEffect(() => {
-        async function fetchUsers() {
-            const usersResult = await getUsers({ role: ['Moderador', 'Obrero'] });
+        async function fetchData() {
+            const [usersResult, crewsResult] = await Promise.all([
+                getUsers({ role: ['Moderador', 'Obrero'] }),
+                getCrews()
+            ]);
+
             if (usersResult.success) {
                 setAllUsers(usersResult.data || []);
             }
+            if (crewsResult.success) {
+                setAllCrews(crewsResult.data || []);
+            }
         }
-        fetchUsers();
+        fetchData();
     }, []);
 
     useEffect(() => {
@@ -85,7 +94,24 @@ export function CrewForm({ crew }: CrewFormProps) {
     }
     
     const moderadores = allUsers.filter(u => u.role === 'Moderador');
-    const obreros = allUsers.filter(u => u.role === 'Obrero');
+
+    // Get a set of all obrero IDs that are already in a crew
+    const assignedObreroIds = new Set(
+        allCrews
+            .filter(c => c.id !== crew?.id) // Exclude the current crew when editing
+            .flatMap(c => c.obreros.map(o => o.id))
+    );
+
+    // Filter the list of obreros to show only available ones + those already in the current crew
+    const availableObreros = allUsers.filter(u => {
+        if (u.role !== 'Obrero') return false;
+        // If the obrero is already in this crew, they should be in the list
+        if (isEditing && crew?.obreros.some(o => o.id === u.id)) {
+            return true;
+        }
+        // If the obrero is in another crew, they are not available
+        return !assignedObreroIds.has(u.id);
+    });
 
     return (
         <Form {...form}>
@@ -140,7 +166,7 @@ export function CrewForm({ crew }: CrewFormProps) {
                                 <FormItem>
                                      <ScrollArea className="h-72">
                                          <div className="p-1">
-                                            {obreros.map((obrero) => (
+                                            {availableObreros.map((obrero) => (
                                                 <div key={obrero.id} className="flex items-center space-x-2 mb-2 p-2 rounded-md hover:bg-muted">
                                                     <Checkbox
                                                         id={`obrero-${obrero.id}`}
@@ -175,3 +201,4 @@ export function CrewForm({ crew }: CrewFormProps) {
 }
 
     
+
