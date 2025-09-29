@@ -45,9 +45,7 @@ export function MainNav({ userRole }: MainNavProps) {
           if (item.href === '/personal/cuadrillas' && pathname.startsWith('/personal')) {
               isActive = true; // Highlight "Cuadrillas" if we are anywhere under "personal"
           }
-          if (item.href === '/personal/usuarios' && userRole === 'Moderador') {
-              return null; // Do not show a separate "Usuarios" button for moderators
-          }
+          
           if (item.href === '/personal/usuarios' && pathname.startsWith('/personal')) {
                isActive = true; // Highlight "Usuarios" if we are anywhere under "personal"
           }
