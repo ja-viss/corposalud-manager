@@ -66,12 +66,6 @@ export default function LoginPage() {
           height={150}
           className="rounded-lg"
         />
-        <Image
-          src="https://turbo.build/images/pack-glyph-knockout.svg"
-          alt="Turbopack Logo"
-          width={40}
-          height={40}
-        />
       </div>
       <Tabs defaultValue="user" className="w-full max-w-md">
         <TabsList className="grid w-full grid-cols-2">
