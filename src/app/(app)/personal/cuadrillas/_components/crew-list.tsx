@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { MoreHorizontal, PlusCircle, FileDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -82,9 +82,10 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
     doc.text("Listado de Cuadrillas", 14, 15);
     doc.autoTable({
       startY: 20,
-      head: [['Nombre', 'Miembros', 'Creado por', 'Fecha Creación']],
+      head: [['Nombre', 'Descripción', 'Miembros', 'Creado por', 'Fecha Creación']],
       body: crews.map(crew => [
         crew.nombre,
+        crew.descripcion || 'N/A',
         crew.moderadores.length + crew.obreros.length,
         crew.creadoPor,
         format(new Date(crew.fechaCreacion), "dd/MM/yyyy")
@@ -102,6 +103,9 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
         overflow: 'linebreak',
         halign: 'left',
       },
+      columnStyles: {
+        1: { cellWidth: 'auto' } // Description column
+      }
     });
     doc.save('listado-cuadrillas.pdf');
   };
@@ -144,6 +148,7 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nombre</TableHead>
+                <TableHead className="w-[30%]">Descripción</TableHead>
                 <TableHead>Miembros</TableHead>
                 <TableHead>Creado por</TableHead>
                 <TableHead>Creado el</TableHead>
@@ -157,13 +162,13 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
+                  <TableCell colSpan={canManageCrews ? 6 : 5} className="h-24 text-center">
                     Cargando cuadrillas...
                   </TableCell>
                 </TableRow>
               ) : crews.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={canManageCrews ? 5 : 4} className="h-24 text-center">
+                  <TableCell colSpan={canManageCrews ? 6 : 5} className="h-24 text-center">
                     No se encontraron cuadrillas.
                   </TableCell>
                 </TableRow>
@@ -171,6 +176,7 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
                 crews.map((crew) => (
                   <TableRow key={crew.id}>
                     <TableCell className="font-medium">{crew.nombre}</TableCell>
+                    <TableCell className="text-muted-foreground truncate max-w-xs">{crew.descripcion || 'N/A'}</TableCell>
                     <TableCell>
                       {crew.moderadores.length + crew.obreros.length}
                     </TableCell>
@@ -245,6 +251,7 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
                                 </DropdownMenu>
                             )}
                         </div>
+                         <CardDescription>{crew.descripcion || 'Sin descripción'}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">

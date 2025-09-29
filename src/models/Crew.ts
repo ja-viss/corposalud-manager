@@ -3,6 +3,7 @@ import mongoose, { Schema, models, model } from 'mongoose';
 
 const CrewSchema = new Schema({
   nombre: { type: String, required: true, unique: true },
+  descripcion: { type: String, required: false },
   moderadores: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   obreros: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   fechaCreacion: { type: Date, default: Date.now },

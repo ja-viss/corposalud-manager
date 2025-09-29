@@ -18,6 +18,7 @@ export interface User {
 export interface Crew {
     id: string;
     nombre: string;
+    descripcion?: string;
     moderadores: Pick<User, 'id' | 'nombre' | 'apellido'>[];
     obreros: Pick<User, 'id' | 'nombre' | 'apellido'>[];
     fechaCreacion: string;

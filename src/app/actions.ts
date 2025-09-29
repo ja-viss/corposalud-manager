@@ -403,7 +403,7 @@ async function getNextCrewNumber() {
 }
 
 
-export async function createCrew(crewData: { moderadores: string[]; obreros: string[] }) {
+export async function createCrew(crewData: { descripcion?: string; moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
         const currentUser = await getCurrentUserFromSession();
@@ -428,7 +428,7 @@ export async function createCrew(crewData: { moderadores: string[]; obreros: str
     }
 }
 
-export async function updateCrew(crewId: string, crewData: { nombre?: string; moderadores: string[]; obreros: string[] }) {
+export async function updateCrew(crewId: string, crewData: { nombre?: string; descripcion?: string; moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
         const currentUser = await getCurrentUserFromSession();

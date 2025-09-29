@@ -17,12 +17,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 
 interface CrewFormProps {
     crew?: Crew | null;
 }
 
 const formSchema = z.object({
+    descripcion: z.string().optional(),
     moderadores: z.array(z.string()).min(1, "Debe seleccionar al menos un moderador."),
     obreros: z.array(z.string()).min(4, "Debe seleccionar al menos 4 obreros.").max(40, "No puede seleccionar más de 40 obreros."),
 });
@@ -37,6 +39,7 @@ export function CrewForm({ crew }: CrewFormProps) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            descripcion: "",
             moderadores: [],
             obreros: [],
         },
@@ -57,6 +60,7 @@ export function CrewForm({ crew }: CrewFormProps) {
     useEffect(() => {
         if (isEditing && crew) {
             form.reset({
+                descripcion: crew.descripcion || "",
                 moderadores: crew.moderadores.map(m => typeof m === 'string' ? m : m.id),
                 obreros: crew.obreros.map(o => typeof o === 'string' ? o : o.id),
             });
@@ -86,6 +90,20 @@ export function CrewForm({ crew }: CrewFormProps) {
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                 <Card>
+                    <CardHeader><CardTitle>Descripción de Actividad</CardTitle></CardHeader>
+                    <CardContent>
+                        <FormField control={form.control} name="descripcion" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Actividad de la Cuadrilla</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="Ej: Limpieza y mantenimiento del sector Barrio Obrero..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                    </CardContent>
+                </Card>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <Card>
                         <CardHeader><CardTitle>Moderadores</CardTitle></CardHeader>
