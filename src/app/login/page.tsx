@@ -30,12 +30,12 @@ export default function LoginPage() {
     const result = await loginUser({ username, password });
     if (result.success) {
       toast({ title: "Éxito", description: result.message });
-      router.push('/dashboard');
-      router.refresh();
+      // Redirect to dashboard after successful login
+      window.location.href = '/dashboard';
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleObreroLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -47,24 +47,30 @@ export default function LoginPage() {
     const result = await loginObrero(cedula);
      if (result.success) {
       toast({ title: "Éxito", description: result.message });
-      router.push('/dashboard'); 
-      router.refresh();
+      // Redirect to dashboard after successful login
+      window.location.href = '/dashboard';
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
+      setLoading(false);
     }
-    setLoading(false);
   };
 
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4">
-      <div className="mb-8">
+      <div className="mb-8 flex items-center gap-4">
         <Image
           src="/image_logo.png"
           alt="Logo"
           width={150}
           height={150}
           className="rounded-lg"
+        />
+        <Image
+          src="https://turbo.build/images/pack-glyph-knockout.svg"
+          alt="Turbopack Logo"
+          width={40}
+          height={40}
         />
       </div>
       <Tabs defaultValue="user" className="w-full max-w-md">
