@@ -47,7 +47,7 @@ export async function getActivityLogs(limit?: number) {
 }
 
 
-export async function getUsers(filter: { role?: UserRole } = {}) {
+export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
     try {
         await dbConnect();
         const currentUser = await getCurrentUserFromSession();
@@ -56,8 +56,14 @@ export async function getUsers(filter: { role?: UserRole } = {}) {
             return { success: false, message: "Acceso no autorizado." };
         }
         
-        let queryFilter: any = filter;
-        // If the user is a Moderator, they can only see Obreros
+        let queryFilter: any = {};
+
+        if (filter.role) {
+            const roles = Array.isArray(filter.role) ? filter.role : [filter.role];
+            queryFilter.role = { $in: roles };
+        }
+
+        // If the user is a Moderator, they can ONLY see Obreros, regardless of filter
         if (currentUser.role === 'Moderador') {
             queryFilter.role = 'Obrero';
         }

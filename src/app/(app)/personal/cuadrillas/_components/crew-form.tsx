@@ -33,8 +33,7 @@ export function CrewForm({ crew }: CrewFormProps) {
     const { toast } = useToast();
     const router = useRouter();
     const isEditing = !!crew;
-    const [moderadores, setModeradores] = useState<User[]>([]);
-    const [obreros, setObreros] = useState<User[]>([]);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -47,12 +46,10 @@ export function CrewForm({ crew }: CrewFormProps) {
 
     useEffect(() => {
         async function fetchUsers() {
-            const [modResult, obreroResult] = await Promise.all([
-                getUsers({ role: 'Moderador' }),
-                getUsers({ role: 'Obrero' })
-            ]);
-            if (modResult.success) setModeradores(modResult.data || []);
-            if (obreroResult.success) setObreros(obreroResult.data || []);
+            const usersResult = await getUsers({ role: ['Moderador', 'Obrero'] });
+            if (usersResult.success) {
+                setAllUsers(usersResult.data || []);
+            }
         }
         fetchUsers();
     }, []);
@@ -86,6 +83,9 @@ export function CrewForm({ crew }: CrewFormProps) {
             toast({ variant: "destructive", title: "Error", description: result.message });
         }
     }
+    
+    const moderadores = allUsers.filter(u => u.role === 'Moderador');
+    const obreros = allUsers.filter(u => u.role === 'Obrero');
 
     return (
         <Form {...form}>
