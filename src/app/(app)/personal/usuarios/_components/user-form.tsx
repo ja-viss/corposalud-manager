@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface UserFormProps {
     user?: User | null;
+    currentUserRole?: UserRole;
 }
 
 const formSchema = z.object({
@@ -33,7 +34,7 @@ const formSchema = z.object({
     role: z.enum(['Admin', 'Moderador', 'Obrero']),
 });
 
-export function UserForm({ user }: UserFormProps) {
+export function UserForm({ user, currentUserRole }: UserFormProps) {
     const { toast } = useToast();
     const router = useRouter();
     const isEditing = !!user;
@@ -92,6 +93,9 @@ export function UserForm({ user }: UserFormProps) {
             toast({ variant: "destructive", title: "Error", description: result.message });
         }
     }
+    
+    const canSelectRole = currentUserRole === 'Admin';
+
 
     return (
         <Form {...form}>
@@ -153,13 +157,13 @@ export function UserForm({ user }: UserFormProps) {
                             <FormField control={form.control} name="role" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Rol</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole}>
                                         <FormControl>
                                             <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Admin">Admin</SelectItem>
-                                            <SelectItem value="Moderador">Moderador</SelectItem>
+                                            {currentUserRole === 'Admin' && <SelectItem value="Admin">Admin</SelectItem>}
+                                            {currentUserRole === 'Admin' && <SelectItem value="Moderador">Moderador</SelectItem>}
                                             <SelectItem value="Obrero">Obrero</SelectItem>
                                         </SelectContent>
                                     </Select>

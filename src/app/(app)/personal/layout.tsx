@@ -30,14 +30,19 @@ export default async function PersonalLayout({ children }: { children: React.Rea
 
     const canManagePersonal = user.role === 'Admin' || user.role === 'Moderador';
 
+    if (!canManagePersonal) {
+        // If a user without permissions (like Obrero) tries to access, redirect them.
+        redirect('/dashboard');
+    }
+
     return (
         <div className="space-y-8 py-8">
             <h1 className="text-3xl font-bold tracking-tight">
-                {canManagePersonal ? 'Gestión de Personal' : 'Mis Cuadrillas'}
+                Gestión de Personal
             </h1>
             
             <PersonalClientLayout 
-                showUserTab={user.role === 'Admin'}
+                showUserTab={canManagePersonal}
             >
                 {children}
             </PersonalClientLayout>

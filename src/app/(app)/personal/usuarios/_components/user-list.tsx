@@ -34,9 +34,10 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 interface UserListProps {
   initialUsers: User[];
+  canManageUsers: boolean;
 }
 
-export function UserList({ initialUsers }: UserListProps) {
+export function UserList({ initialUsers, canManageUsers }: UserListProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
@@ -46,12 +47,12 @@ export function UserList({ initialUsers }: UserListProps) {
     setLoading(true);
     const result = await getUsers();
     if (result.success && result.data) {
-      setUsers(result.data);
+      setUsers(result.data.filter(user => !initialUsers.some(u => u.id === user.id))); // Simple filter to avoid showing self if logic changes
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
     }
     setLoading(false);
-  }, [toast]);
+  }, [toast, initialUsers]);
   
   useEffect(() => {
     setUsers(initialUsers);
@@ -62,7 +63,8 @@ export function UserList({ initialUsers }: UserListProps) {
       const result = await deleteUser(showDeleteConfirm.id);
        if (result.success) {
         toast({ title: "Éxito", description: result.message });
-        fetchUsers(); // Refresh users list
+        // Optimistic update
+        setUsers(prev => prev.filter(u => u.id !== showDeleteConfirm.id));
       } else {
         toast({ variant: "destructive", title: "Error", description: result.message });
       }
@@ -114,22 +116,24 @@ export function UserList({ initialUsers }: UserListProps) {
             <h2 className="text-2xl font-bold tracking-tight">Usuarios</h2>
             <p className="text-muted-foreground">Gestione los usuarios del sistema.</p>
         </div>
-        <div className="flex items-center gap-2">
-            <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || users.length === 0}>
-                <FileDown className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Exportar a PDF
-                </span>
-            </Button>
-            <Button size="sm" asChild className="gap-1">
-              <Link href="/personal/usuarios/nuevo">
-                <PlusCircle className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                    Crear Usuario
-                </span>
-              </Link>
-            </Button>
-        </div>
+        {canManageUsers && (
+          <div className="flex items-center gap-2">
+              <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || users.length === 0}>
+                  <FileDown className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Exportar a PDF
+                  </span>
+              </Button>
+              <Button size="sm" asChild className="gap-1">
+                <Link href="/personal/usuarios/nuevo">
+                  <PlusCircle className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                      Crear Usuario
+                  </span>
+                </Link>
+              </Button>
+          </div>
+        )}
       </div>
       {/* Desktop Table View */}
       <Card className="hidden md:block">
@@ -142,21 +146,19 @@ export function UserList({ initialUsers }: UserListProps) {
                 <TableHead>Rol</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Creado el</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                {canManageUsers && <TableHead><span className="sr-only">Actions</span></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && initialUsers.length === 0 ? (
+              {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={canManageUsers ? 6 : 5} className="h-24 text-center">
                     Cargando usuarios...
                   </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={canManageUsers ? 6 : 5} className="h-24 text-center">
                     No se encontraron usuarios.
                   </TableCell>
                 </TableRow>
@@ -176,28 +178,30 @@ export function UserList({ initialUsers }: UserListProps) {
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
                     </TableCell>
                     <TableCell>{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/personal/usuarios/${user.id}/editar`}>Editar</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={() => setShowDeleteConfirm(user)}
-                          >
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {canManageUsers && (
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/personal/usuarios/${user.id}/editar`}>Editar</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onSelect={() => setShowDeleteConfirm(user)}
+                            >
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -208,7 +212,7 @@ export function UserList({ initialUsers }: UserListProps) {
 
       {/* Mobile Card View */}
       <div className="grid gap-4 md:hidden">
-        {loading && initialUsers.length === 0 ? (
+        {loading ? (
             <p className="text-center text-muted-foreground">Cargando usuarios...</p>
         ) : users.length === 0 ? (
             <p className="text-center text-muted-foreground">No se encontraron usuarios.</p>
@@ -221,26 +225,28 @@ export function UserList({ initialUsers }: UserListProps) {
                                 {user.nombre} {user.apellido}
                                 <p className="text-sm font-normal text-muted-foreground">C.I: {user.cedula}</p>
                             </CardTitle>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/personal/usuarios/${user.id}/editar`}>Editar</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="text-destructive"
-                                    onSelect={() => setShowDeleteConfirm(user)}
-                                >
-                                    Eliminar
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {canManageUsers && (
+                              <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                  <Button aria-haspopup="true" size="icon" variant="ghost">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                      <span className="sr-only">Toggle menu</span>
+                                  </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                  <DropdownMenuItem asChild>
+                                    <Link href={`/personal/usuarios/${user.id}/editar`}>Editar</Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                      className="text-destructive"
+                                      onSelect={() => setShowDeleteConfirm(user)}
+                                  >
+                                      Eliminar
+                                  </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">

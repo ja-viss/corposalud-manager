@@ -19,6 +19,15 @@ function safeSerialize<T>(data: T): T {
     return JSON.parse(JSON.stringify(data));
 }
 
+// Helper to get current user from session
+async function getCurrentUserFromSession(): Promise<UserType | null> {
+    const userId = cookies().get('session-id')?.value;
+    if (!userId) return null;
+    const user = await User.findById(userId).lean().exec();
+    return user ? safeSerialize(user) as UserType : null;
+}
+
+
 export async function getActivityLogs(limit?: number) {
     try {
         await dbConnect();
@@ -38,7 +47,19 @@ export async function getActivityLogs(limit?: number) {
 export async function getUsers(filter: { role?: UserRole } = {}) {
     try {
         await dbConnect();
-        const users = await User.find(filter).sort({ fechaCreacion: -1 }).exec();
+        const currentUser = await getCurrentUserFromSession();
+
+        if (!currentUser) {
+            return { success: false, message: "Acceso no autorizado." };
+        }
+        
+        let queryFilter = filter;
+        // If the user is a Moderator, they can only see Obreros
+        if (currentUser.role === 'Moderador') {
+            queryFilter.role = 'Obrero';
+        }
+
+        const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
         return { success: true, data: safeSerialize(users) as UserType[] };
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
@@ -65,12 +86,20 @@ export async function getUserById(userId: string) {
 export async function deleteUser(userId: string) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: "No tiene permiso para realizar esta acción." };
+        }
         
-        const user = await User.findById(userId);
-        if (!user) {
+        const userToDelete = await User.findById(userId);
+        if (!userToDelete) {
             return { success: false, message: "Usuario no encontrado." };
         }
         
+        if (currentUser.role === 'Moderador' && userToDelete.role !== 'Obrero') {
+             return { success: false, message: "Los moderadores solo pueden eliminar obreros." };
+        }
+
         const crewWithUser = await Crew.findOne({
           $or: [{ moderadores: userId }, { obreros: userId }],
         });
@@ -80,7 +109,7 @@ export async function deleteUser(userId: string) {
         }
         
         await User.findByIdAndDelete(userId);
-        await logActivity(`user-deletion:${user.username}`, 'Sistema');
+        await logActivity(`user-deletion:${userToDelete.username}`, currentUser.username);
         return { success: true, message: "Usuario eliminado exitosamente." };
 
     } catch (error) {
@@ -92,6 +121,14 @@ export async function deleteUser(userId: string) {
 export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion' | 'creadoPor' | 'status' | 'contrasena'> & { contrasena?: string }) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: "No tiene permiso para realizar esta acción." };
+        }
+        
+        if (currentUser.role === 'Moderador' && userData.role !== 'Obrero') {
+            return { success: false, message: "Los moderadores solo pueden crear usuarios con el rol de Obrero." };
+        }
 
         const existingUser = await User.findOne({ $or: [{ username: userData.username }, { email: userData.email }, { cedula: userData.cedula }] });
         if (existingUser) {
@@ -112,13 +149,13 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
         const newUser = new User({
             ...userData,
             contrasena: hashedPassword,
-            creadoPor: 'Admin',
+            creadoPor: currentUser.username,
             fechaCreacion: new Date(),
             status: 'active',
         });
 
         await newUser.save();
-        await logActivity(`user-creation:${newUser.username}`, 'Admin');
+        await logActivity(`user-creation:${newUser.username}`, currentUser.username);
         return { success: true, data: safeSerialize(newUser), message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
@@ -130,6 +167,20 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
 export async function updateUser(userId: string, userData: Partial<Omit<UserType, 'id' | 'contrasena'>> & { contrasena?: string }) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: "No tiene permiso para realizar esta acción." };
+        }
+
+        const userToUpdate = await User.findById(userId);
+        if (!userToUpdate) {
+            return { success: false, message: 'Usuario no encontrado.' };
+        }
+
+        if (currentUser.role === 'Moderador' && (userToUpdate.role !== 'Obrero' || userData.role !== 'Obrero')) {
+            return { success: false, message: "Los moderadores solo pueden modificar usuarios con el rol de Obrero." };
+        }
+
 
         const updateData: any = { ...userData };
 
@@ -146,7 +197,7 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
             return { success: false, message: 'Usuario no encontrado.' };
         }
 
-        await logActivity(`user-update:${updatedUser.username}`, 'Admin');
+        await logActivity(`user-update:${updatedUser.username}`, currentUser.username);
         return { success: true, data: safeSerialize(updatedUser), message: 'Usuario actualizado exitosamente.' };
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
@@ -240,8 +291,9 @@ export async function updatePassword(userId: string, currentPassword: string, ne
 
         user.contrasena = hashedPassword;
         await user.save();
-
-        await logActivity(`user-password-change:${user.username}`, user.username);
+        
+        const currentUser = await getCurrentUserFromSession();
+        await logActivity(`user-password-change:${user.username}`, currentUser?.username || 'Sistema');
         return { success: true, message: "Contraseña actualizada exitosamente." };
 
     } catch (error) {
@@ -301,6 +353,10 @@ async function getNextCrewNumber() {
 export async function createCrew(crewData: { moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+         if (!currentUser) {
+            return { success: false, message: "Acceso no autorizado." };
+        }
 
         const crewNumber = await getNextCrewNumber();
         const crewName = `Cuadrilla - N°${crewNumber}`;
@@ -308,10 +364,10 @@ export async function createCrew(crewData: { moderadores: string[]; obreros: str
         const newCrew = new Crew({
             ...crewData,
             nombre: crewName,
-            creadoPor: 'Admin', // Asumir que el admin lo crea
+            creadoPor: currentUser.username, 
         });
         await newCrew.save();
-        await logActivity(`crew-creation:${newCrew.nombre}`, 'Admin');
+        await logActivity(`crew-creation:${newCrew.nombre}`, currentUser.username);
         return { success: true, message: 'Cuadrilla creada exitosamente.' };
     } catch (error) {
         console.error('Error al crear cuadrilla:', error);
@@ -322,11 +378,16 @@ export async function createCrew(crewData: { moderadores: string[]; obreros: str
 export async function updateCrew(crewId: string, crewData: { nombre?: string; moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+         if (!currentUser) {
+            return { success: false, message: "Acceso no autorizado." };
+        }
+
         const crew = await Crew.findByIdAndUpdate(crewId, crewData, { new: true });
         if (!crew) {
             return { success: false, message: 'Cuadrilla no encontrada.' };
         }
-        await logActivity(`crew-update:${crew.nombre}`, 'Admin');
+        await logActivity(`crew-update:${crew.nombre}`, currentUser.username);
         return { success: true, message: 'Cuadrilla actualizada exitosamente.' };
     } catch (error) {
         console.error('Error al actualizar cuadrilla:', error);
@@ -337,11 +398,16 @@ export async function updateCrew(crewId: string, crewData: { nombre?: string; mo
 export async function deleteCrew(crewId: string) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+         if (!currentUser) {
+            return { success: false, message: "Acceso no autorizado." };
+        }
+
         const crew = await Crew.findByIdAndDelete(crewId);
         if (!crew) {
             return { success: false, message: 'Cuadrilla no encontrada.' };
         }
-        await logActivity(`crew-deletion:${crew.nombre}`, 'Admin');
+        await logActivity(`crew-deletion:${crew.nombre}`, currentUser.username);
         return { success: true, message: 'Cuadrilla eliminada exitosamente.' };
     } catch (error) {
         console.error('Error al eliminar cuadrilla:', error);
@@ -600,8 +666,8 @@ export async function deleteMessage(messageId: string) {
         if (!deletedMessage) {
             return { success: false, message: 'Mensaje no encontrado.' };
         }
-        
-        await logActivity(`message-deletion:${messageId}`, 'Sistema');
+        const currentUser = await getCurrentUserFromSession();
+        await logActivity(`message-deletion:${messageId}`, currentUser?.username || 'Sistema');
         return { success: true, message: 'Mensaje eliminado exitosamente.' };
     } catch (error) {
         console.error('Error al eliminar mensaje:', error);
@@ -639,6 +705,11 @@ export async function generateReport(data: {
 }) {
     try {
         await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+         if (!currentUser) {
+            return { success: false, message: "Acceso no autorizado." };
+        }
+
 
         const reportNumber = await getNextReportNumber();
         const reportName = `Reporte - N°${reportNumber}`;
@@ -646,11 +717,12 @@ export async function generateReport(data: {
         const newReport = new Report({
             ...data,
             nombre: reportName,
+            generadoPor: currentUser.username,
             fechaCreacion: new Date(),
         });
         await newReport.save();
 
-        await logActivity(`report-generation:${reportName}`, data.generadoPor);
+        await logActivity(`report-generation:${reportName}`, currentUser.username);
         return { success: true, data: safeSerialize(newReport), message: 'Reporte generado exitosamente.' };
     } catch (error) {
         console.error('Error al generar reporte:', error);
