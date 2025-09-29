@@ -53,14 +53,16 @@ export async function getUsers(filter: { role?: UserRole } = {}) {
             return { success: false, message: "Acceso no autorizado." };
         }
         
-        let queryFilter = filter;
+        let queryFilter: any = filter;
         // If the user is a Moderator, they can only see Obreros
         if (currentUser.role === 'Moderador') {
             queryFilter.role = 'Obrero';
         }
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
-        return { success: true, data: safeSerialize(users) as UserType[] };
+        const filteredUsers = users.filter(user => user.id.toString() !== currentUser.id);
+
+        return { success: true, data: safeSerialize(filteredUsers) as UserType[] };
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
         return { success: false, message: 'Error al obtener los usuarios.' };
@@ -118,7 +120,7 @@ export async function deleteUser(userId: string) {
     }
 }
 
-export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion' | 'creadoPor' | 'status' | 'contrasena'> & { contrasena?: string }) {
+export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaCreacion' | 'creadoPor' | 'status'>>) {
     try {
         await dbConnect();
         const currentUser = await getCurrentUserFromSession();
@@ -130,24 +132,45 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
             return { success: false, message: "Los moderadores solo pueden crear usuarios con el rol de Obrero." };
         }
 
-        const existingUser = await User.findOne({ $or: [{ username: userData.username }, { email: userData.email }, { cedula: userData.cedula }] });
+        const existingUser = await User.findOne({ $or: [{ email: userData.email }, { cedula: userData.cedula }] });
         if (existingUser) {
             let message = 'Ya existe un usuario con los mismos datos:';
-            if (existingUser.username === userData.username) message += ' Nombre de usuario.';
             if (existingUser.email === userData.email) message += ' Email.';
             if (existingUser.cedula === userData.cedula) message += ' Cédula.';
             return { success: false, message };
         }
         
-        if (!userData.contrasena) {
+        let finalUsername = userData.username;
+        let finalPassword = userData.contrasena;
+        let generatedPasswordForResponse: string | undefined = undefined;
+
+        if (userData.role === 'Obrero') {
+            finalUsername = userData.cedula;
+            finalPassword = userData.cedula; 
+        } else if (userData.role === 'Moderador') {
+            finalUsername = userData.cedula;
+            const initialName = userData.nombre?.charAt(0).toUpperCase() ?? '';
+            const initialLastName = userData.apellido?.charAt(0).toUpperCase() ?? '';
+            finalPassword = `${initialName}${initialLastName}${userData.cedula}`;
+            generatedPasswordForResponse = finalPassword;
+        }
+
+        if (!finalUsername) {
+             const existingByUsername = await User.findOne({ username: userData.username });
+             if(existingByUsername) return { success: false, message: 'Ya existe un usuario con el mismo nombre de usuario.' };
+             finalUsername = userData.username;
+        }
+
+        if (!finalPassword) {
             return { success: false, message: 'La contraseña es obligatoria.' };
         }
 
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(userData.contrasena, salt);
+        const hashedPassword = await bcrypt.hash(finalPassword, salt);
 
         const newUser = new User({
             ...userData,
+            username: finalUsername,
             contrasena: hashedPassword,
             creadoPor: currentUser.username,
             fechaCreacion: new Date(),
@@ -156,7 +179,13 @@ export async function createUser(userData: Omit<UserType, 'id' | 'fechaCreacion'
 
         await newUser.save();
         await logActivity(`user-creation:${newUser.username}`, currentUser.username);
-        return { success: true, data: safeSerialize(newUser), message: 'Usuario creado exitosamente.' };
+        
+        const responseData = safeSerialize(newUser);
+        if (generatedPasswordForResponse) {
+           (responseData as any).generatedPassword = generatedPasswordForResponse;
+        }
+
+        return { success: true, data: responseData, message: 'Usuario creado exitosamente.' };
 
     } catch (error) {
         console.error('Error al crear usuario:', error);
@@ -177,7 +206,7 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
             return { success: false, message: 'Usuario no encontrado.' };
         }
 
-        if (currentUser.role === 'Moderador' && (userToUpdate.role !== 'Obrero' || userData.role !== 'Obrero')) {
+        if (currentUser.role === 'Moderador' && (userToUpdate.role !== 'Obrero' || (userData.role && userData.role !== 'Obrero'))) {
             return { success: false, message: "Los moderadores solo pueden modificar usuarios con el rol de Obrero." };
         }
 
@@ -190,6 +219,12 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
         } else {
             delete updateData.contrasena;
         }
+        
+        // Prevent role escalation by moderators
+        if (currentUser.role === 'Moderador') {
+            delete updateData.role;
+        }
+
 
         const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).exec();
         
@@ -729,3 +764,4 @@ export async function generateReport(data: {
         return { success: false, message: 'Error al generar el reporte.' };
     }
 }
+
