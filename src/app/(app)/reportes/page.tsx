@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileText, Users, HardHat, FileDown, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, getCrews } from "@/app/actions";
-import type { Crew, User } from "@/lib/types";
+import type { Crew } from "@/lib/types";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
@@ -57,7 +58,7 @@ export default function ReportesPage() {
         obrero.status,
         format(new Date(obrero.fechaCreacion), "dd/MM/yyyy")
       ]),
-      headStyles: { fillColor: headerColor },
+      headStyles: { fillColor: headerColor, textColor: [255, 255, 255] },
       styles: { fontSize: 8 },
     });
     doc.save('reporte-obreros.pdf');
