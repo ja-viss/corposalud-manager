@@ -83,9 +83,9 @@ export default function ReportesPage() {
               `"${crew.descripcion || ''}"`,
               `"${format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}"`,
               `"${crew.creadoPor}"`,
-              `"${crew.moderadores.map(m => m.id).join(';')}"`,
+              `"${crew.moderadores.map(m => typeof m === 'string' ? m : m.id).join(';')}"`,
               `"${crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(';')}"`,
-              `"${crew.obreros.map(o => o.id).join(';')}"`,
+              `"${crew.obreros.map(o => typeof o === 'string' ? o : o.id).join(';')}"`,
               `"${crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join(';')}"`
           ].join(',');
           csvContent += row + "\n";
@@ -177,5 +177,3 @@ export default function ReportesPage() {
     </>
   );
 }
-
-    
