@@ -63,12 +63,14 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
             queryFilter.role = { $in: roles };
         }
 
-        // If the user is a Moderator, they can ONLY see Obreros, regardless of filter
-        if (currentUser.role === 'Moderador') {
+        // If the user is a Moderator, they can ONLY see Obreros, unless they explicitly ask for other roles (like in crew creation)
+        if (currentUser.role === 'Moderador' && !filter.role) {
             queryFilter.role = 'Obrero';
         }
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
+        
+        // Admins and Moderators should not see themselves in the general user list
         const filteredUsers = users.filter(user => user.id.toString() !== currentUser.id);
 
         return { success: true, data: safeSerialize(filteredUsers) as UserType[] };
@@ -790,3 +792,6 @@ export async function generateReport(data: {
 }
 
 
+
+
+    

@@ -32,10 +32,11 @@ export default async function UsuariosPage() {
 
   const usersResult = await getUsers();
   
-  // Filter out the current user from the list
-  const initialUsers = (usersResult.success && usersResult.data)
-    ? usersResult.data.filter(user => user.id !== currentUser?.id)
-    : [];
+  // The getUsers action already filters out the current user.
+  const initialUsers = usersResult.success ? usersResult.data || [] : [];
   
   return <UserList initialUsers={initialUsers} canManageUsers={currentUser.role === 'Admin' || currentUser.role === 'Moderador'} />;
 }
+
+
+    
