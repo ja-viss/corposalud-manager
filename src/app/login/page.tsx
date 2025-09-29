@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -10,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { loginUser, loginObrero } from "@/app/actions";
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -83,9 +86,18 @@ export default function LoginPage() {
                   <Label htmlFor="username">Usuario</Label>
                   <Input id="username" name="username" type="text" placeholder="su-usuario" required disabled={loading} />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="password">Contraseña</Label>
-                  <Input id="password" name="password" type="password" required disabled={loading} />
+                  <Input id="password" name="password" type={showPassword ? "text" : "password"} required disabled={loading} className="pr-10"/>
+                   <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+                      onClick={() => setShowPassword(prev => !prev)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
                 </div>
               </CardContent>
               <CardFooter className="flex-col gap-4">

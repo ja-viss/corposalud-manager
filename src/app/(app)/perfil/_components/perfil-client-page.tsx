@@ -15,6 +15,7 @@ import { updatePassword } from "@/app/actions";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { User } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
+import { Eye, EyeOff } from 'lucide-react';
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, "La contraseña actual es requerida."),
@@ -33,6 +34,9 @@ interface PerfilPageProps {
 export function PerfilClientPage({ user }: PerfilPageProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const form = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
@@ -71,23 +75,38 @@ export function PerfilClientPage({ user }: PerfilPageProps) {
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                 <FormField control={form.control} name="currentPassword" render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="relative">
                                         <FormLabel>Contraseña Actual</FormLabel>
-                                        <FormControl><Input type="password" {...field} disabled={isLoading} /></FormControl>
+                                        <FormControl>
+                                            <Input type={showCurrentPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
+                                        </FormControl>
+                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowCurrentPassword(p => !p)}>
+                                            {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
                                  <FormField control={form.control} name="newPassword" render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="relative">
                                         <FormLabel>Nueva Contraseña</FormLabel>
-                                        <FormControl><Input type="password" {...field} disabled={isLoading} /></FormControl>
+                                        <FormControl>
+                                            <Input type={showNewPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
+                                        </FormControl>
+                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowNewPassword(p => !p)}>
+                                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
                                 <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="relative">
                                         <FormLabel>Confirmar Contraseña</FormLabel>
-                                        <FormControl><Input type="password" {...field} disabled={isLoading} /></FormControl>
+                                        <FormControl>
+                                            <Input type={showConfirmPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
+                                        </FormControl>
+                                         <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowConfirmPassword(p => !p)}>
+                                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
                                         <FormMessage />
                                     </FormItem>
                                 )} />

@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Eye, EyeOff } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export function UserForm({ user }: UserFormProps) {
     const { toast } = useToast();
     const router = useRouter();
     const isEditing = !!user;
+    const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -126,9 +128,25 @@ export function UserForm({ user }: UserFormProps) {
                                 <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name="contrasena" render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="relative">
                                     <FormLabel>Contraseña</FormLabel>
-                                    <FormControl><Input type="password" placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} {...field} /></FormControl>
+                                    <FormControl>
+                                        <Input 
+                                            type={showPassword ? "text" : "password"} 
+                                            placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} 
+                                            {...field} 
+                                            className="pr-10"
+                                        />
+                                    </FormControl>
+                                    <Button 
+                                      type="button" 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+                                      onClick={() => setShowPassword(prev => !prev)}
+                                    >
+                                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </Button>
                                     <FormMessage />
                                 </FormItem>
                             )} />
