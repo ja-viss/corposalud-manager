@@ -178,7 +178,7 @@ export function PerfilClientPage({ user, crews }: PerfilPageProps) {
                                 {crews.length > 0 ? (
                                     <ul className="space-y-3">
                                         {crews.map(crew => (
-                                            <li key={crew.id} className="flex items-center gap-3 text-sm font-medium">
+                                            <li key={crew._id} className="flex items-center gap-3 text-sm font-medium">
                                                 <HardHat className="h-5 w-5 text-primary" />
                                                 <span>{crew.nombre}</span>
                                             </li>
