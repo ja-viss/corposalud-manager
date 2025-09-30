@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -342,6 +343,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
 
         const finalValues = {
             ...values,
+            comentarios: values.comentarios?.trim() === '' ? 'Reporte de trabajo sin comentario' : values.comentarios,
             herramientasUtilizadas: values.herramientasUtilizadas?.filter(t => t.nombre && t.nombre.trim() !== '' && t.cantidad > 0),
             herramientasDanadas: values.herramientasDanadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
             herramientasExtraviadas: values.herramientasExtraviadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
@@ -504,3 +506,5 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
         </Dialog>
     );
 }
+
+    
