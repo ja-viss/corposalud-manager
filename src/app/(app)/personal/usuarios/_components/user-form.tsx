@@ -80,8 +80,8 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const dataToSubmit = { ...values, role: values.role as UserRole };
         
-        if (!isEditing && values.role === 'Admin' && !values.contrasena) {
-            form.setError("contrasena", { type: "manual", message: "La contraseña es obligatoria para nuevos usuarios Admin." });
+        if (!isEditing && values.role !== 'Obrero' && !values.contrasena) {
+            form.setError("contrasena", { type: "manual", message: "La contraseña es obligatoria para nuevos usuarios." });
             return;
         }
         
