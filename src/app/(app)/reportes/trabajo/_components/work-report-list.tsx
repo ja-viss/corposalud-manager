@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, FileDown, HardHat, MapPin, Calendar } from "lucide-react";
+import { MoreHorizontal, FileDown, HardHat, MapPin, Calendar, User } from "lucide-react";
 import type { PopulatedWorkReport } from "@/lib/types";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Badge } from "@/components/ui/badge";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -127,113 +127,77 @@ export function WorkReportList({ initialReports = [] }: WorkReportListProps) {
   };
 
   return (
-    <>
-      <Card className="hidden md:block">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cuadrilla</TableHead>
-                <TableHead>Municipio</TableHead>
-                <TableHead>Realizado Por</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>
-                  <span className="sr-only">Acciones</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    Cargando reportes...
-                  </TableCell>
-                </TableRow>
-              ) : reports.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No se encontraron reportes de trabajo.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                reports.map((report) => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-medium">{report.crewId?.nombre || 'N/A'}</TableCell>
-                    <TableCell>{report.municipio}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'N/A'}
-                    </TableCell>
-                    <TableCell>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+    <div className="space-y-4">
+      {loading ? (
+        <p className="text-center text-muted-foreground">Cargando reportes...</p>
+      ) : reports.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center p-10 text-center">
+            <HardHat className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold">No se encontraron reportes</h3>
+            <p className="text-muted-foreground">Parece que aún no se ha creado ningún reporte de trabajo.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        reports.map((report) => (
+          <Card key={report.id}>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <HardHat className="h-5 w-5 text-primary" />
+                    {report.crewId?.nombre || 'Reporte sin cuadrilla'}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    ID del Reporte: {report.id.slice(-6).toUpperCase()}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                  <Badge variant="outline">{report.municipio}</Badge>
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                           <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Toggle menu</span>
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuItem onSelect={() => handleExportPDF(report)}>
                             <FileDown className="mr-2 h-4 w-4" />
                             Exportar a PDF
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      
-      <div className="grid gap-4 md:hidden">
-         {loading ? (
-            <p className="text-center text-muted-foreground">Cargando reportes...</p>
-         ) : reports.length === 0 ? (
-            <p className="text-center text-muted-foreground">No se encontraron reportes.</p>
-         ) : (
-            reports.map((report) => (
-                <Card key={report.id}>
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg">{report.crewId?.nombre || 'Reporte sin cuadrilla'}</CardTitle>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                    <DropdownMenuItem onSelect={() => handleExportPDF(report)}>
-                                      <FileDown className="mr-2 h-4 w-4" />
-                                      Exportar a PDF
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <CardDescription>
-                          Realizado por: {report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'N/A'}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{report.municipio}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            <span>{isClient ? format(new Date(report.fecha), "dd MMM, yyyy") : '...'}</span>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))
-         )}
-      </div>
-    </>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <div>
+                        <span className="font-semibold text-foreground">Realizado por:</span>
+                        <p>{report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'N/A'}</p>
+                    </div>
+                </div>
+                 <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <div>
+                        <span className="font-semibold text-foreground">Fecha:</span>
+                        <p>{isClient ? format(new Date(report.fecha), "dd MMM, yyyy") : '...'}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground sm:col-span-2 md:col-span-1">
+                    <MapPin className="h-4 w-4" />
+                    <div>
+                        <span className="font-semibold text-foreground">Distancia:</span>
+                        <p>{report.distancia} metros</p>
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+    </div>
   );
 }
