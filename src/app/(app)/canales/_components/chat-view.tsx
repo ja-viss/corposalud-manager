@@ -156,7 +156,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     return channel.nombre;
   }
   
-  const canManageChannel = channel.isDeletable && currentUser.role === 'Admin';
+  const canManageChannel = channel.isDeletable && (currentUser.role === 'Admin' || (currentUser.role === 'Moderador' && (channel.type === 'GROUP' || channel.type === 'DIRECT')));
   const isGroupChannel = channel.type === 'GROUP';
 
 

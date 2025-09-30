@@ -721,8 +721,14 @@ export async function deleteChannel(channelId: string, userId: string) {
             return { success: false, message: "Este canal no puede ser eliminado." };
         }
         
-        // Only admins can delete channels
-        if (user.role !== 'Admin') {
+        // Admins can delete any deletable channel.
+        // Moderators can only delete GROUP or DIRECT channels.
+        if (user.role === 'Moderador' && channel.type !== 'GROUP' && channel.type !== 'DIRECT') {
+            return { success: false, message: "No tienes permiso para eliminar este tipo de canal." };
+        }
+        
+        // Block anyone else
+        if (user.role !== 'Admin' && user.role !== 'Moderador') {
             return { success: false, message: "No tienes permiso para eliminar este canal." };
         }
         
@@ -846,6 +852,10 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
         if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
             return { success: false, message: "No tiene permiso para realizar esta acción." };
         }
+        
+        if (!data.comentarios || data.comentarios.trim() === '') {
+            data.comentarios = "Reporte sin comentarios";
+        }
 
         const newWorkReport = new WorkReport({
             ...data,
@@ -892,7 +902,12 @@ export async function updateWorkReport(reportId: string, data: Partial<Omit<Work
 
         await logActivity(`work-report-update:${report._id}`, currentUser.username);
 
-        return { success: true, data: safeSerialize(report), message: 'Reporte de trabajo actualizado exitosamente.' };
+        const populatedReport = await getWorkReportById(reportId);
+        if (!populatedReport.success) {
+            return { success: false, message: "Reporte actualizado, pero no se pudo recuperar para la exportación." };
+        }
+        
+        return { success: true, data: populatedReport.data, message: 'Reporte de trabajo actualizado exitosamente.' };
 
     } catch (error: any) {
         if (error instanceof mongoose.Error.ValidationError) {
