@@ -46,7 +46,7 @@ const generateReportQRString = (report: PopulatedWorkReport | null): string => {
 
     const crew = report.crewId as PopulatedCrew | null;
     const moderators = crew ? crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ') : 'N/A';
-    const workers = crew ? crew.obreros.map(o => `${o.nombre} ${m.apellido}`).join(', ') : 'N/A';
+    const workers = crew ? crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join(', ') : 'N/A';
 
     return `
 === REPORTE DE TRABAJO ===
@@ -229,5 +229,3 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
     </div>
   );
 }
-
-    
