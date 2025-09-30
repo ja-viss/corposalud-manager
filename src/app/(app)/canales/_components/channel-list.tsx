@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -90,25 +91,6 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
                             ))}
                         </div>
                     )}
-                    {channelGroups.grupos.length > 0 && (
-                         <div>
-                            <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Grupos</h3>
-                            {channelGroups.grupos.map(channel => (
-                                <Button
-                                key={channel.id}
-                                variant="ghost"
-                                className={cn(
-                                    "w-full justify-start gap-2",
-                                    selectedChannel?.id === channel.id && "bg-muted font-semibold"
-                                )}
-                                onClick={() => onSelectChannel(channel)}
-                                >
-                                {getChannelIcon(channel.type)}
-                                {channel.nombre}
-                                </Button>
-                            ))}
-                        </div>
-                    )}
                     {channelGroups.directos.length > 0 && (
                          <div>
                             <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Mensajes Directos</h3>
@@ -124,6 +106,25 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
                                 >
                                 {getChannelIcon(channel.type)}
                                 {getDirectChannelName(channel, currentUser.id, allUsers)}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+                    {channelGroups.grupos.length > 0 && (
+                         <div>
+                            <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">Grupos</h3>
+                            {channelGroups.grupos.map(channel => (
+                                <Button
+                                key={channel.id}
+                                variant="ghost"
+                                className={cn(
+                                    "w-full justify-start gap-2",
+                                    selectedChannel?.id === channel.id && "bg-muted font-semibold"
+                                )}
+                                onClick={() => onSelectChannel(channel)}
+                                >
+                                {getChannelIcon(channel.type)}
+                                {channel.nombre}
                                 </Button>
                             ))}
                         </div>
