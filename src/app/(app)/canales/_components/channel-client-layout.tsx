@@ -120,7 +120,7 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
       <Card className="h-[calc(100vh-15rem)]">
         <CardContent className="p-0 h-full">
           <div className="grid md:grid-cols-[300px_1fr] h-full">
-            <div className={cn("h-full", selectedChannel && "hidden md:block")}>
+            <div className={cn("h-full border-r", selectedChannel && "hidden md:block")}>
               <ChannelList
                 channels={channels}
                 selectedChannel={selectedChannel}

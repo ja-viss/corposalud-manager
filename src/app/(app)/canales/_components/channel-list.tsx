@@ -44,8 +44,7 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
   };
 
   return (
-    <div className="h-full border-r">
-      <ScrollArea className="h-full">
+    <ScrollArea className="h-full">
         <div className="p-2 space-y-4">
             {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
@@ -133,6 +132,5 @@ export function ChannelList({ channels, selectedChannel, onSelectChannel, loadin
             )}
         </div>
       </ScrollArea>
-    </div>
   );
 }

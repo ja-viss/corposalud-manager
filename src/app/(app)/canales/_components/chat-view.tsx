@@ -157,7 +157,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
   return (
     <>
       <div className="flex flex-col h-full bg-muted/20">
-        <header className="flex items-center justify-between p-4 border-b bg-card">
+        <header className="flex items-center justify-between p-4 border-b bg-card flex-shrink-0">
           <h2 className="text-lg font-semibold">{getChannelTitle()}</h2>
           {canDeleteChannel && (
             <DropdownMenu>
@@ -179,59 +179,61 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
           )}
         </header>
         
-        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
-            {loading ? (
-               <div className="flex justify-center items-center h-full">
-                  <p>Cargando mensajes...</p>
-               </div>
-            ) : messages.length === 0 ? (
-               <div className="flex justify-center items-center h-full text-center text-muted-foreground">
-                  <p>No hay mensajes en este canal todavía.<br/>Sé el primero en enviar uno.</p>
-               </div>
-            ) : (
-              messages.map((msg) => {
-                const sender = msg.senderId;
-                const senderName = sender ? `${sender.nombre} ${sender.apellido} (${sender.role})` : "Usuario Eliminado";
-                const senderInitials = sender ? `${sender.nombre.charAt(0)}${sender.apellido.charAt(0)}` : "UE";
+        <div className="flex-1 overflow-y-auto">
+            <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
+            <div className="space-y-4">
+                {loading ? (
+                <div className="flex justify-center items-center h-full">
+                    <p>Cargando mensajes...</p>
+                </div>
+                ) : messages.length === 0 ? (
+                <div className="flex justify-center items-center h-full text-center text-muted-foreground">
+                    <p>No hay mensajes en este canal todavía.<br/>Sé el primero en enviar uno.</p>
+                </div>
+                ) : (
+                messages.map((msg) => {
+                    const sender = msg.senderId;
+                    const senderName = sender ? `${sender.nombre} ${sender.apellido} (${sender.role})` : "Usuario Eliminado";
+                    const senderInitials = sender ? `${sender.nombre.charAt(0)}${sender.apellido.charAt(0)}` : "UE";
 
-                const canDelete = currentUser.role === 'Admin' || (currentUser.role === 'Moderador' && channel.type !== 'DIRECT') || msg.senderId?.id === currentUser.id;
+                    const canDelete = currentUser.role === 'Admin' || (currentUser.role === 'Moderador' && channel.type !== 'DIRECT') || msg.senderId?.id === currentUser.id;
 
-                return (
-                  <div key={msg.id} className="flex items-start gap-3 group relative">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{senderInitials}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <p className="font-semibold text-sm">{senderName}</p>
-                        <p className="text-xs text-muted-foreground">
-                           {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
-                        </p>
-                      </div>
-                      <div className="p-2 mt-1 rounded-lg bg-card text-sm">
-                        <p>{msg.content}</p>
-                      </div>
+                    return (
+                    <div key={msg.id} className="flex items-start gap-3 group relative">
+                        <Avatar className="h-8 w-8">
+                        <AvatarFallback>{senderInitials}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                            <p className="font-semibold text-sm">{senderName}</p>
+                            <p className="text-xs text-muted-foreground">
+                            {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
+                            </p>
+                        </div>
+                        <div className="p-2 mt-1 rounded-lg bg-card text-sm break-words">
+                            <p>{msg.content}</p>
+                        </div>
+                        </div>
+                        {canDelete && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-0 right-0 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100"
+                                onClick={() => setShowDeleteConfirm(msg)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="sr-only">Eliminar mensaje</span>
+                            </Button>
+                        )}
                     </div>
-                     {canDelete && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-0 right-0 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100"
-                            onClick={() => setShowDeleteConfirm(msg)}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Eliminar mensaje</span>
-                        </Button>
-                      )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </ScrollArea>
+                    );
+                })
+                )}
+            </div>
+            </ScrollArea>
+        </div>
         
-        <footer className="p-4 border-t bg-card">
+        <footer className="p-4 border-t bg-card flex-shrink-0">
           <form onSubmit={handleSendMessage} className="relative">
             <Input
               placeholder={getInputPlaceholder()}
