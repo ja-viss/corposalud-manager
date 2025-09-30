@@ -58,7 +58,6 @@ const generateWorkReportPDF = (report: PopulatedWorkReport) => {
         body: [
             ['Municipio', report.municipio],
             ['Distancia (m)', report.distancia.toString()],
-            ['Realizado Por', `${report.realizadoPor?.nombre} ${report.realizadoPor?.apellido}`],
             ['Comentarios', report.comentarios],
         ],
         theme: 'grid',
