@@ -27,35 +27,23 @@ interface MainNavProps {
 export function MainNav({ userRole }: MainNavProps) {
   const pathname = usePathname();
 
-  const navItems = allNavItems.filter(item => {
-    if (!item.roles.includes(userRole)) {
-        return false;
-    }
-    // Special case to group 'usuarios' and 'cuadrillas' under a single 'personal' highlight
-    if (item.href.startsWith('/personal') && pathname.startsWith('/personal')) {
-        return true;
-    }
-    return true;
-  });
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
   return (
     <SidebarMenu>
       {navItems.map((item) => {
-          let isActive = pathname === item.href;
-          if (item.href === '/personal/cuadrillas' && pathname.startsWith('/personal')) {
-              isActive = true; // Highlight "Cuadrillas" if we are anywhere under "personal"
-          }
-          
-          if (item.href === '/personal/usuarios' && pathname.startsWith('/personal')) {
-               isActive = true; // Highlight "Usuarios" if we are anywhere under "personal"
-          }
-
+        let isActive = false;
+        if (item.href.startsWith('/personal') && pathname.startsWith('/personal')) {
+            isActive = true;
+        } else {
+            isActive = pathname.startsWith(item.href);
+        }
 
         return (
             <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith(item.href)}
+                isActive={isActive}
                 tooltip={{ children: item.label }}
                 variant="default"
                 size="default"
