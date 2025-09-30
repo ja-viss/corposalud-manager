@@ -826,7 +826,14 @@ export async function getWorkReports() {
     try {
         await dbConnect();
         const reports = await WorkReport.find({})
-            .populate<{ crewId: CrewType }>('crewId', 'nombre')
+            .populate({
+                path: 'crewId',
+                model: 'Crew',
+                populate: [
+                    { path: 'moderadores', model: 'User' },
+                    { path: 'obreros', model: 'User' }
+                ]
+            })
             .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido')
             .sort({ fecha: -1 })
             .lean()
@@ -884,6 +891,7 @@ export async function getAdminDashboardStats() {
 }
 
     
+
 
 
 

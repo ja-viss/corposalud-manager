@@ -27,6 +27,11 @@ export interface Crew {
     creadoPor: string;
 }
 
+export type PopulatedCrew = Omit<Crew, 'moderadores' | 'obreros'> & {
+  moderadores: User[];
+  obreros: User[];
+}
+
 export interface ActivityLog {
   id: string;
   action: string;
@@ -83,10 +88,11 @@ export interface WorkReport {
 }
 
 export type PopulatedWorkReport = Omit<WorkReport, 'crewId' | 'realizadoPor'> & {
-  crewId: Pick<Crew, 'id' | 'nombre'> | null;
-  realizadoPor: Pick<User, 'id' | 'nombre' | 'apellido'>;
+  crewId: PopulatedCrew | null;
+  realizadoPor: Pick<User, 'id' | 'nombre' | 'apellido'> | null;
 };
     
 
     
+
 
