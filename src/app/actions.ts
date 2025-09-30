@@ -154,6 +154,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
         let finalUsername = userData.username;
         let finalPassword = userData.contrasena;
         let generatedPasswordForResponse: string | undefined = undefined;
+        let finalRole = userData.role;
 
         if (userData.role === 'Obrero') {
             finalUsername = userData.cedula;
@@ -174,6 +175,14 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
             if (!finalPassword) {
                 return { success: false, message: 'La contraseña es obligatoria para el rol de Admin.' };
             }
+        } else {
+            // Default users without a valid role to 'Moderador'
+            finalRole = 'Moderador';
+            finalUsername = userData.cedula;
+            const initialName = userData.nombre?.charAt(0).toUpperCase() ?? '';
+            const initialLastName = userData.apellido?.charAt(0).toUpperCase() ?? '';
+            finalPassword = `${initialName}${initialLastName}${userData.cedula}`;
+            generatedPasswordForResponse = finalPassword;
         }
 
         if (!finalUsername || !finalPassword) {
@@ -186,6 +195,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
 
         const newUser = new User({
             ...userData,
+            role: finalRole,
             username: finalUsername,
             contrasena: hashedPassword,
             creadoPor: currentUser.username,
