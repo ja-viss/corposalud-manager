@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Eye, EyeOff, Copy } from 'lucide-react';
+import { Eye, EyeOff, Copy, HardHat } from 'lucide-react';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { createUser, updateUser } from "@/app/actions";
-import type { User, UserRole } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { User, UserRole, Crew } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 
 interface UserFormProps {
     user?: User | null;
     currentUserRole?: UserRole;
+    crews?: Crew[];
 }
 
 const formSchema = z.object({
@@ -36,7 +37,7 @@ const formSchema = z.object({
     role: z.enum(['Admin', 'Moderador', 'Obrero']),
 });
 
-export function UserForm({ user, currentUserRole }: UserFormProps) {
+export function UserForm({ user, currentUserRole, crews = [] }: UserFormProps) {
     const { toast } = useToast();
     const router = useRouter();
     const isEditing = !!user;
@@ -115,6 +116,7 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
         (isEditing && (roleWatcher === 'Admin' || roleWatcher === 'Moderador')) ||
         (!isEditing && roleWatcher === 'Admin');
 
+    const isWorkerOrModerator = user?.role === 'Obrero' || user?.role === 'Moderador';
 
     const handleCopyToClipboard = () => {
         const credentialsText = `Usuario: ${generatedCredentials.username}\nContraseña: ${generatedCredentials.password}`;
@@ -126,89 +128,115 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
         <>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Información Personal</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <FormField control={form.control} name="nombre" render={({ field }) => (
-                                    <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="apellido" render={({ field }) => (
-                                    <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="cedula" render={({ field }) => (
-                                    <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="telefono" render={({ field }) => (
-                                    <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="email" render={({ field }) => (
-                                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </CardContent>
-                        </Card>
-                            <Card>
-                            <CardHeader>
-                                <CardTitle>Información de la Cuenta</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                 <FormField control={form.control} name="role" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Rol</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole || isEditing}>
-                                            <FormControl>
-                                                <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {currentUserRole === 'Admin' && <SelectItem value="Admin">Admin</SelectItem>}
-                                                {currentUserRole === 'Admin' && <SelectItem value="Moderador">Moderador</SelectItem>}
-                                                <SelectItem value="Obrero">Obrero</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                
-                                {showCredentialsFields ? (
-                                    <>
-                                        <FormField control={form.control} name="username" render={({ field }) => (
-                                            <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} disabled={isEditing} /></FormControl><FormMessage /></FormItem>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="md:col-span-2 grid gap-8">
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>Información Personal</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="nombre" render={({ field }) => (
+                                            <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
-                                        <FormField control={form.control} name="contrasena" render={({ field }) => (
-                                            <FormItem className="relative">
-                                                <FormLabel>Contraseña</FormLabel>
-                                                <FormControl>
-                                                    <Input 
-                                                        type={showPassword ? "text" : "password"} 
-                                                        placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} 
-                                                        {...field} 
-                                                        className="pr-10"
-                                                    />
-                                                </FormControl>
-                                                <Button 
-                                                  type="button" 
-                                                  variant="ghost" 
-                                                  size="icon" 
-                                                  className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
-                                                  onClick={() => setShowPassword(prev => !prev)}
-                                                >
-                                                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                </Button>
-                                                <FormMessage />
-                                            </FormItem>
+                                        <FormField control={form.control} name="apellido" render={({ field }) => (
+                                            <FormItem><FormLabel>Apellido</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
-                                    </>
-                                ) : (
-                                    <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
-                                       {roleWatcher === 'Obrero' && !isEditing ? 'Las credenciales para Obreros se generan automáticamente (Cédula/Cédula).' :
-                                        roleWatcher === 'Moderador' && !isEditing ? 'Las credenciales para Moderadores se generarán automáticamente.' :
-                                        'Este rol no requiere credenciales manuales.'}
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    <FormField control={form.control} name="cedula" render={({ field }) => (
+                                        <FormItem><FormLabel>Cédula</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="telefono" render={({ field }) => (
+                                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="email" render={({ field }) => (
+                                            <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="space-y-8">
+                           <Card>
+                                <CardHeader>
+                                    <CardTitle>Información de la Cuenta</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <FormField control={form.control} name="role" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Rol</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole || isEditing}>
+                                                <FormControl>
+                                                    <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {currentUserRole === 'Admin' && <SelectItem value="Admin">Admin</SelectItem>}
+                                                    {currentUserRole === 'Admin' && <SelectItem value="Moderador">Moderador</SelectItem>}
+                                                    <SelectItem value="Obrero">Obrero</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    
+                                    {showCredentialsFields ? (
+                                        <>
+                                            <FormField control={form.control} name="username" render={({ field }) => (
+                                                <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} disabled={isEditing} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="contrasena" render={({ field }) => (
+                                                <FormItem className="relative">
+                                                    <FormLabel>Contraseña</FormLabel>
+                                                    <FormControl>
+                                                        <Input 
+                                                            type={showPassword ? "text" : "password"} 
+                                                            placeholder={isEditing ? "Dejar en blanco para no cambiar" : ""} 
+                                                            {...field} 
+                                                            className="pr-10"
+                                                        />
+                                                    </FormControl>
+                                                    <Button 
+                                                    type="button" 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+                                                    onClick={() => setShowPassword(prev => !prev)}
+                                                    >
+                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                    </Button>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </>
+                                    ) : (
+                                        <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
+                                        {roleWatcher === 'Obrero' && !isEditing ? 'Las credenciales para Obreros se generan automáticamente (Cédula/Cédula).' :
+                                            roleWatcher === 'Moderador' && !isEditing ? 'Las credenciales para Moderadores se generarán automáticamente.' :
+                                            'Este rol no requiere credenciales manuales.'}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                            {isEditing && isWorkerOrModerator && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Asignación de Cuadrilla</CardTitle>
+                                        <CardDescription>Información sobre la cuadrilla actual del usuario.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {crews.length > 0 ? (
+                                            <div className="flex items-center gap-3 text-sm font-medium text-foreground p-3 bg-muted rounded-md">
+                                                <HardHat className="h-5 w-5 text-primary" />
+                                                <span>{crews[0].nombre}</span>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">Este usuario no está asignado a ninguna cuadrilla.</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     </div>
                     <div className="flex justify-end gap-4">
                         <Button type="button" variant="outline" asChild>

@@ -1,9 +1,9 @@
 
-import { getUserById } from "@/app/actions";
+import { getUserById, getUserCrews } from "@/app/actions";
 import { UserForm } from "../../_components/user-form";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { User } from "@/lib/types";
+import type { User, Crew } from "@/lib/types";
 
 async function getCurrentUser(): Promise<User | null> {
     const cookieStore = cookies();
@@ -15,9 +15,10 @@ async function getCurrentUser(): Promise<User | null> {
 
 export default async function EditarUsuarioPage({ params }: { params: { id: string } }) {
   const { id } = params;
-  const [userResult, currentUser] = await Promise.all([
+  const [userResult, currentUser, crewsResult] = await Promise.all([
       getUserById(id),
-      getCurrentUser()
+      getCurrentUser(),
+      getUserCrews(id)
   ]);
 
   if (!currentUser) {
@@ -38,13 +39,19 @@ export default async function EditarUsuarioPage({ params }: { params: { id: stri
       );
   }
 
+  const userCrews = crewsResult.success ? crewsResult.data : [];
+
   return (
      <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Editar Usuario</h1>
         <p className="text-muted-foreground">Actualice la información del usuario.</p>
       </div>
-      <UserForm user={userResult.data} currentUserRole={currentUser.role} />
+      <UserForm 
+        user={userResult.data} 
+        currentUserRole={currentUser.role}
+        crews={userCrews ?? []}
+      />
     </div>
   );
 }
