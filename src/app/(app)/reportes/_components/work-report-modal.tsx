@@ -13,11 +13,90 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { createWorkReport, updateWorkReport } from "@/app/actions";
-import type { Crew, PopulatedWorkReport, ToolEntry } from '@/lib/types';
+import type { Crew, PopulatedWorkReport, ToolEntry, PopulatedCrew } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle, Users, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { format } from 'date-fns';
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => void;
+}
+
+// HSL to RGB conversion function
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [255 * f(0), 255 * f(8), 255 * f(4)];
+}
+
+const generateWorkReportPDF = (report: PopulatedWorkReport) => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const primaryColorH = 173;
+    const headerColor = hslToRgb(primaryColorH, 80, 30);
+
+    const crewName = report.crewId?.nombre || 'N/A';
+    const reportDate = format(new Date(report.fecha), "dd/MM/yyyy");
+
+    // Header
+    doc.setFontSize(20);
+    doc.text(`Reporte de Trabajo - ${crewName}`, 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(`Fecha del Reporte: ${reportDate}`, 14, 29);
+
+    // Basic Info
+    doc.autoTable({
+        startY: 35,
+        body: [
+            ['Municipio', report.municipio],
+            ['Distancia (m)', report.distancia.toString()],
+            ['Realizado Por', `${report.realizadoPor?.nombre} ${report.realizadoPor?.apellido}`],
+            ['Comentarios', report.comentarios],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: headerColor, textColor: 255 },
+    });
+
+    // Tools
+    if (report.herramientasUtilizadas && report.herramientasUtilizadas.length > 0) {
+        doc.autoTable({
+            startY: (doc as any).lastAutoTable.finalY + 10,
+            head: [['Herramienta', 'Utilizadas', 'Dañadas', 'Extraviadas']],
+            body: report.herramientasUtilizadas.map(tool => {
+                const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
+                const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
+                return [tool.nombre, tool.cantidad, damaged, lost];
+            }),
+            headStyles: { fillColor: headerColor, textColor: 255 },
+            styles: { fontSize: 10 },
+        });
+    }
+
+    // Crew Members
+    if (report.crewId) {
+         doc.autoTable({
+            startY: (doc as any).lastAutoTable.finalY + 10,
+            head: [['Miembros de la Cuadrilla']],
+            body: [
+                [`Moderador: ${report.crewId.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}`],
+                [`Obreros:\n${report.crewId.obreros.map(o => ` - ${o.nombre} ${o.apellido}`).join('\n')}`]
+            ],
+             headStyles: { fillColor: headerColor, textColor: 255 },
+             styles: { fontSize: 10, cellPadding: 3 },
+        });
+    }
+
+    doc.save(`reporte-${crewName.replace(/\s/g, '_')}-${reportDate}.pdf`);
+};
 
 
 interface WorkReportModalProps {
@@ -43,29 +122,25 @@ const formSchema = z.object({
     herramientasExtraviadas: z.array(toolEntrySchema).optional(),
 }).superRefine((data, ctx) => {
     const utilizadas = data.herramientasUtilizadas || [];
-    const danadas = data.herramientasDanadas || [];
-    const extraviadas = data.herramientasExtraviadas || [];
 
     utilizadas.forEach((tool, index) => {
-        // Solo valida si la herramienta tiene un nombre y una cantidad
         if (!tool.nombre || tool.cantidad <= 0) return;
         
         const cantidadUtilizada = tool.cantidad || 0;
-        const cantidadDanada = danadas[index]?.cantidad || 0;
-        const cantidadExtraviada = extraviadas[index]?.cantidad || 0;
+        const cantidadDanada = data.herramientasDanadas?.[index]?.cantidad ?? 0;
+        const cantidadExtraviada = data.herramientasExtraviadas?.[index]?.cantidad ?? 0;
 
         if (cantidadDanada + cantidadExtraviada > cantidadUtilizada) {
              const message = `La suma de dañadas (${cantidadDanada}) y extraviadas (${cantidadExtraviada}) no puede superar el total (${cantidadUtilizada}).`;
-            // Añade el error a los campos correspondientes
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: [`herramientasDanadas`, `${index}`, `cantidad`],
+                path: [`herramientasDanadas`, index, `cantidad`],
                 message: message,
             });
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: [`herramientasExtraviadas`, `${index}`, `cantidad`],
-                message: " ", // Mensaje vacío para no duplicar el texto
+                path: [`herramientasExtraviadas`, index, `cantidad`],
+                message: " ",
             });
         }
     });
@@ -120,9 +195,9 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                 municipio: report.municipio,
                 distancia: report.distancia,
                 comentarios: report.comentarios,
-                herramientasUtilizadas: report.herramientasUtilizadas || [{ nombre: "", cantidad: 0 }],
-                herramientasDanadas: report.herramientasDanadas || [{ nombre: "", cantidad: 0 }],
-                herramientasExtraviadas: report.herramientasExtraviadas || [{ nombre: "", cantidad: 0 }],
+                herramientasUtilizadas: report.herramientasUtilizadas?.length ? report.herramientasUtilizadas : [{ nombre: "", cantidad: 0 }],
+                herramientasDanadas: report.herramientasDanadas?.length ? report.herramientasDanadas : [{ nombre: "", cantidad: 0 }],
+                herramientasExtraviadas: report.herramientasExtraviadas?.length ? report.herramientasExtraviadas : [{ nombre: "", cantidad: 0 }],
             });
         } else {
              form.reset({
@@ -137,17 +212,6 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
         }
     }, [isEditing, report, form, isOpen]);
     
-    // Sincroniza los arrays de herramientas dañadas/extraviadas con las utilizadas
-    const syncToolArrays = (updatedTools: typeof utilizadasFields) => {
-        const danadas = form.getValues('herramientasDanadas') || [];
-        const extraviadas = form.getValues('herramientasExtraviadas') || [];
-
-        updatedTools.forEach((tool, index) => {
-            danadasUpdate(index, { nombre: tool.nombre, cantidad: danadas[index]?.cantidad ?? 0 });
-            extraviadasUpdate(index, { nombre: tool.nombre, cantidad: extraviadas[index]?.cantidad ?? 0 });
-        });
-    };
-
     const handleAddTool = () => {
         utilizadasAppend({ nombre: '', cantidad: 0 });
         danadasUpdate(utilizadasFields.length, { nombre: '', cantidad: 0 });
@@ -156,8 +220,6 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
 
     const handleRemoveTool = (index: number) => {
         utilizadasRemove(index);
-        // La sincronización se encargará de remover de los otros arrays implicitamente
-        // al re-renderizar con menos campos.
     };
 
     async function onSubmit(values: FormValues) {
@@ -180,6 +242,9 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
 
         if (result.success) {
             toast({ title: "Éxito", description: result.message });
+            if (!isEditing && result.data) {
+                generateWorkReportPDF(result.data);
+            }
             onReportSaved();
             handleClose();
         } else {
@@ -265,7 +330,6 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                         ))}
                                     </div>
                                     <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={handleAddTool}><PlusCircle className="h-3.5 w-3.5" />Agregar Herramienta</Button>
-                                    <FormField control={form.control} name="herramientasUtilizadas" render={() => (<FormItem><FormMessage /></FormItem>)} />
                                 </div>
                                 <Separator />
                                 <div>
@@ -276,7 +340,8 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                                 <div key={field.id} className="flex items-start gap-2">
                                                     <FormItem className="flex-grow"><FormControl><Input disabled value={form.getValues(`herramientasUtilizadas.${index}.nombre`)} /></FormControl></FormItem>
                                                     <FormField control={form.control} name={`herramientasDanadas.${index}.cantidad`} render={({ field }) => (
-                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage />
+                                                    </FormItem>
                                                     )} />
                                                 </div>
                                             )
@@ -292,7 +357,8 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                                 <div key={field.id} className="flex items-start gap-2">
                                                     <FormItem className="flex-grow"><FormControl><Input disabled value={form.getValues(`herramientasUtilizadas.${index}.nombre`)} /></FormControl></FormItem>
                                                     <FormField control={form.control} name={`herramientasExtraviadas.${index}.cantidad`} render={({ field }) => (
-                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage />
+                                                    </FormItem>
                                                     )} />
                                                 </div>
                                              )
@@ -353,5 +419,3 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
         </Dialog>
     );
 }
-
-    
