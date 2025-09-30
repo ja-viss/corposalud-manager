@@ -4,6 +4,7 @@ import mongoose, { Schema, models, model } from 'mongoose';
 
 const ToolEntrySchema = new Schema({
   nombre: { type: String, required: true },
+  cantidad: { type: Number, required: true, default: 0 },
 }, { _id: false });
 
 const WorkReportSchema = new Schema({
@@ -37,5 +38,7 @@ const WorkReportSchema = new Schema({
 const WorkReport = models.WorkReport || model('WorkReport', WorkReportSchema);
 
 export default WorkReport;
+
+    
 
     

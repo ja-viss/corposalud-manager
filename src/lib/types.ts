@@ -66,6 +66,7 @@ export interface PopulatedMessage {
 
 export interface ToolEntry {
   nombre: string;
+  cantidad: number;
 }
 
 export interface WorkReport {
@@ -80,5 +81,7 @@ export interface WorkReport {
   realizadoPor: string;
   fecha: string;
 }
+
+    
 
     

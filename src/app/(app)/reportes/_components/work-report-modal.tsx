@@ -26,7 +26,8 @@ interface WorkReportModalProps {
 }
 
 const toolEntrySchema = z.object({
-    nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
+    nombre: z.string().min(1, "El nombre es requerido."),
+    cantidad: z.coerce.number().min(0, "La cantidad no puede ser negativa.").default(0),
 });
 
 const formSchema = z.object({
@@ -52,13 +53,13 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
             municipio: "",
             distancia: 0,
             comentarios: "",
-            herramientasUtilizadas: [{ nombre: "" }],
-            herramientasDanadas: [{ nombre: "" }],
-            herramientasExtraviadas: [{ nombre: "" }],
+            herramientasUtilizadas: [{ nombre: "", cantidad: 0 }],
+            herramientasDanadas: [{ nombre: "", cantidad: 0 }],
+            herramientasExtraviadas: [{ nombre: "", cantidad: 0 }],
         },
     });
 
-    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove, update: utilizadasUpdate } = useFieldArray({
+    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove } = useFieldArray({
         control: form.control,
         name: "herramientasUtilizadas",
     });
@@ -76,24 +77,23 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
     useEffect(() => {
         if (!herramientasUtilizadasValues) return;
 
-        // Sync lengths
         const utilizadasLength = herramientasUtilizadasValues.length;
         const danadasLength = form.getValues('herramientasDanadas')?.length ?? 0;
         const extraviadasLength = form.getValues('herramientasExtraviadas')?.length ?? 0;
 
-        // Sync add
+        // Sync Add
         if (utilizadasLength > danadasLength) {
             for (let i = danadasLength; i < utilizadasLength; i++) {
-                danadasAppend({ nombre: herramientasUtilizadasValues[i]?.nombre || "" });
+                danadasAppend({ nombre: herramientasUtilizadasValues[i]?.nombre || "", cantidad: 0 });
             }
         }
         if (utilizadasLength > extraviadasLength) {
             for (let i = extraviadasLength; i < utilizadasLength; i++) {
-                extraviadasAppend({ nombre: herramientasUtilizadasValues[i]?.nombre || "" });
+                extraviadasAppend({ nombre: herramientasUtilizadasValues[i]?.nombre || "", cantidad: 0 });
             }
         }
         
-        // Sync remove
+        // Sync Remove
         if (utilizadasLength < danadasLength) {
             for (let i = danadasLength - 1; i >= utilizadasLength; i--) {
                 danadasRemove(i);
@@ -105,7 +105,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
             }
         }
 
-        // Sync values
+        // Sync Name values
         herramientasUtilizadasValues.forEach((tool, index) => {
             const danadaValue = form.getValues(`herramientasDanadas.${index}.nombre`);
             const extraviadaValue = form.getValues(`herramientasExtraviadas.${index}.nombre`);
@@ -214,14 +214,26 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                 </div>
                                 <div className="space-y-3">
                                     {utilizadasFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
+                                        <div key={field.id} className="flex items-start sm:items-center gap-2 flex-col sm:flex-row">
                                             <FormField
                                                 control={form.control}
                                                 name={`herramientasUtilizadas.${index}.nombre`}
                                                 render={({ field }) => (
-                                                    <FormItem className="flex-grow">
+                                                    <FormItem className="flex-grow w-full">
                                                         <FormControl>
-                                                            <Input placeholder={`Herramienta #${index + 1}`} {...field} />
+                                                            <Input placeholder={`Nombre Herramienta #${index + 1}`} {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                             <FormField
+                                                control={form.control}
+                                                name={`herramientasUtilizadas.${index}.cantidad`}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-full sm:w-24">
+                                                        <FormControl>
+                                                            <Input type="number" placeholder="Cant." {...field} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -233,7 +245,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                         </div>
                                     ))}
                                 </div>
-                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => utilizadasAppend({ nombre: '' })}>
+                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => utilizadasAppend({ nombre: '', cantidad: 0 })}>
                                     <PlusCircle className="h-3.5 w-3.5" />
                                     Agregar Herramienta
                                 </Button>
@@ -249,21 +261,25 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                 </div>
                                 <div className="space-y-3">
                                     {danadasFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`herramientasDanadas.${index}.nombre`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-grow">
-                                                        <FormControl>
-                                                            <Input placeholder={`Herramienta #${index + 1}`} {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                             {/* Remove button is intentionally omitted from this synchronized list */}
-                                        </div>
+                                         form.getValues(`herramientasDanadas.${index}.nombre`) && (
+                                            <div key={field.id} className="flex items-start sm:items-center gap-2 flex-col sm:flex-row">
+                                                <FormItem className="flex-grow w-full">
+                                                    <FormControl><Input disabled value={form.getValues(`herramientasDanadas.${index}.nombre`)} /></FormControl>
+                                                </FormItem>
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`herramientasDanadas.${index}.cantidad`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="w-full sm:w-24">
+                                                            <FormControl>
+                                                                <Input type="number" placeholder="Cant." {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                         )
                                     ))}
                                 </div>
                             </div>
@@ -278,21 +294,25 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                 </div>
                                 <div className="space-y-3">
                                     {extraviadasFields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`herramientasExtraviadas.${index}.nombre`}
-                                                render={({ field }) => (
-                                                    <FormItem className="flex-grow">
-                                                        <FormControl>
-                                                            <Input placeholder={`Herramienta #${index + 1}`} {...field} />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            {/* Remove button is intentionally omitted from this synchronized list */}
-                                        </div>
+                                         form.getValues(`herramientasExtraviadas.${index}.nombre`) && (
+                                            <div key={field.id} className="flex items-start sm:items-center gap-2 flex-col sm:flex-row">
+                                                <FormItem className="flex-grow w-full">
+                                                    <FormControl><Input disabled value={form.getValues(`herramientasExtraviadas.${index}.nombre`)} /></FormControl>
+                                                </FormItem>
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`herramientasExtraviadas.${index}.cantidad`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="w-full sm:w-24">
+                                                            <FormControl>
+                                                                <Input type="number" placeholder="Cant." {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                         )
                                     ))}
                                 </div>
                             </div>
@@ -310,5 +330,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         </Dialog>
     );
 }
+
+    
 
     
