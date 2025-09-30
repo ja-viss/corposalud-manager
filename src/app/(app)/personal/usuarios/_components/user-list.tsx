@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import type { User, UserRole } from "@/lib/types";
+import type { User } from "@/lib/types";
 import { getUsers, deleteUser } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
@@ -34,10 +34,10 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 interface UserListProps {
   initialUsers: User[];
-  currentUserRole: UserRole;
+  currentUser: User;
 }
 
-export function UserList({ initialUsers, currentUserRole }: UserListProps) {
+export function UserList({ initialUsers, currentUser }: UserListProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
@@ -114,7 +114,14 @@ export function UserList({ initialUsers, currentUserRole }: UserListProps) {
     doc.save('listado-usuarios.pdf');
   };
   
-  const canManageUsers = currentUserRole === 'Admin' || currentUserRole === 'Moderador';
+  const canCreateUsers = currentUser.role === 'Admin' || currentUser.role === 'Moderador';
+
+  const canManageUser = (user: User) => {
+    if (user.id === currentUser.id) return false; // Cannot manage self
+    if (currentUser.role === 'Admin') return true;
+    if (currentUser.role === 'Moderador' && user.role === 'Obrero') return true;
+    return false;
+  }
 
   return (
     <>
@@ -123,7 +130,7 @@ export function UserList({ initialUsers, currentUserRole }: UserListProps) {
             <h2 className="text-2xl font-bold tracking-tight">Usuarios</h2>
             <p className="text-muted-foreground">Gestione los usuarios del sistema.</p>
         </div>
-        {canManageUsers && (
+        {canCreateUsers && (
           <div className="flex items-center gap-2">
               <Button size="sm" className="gap-1" onClick={handleExportPDF} disabled={loading || users.length === 0}>
                   <FileDown className="h-3.5 w-3.5" />
@@ -153,19 +160,19 @@ export function UserList({ initialUsers, currentUserRole }: UserListProps) {
                 <TableHead>Rol</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Creado el</TableHead>
-                {canManageUsers && <TableHead><span className="sr-only">Actions</span></TableHead>}
+                <TableHead><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={canManageUsers ? 6 : 5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     Cargando usuarios...
                   </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={canManageUsers ? 6 : 5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No se encontraron usuarios.
                   </TableCell>
                 </TableRow>
@@ -185,8 +192,8 @@ export function UserList({ initialUsers, currentUserRole }: UserListProps) {
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
                     </TableCell>
                     <TableCell>{isClient ? format(new Date(user.fechaCreacion), "dd/MM/yyyy") : '...'}</TableCell>
-                    {canManageUsers && (currentUserRole === 'Admin' || (currentUserRole === 'Moderador' && user.role === 'Obrero')) && (
-                      <TableCell>
+                    <TableCell>
+                      {canManageUser(user) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -207,8 +214,8 @@ export function UserList({ initialUsers, currentUserRole }: UserListProps) {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    )}
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -232,7 +239,7 @@ export function UserList({ initialUsers, currentUserRole }: UserListProps) {
                                 {user.nombre} {user.apellido}
                                 <p className="text-sm font-normal text-muted-foreground">C.I: {user.cedula}</p>
                             </CardTitle>
-                            {canManageUsers && (currentUserRole === 'Admin' || (currentUserRole === 'Moderador' && user.role === 'Obrero')) && (
+                            {canManageUser(user) && (
                               <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                   <Button aria-haspopup="true" size="icon" variant="ghost">

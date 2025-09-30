@@ -37,7 +37,7 @@ export default async function UsuariosPage() {
   
   return (
     <div className="space-y-6">
-        <UserList initialUsers={initialUsers} currentUserRole={currentUser.role} />
+        <UserList initialUsers={initialUsers} currentUser={currentUser} />
     </div>
     );
 }
