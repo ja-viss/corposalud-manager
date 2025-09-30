@@ -11,7 +11,7 @@ const WorkReportSchema = new Schema({
   crewId: { type: Schema.Types.ObjectId, ref: 'Crew', required: true },
   municipio: { type: String, required: true },
   distancia: { type: Number, required: true },
-  comentarios: { type: String, required: true },
+  comentarios: { type: String, required: false },
   herramientasUtilizadas: [ToolEntrySchema],
   herramientasDanadas: [ToolEntrySchema],
   herramientasExtraviadas: [ToolEntrySchema],
@@ -30,6 +30,7 @@ const WorkReportSchema = new Schema({
     virtuals: true,
     transform(doc, ret) {
       ret.id = ret._id;
+      delete ret._id;
       delete ret.__v;
     },
   }
@@ -42,3 +43,4 @@ export default WorkReport;
     
 
     
+
