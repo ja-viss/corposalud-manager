@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { getUserById, getCrews } from '@/app/actions';
 import type { User } from '@/lib/types';
 import { CrewList } from './_components/crew-list';
+import { PersonalClientLayout } from '../_components/personal-client-layout';
 
 async function getCurrentUser(): Promise<User | null> {
     const cookieStore = cookies();
@@ -36,14 +37,11 @@ export default async function CuadrillasPage() {
     const canManageCrews = user.role === 'Admin' || user.role === 'Moderador';
 
     return (
-        <div className="space-y-8 py-8">
-            <h1 className="text-3xl font-bold tracking-tight">
-                Gestión de Cuadrillas
-            </h1>
+        <PersonalClientLayout showUserTab={user.role === 'Admin'}>
             <CrewList 
                 initialCrews={initialCrews}
                 canManageCrews={canManageCrews}
             />
-        </div>
+        </PersonalClientLayout>
     );
 }
