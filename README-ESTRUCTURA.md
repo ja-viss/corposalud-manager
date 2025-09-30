@@ -1,5 +1,5 @@
 
-# Estructura del Proyecto: Gestión CORPOELEC
+# Estructura del Proyecto: Gestión CORPOTACHIRA
 
 Este documento detalla la estructura de archivos y directorios del sistema de gestión, explicando el propósito de cada componente clave.
 
