@@ -57,24 +57,22 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
             return { success: false, message: "Acceso no autorizado." };
         }
         
-        let queryFilter: any = {};
+        // Start with a filter to exclude the current user
+        let queryFilter: any = { _id: { $ne: currentUser.id } };
 
         if (filter.role) {
             const roles = Array.isArray(filter.role) ? filter.role : [filter.role];
             queryFilter.role = { $in: roles };
         }
 
-        // If the user is a Moderator, they can ONLY see Obreros, unless they explicitly ask for other roles (like in crew creation)
+        // If the user is a Moderator, they can ONLY see Obreros, unless they explicitly ask for other roles
         if (currentUser.role === 'Moderador' && !filter.role) {
             queryFilter.role = 'Obrero';
         }
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
-        
-        // Admins and Moderators should not see themselves in the general user list
-        const filteredUsers = users.filter(user => user.id.toString() !== currentUser.id);
 
-        return { success: true, data: safeSerialize(filteredUsers) as UserType[] };
+        return { success: true, data: safeSerialize(users) as UserType[] };
     } catch (error) {
         console.error('Error al obtener usuarios:', error);
         return { success: false, message: 'Error al obtener los usuarios.' };
