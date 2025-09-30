@@ -12,144 +12,224 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
-import { createWorkReport, updateWorkReport, getWorkReportById } from "@/app/actions";
-import type { Crew, PopulatedWorkReport, ToolEntry, PopulatedCrew } from '@/lib/types';
+import { createWorkReport, updateWorkReport } from "@/app/actions";
+import type { Crew, PopulatedWorkReport, PopulatedCrew } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle, Users, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import QRCode from "react-qr-code";
-import ReactDOMServer from 'react-dom/server';
+import { pdf, Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDFWithAutoTable;
-}
+// --- PDF Generation with @react-pdf/renderer ---
 
-const generateWorkReportPDF = (report: PopulatedWorkReport) => {
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    const primaryColorH = 173;
-    const headerColor = hslToRgb(primaryColorH, 80, 30);
-    const textColor = [255, 255, 255];
-    const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
-    const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+// Register fonts
+Font.register({
+  family: 'Helvetica',
+  fonts: [
+    { src: 'https://fonts.gstatic.com/s/helvetica/v11/s-0ZQ3_2i_25c9Fh-2Kthw.ttf', fontWeight: 'normal' },
+    { src: 'https://fonts.gstatic.com/s/helvetica/v11/s-0ZQ3_2i_25c9Fh-2Kthw.ttf', fontWeight: 'bold' },
+  ]
+});
 
-    // --- Header ---
-    doc.setFillColor(...headerColor);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    doc.setFontSize(22);
-    doc.setTextColor(...textColor);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Reporte de Trabajo', pageWidth / 2, 18, { align: 'center' });
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text(report.crewId?.nombre || 'N/A', pageWidth / 2, 28, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.setTextColor(200, 200, 200);
-    doc.text(`ID: ${report.id.slice(-6).toUpperCase()} | Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy", { locale: es })}`, pageWidth / 2, 34, { align: 'center' });
-    
+const styles = StyleSheet.create({
+    page: {
+        fontFamily: 'Helvetica',
+        fontSize: 10,
+        paddingTop: 35,
+        paddingBottom: 65,
+        paddingHorizontal: 35,
+        backgroundColor: '#ffffff',
+    },
+    header: {
+        backgroundColor: '#0A534B',
+        padding: 20,
+        textAlign: 'center',
+        color: 'white',
+        marginBottom: 20,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    headerSubtitle: {
+        fontSize: 14,
+    },
+    headerMeta: {
+        fontSize: 10,
+        color: '#d1d5db',
+        marginTop: 5,
+    },
+    sectionTitle: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#323232',
+        marginBottom: 6,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eeeeee',
+        paddingBottom: 4,
+    },
+    section: {
+        marginBottom: 15,
+    },
+    crewDescription: {
+        fontSize: 10,
+        color: '#6b7280',
+        marginBottom: 10,
+        fontStyle: 'italic',
+    },
+    grid: {
+        flexDirection: 'row',
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb'
+    },
+    gridColLabel: {
+        width: '30%',
+        padding: 5,
+        backgroundColor: '#f9fafb',
+        borderRightWidth: 1,
+        borderRightColor: '#e5e7eb',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+        fontWeight: 'bold',
+    },
+    gridColValue: {
+        width: '70%',
+        padding: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+    },
+    table: {
+        display: "flex",
+        width: "auto",
+        borderStyle: "solid",
+        borderWidth: 1,
+        borderRightWidth: 0,
+        borderBottomWidth: 0,
+        borderColor: '#e5e7eb',
+        marginBottom: 10,
+    },
+    tableRow: {
+        margin: "auto",
+        flexDirection: "row"
+    },
+    tableColHeader: {
+        width: "25%",
+        borderStyle: "solid",
+        borderWidth: 1,
+        borderLeftWidth: 0,
+        borderTopWidth: 0,
+        backgroundColor: '#0A534B',
+        color: 'white',
+        padding: 5,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    tableCol: {
+        width: "25%",
+        borderStyle: "solid",
+        borderWidth: 1,
+        borderLeftWidth: 0,
+        borderTopWidth: 0,
+        padding: 5,
+        textAlign: 'center',
+    },
+    membersList: {
+        paddingLeft: 10,
+    },
+    memberItem: {
+        marginBottom: 3,
+    },
+    pageNumber: {
+        position: 'absolute',
+        fontSize: 8,
+        bottom: 30,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        color: 'grey',
+    },
+});
 
-    // --- Body ---
-    let startY = 50;
+const WorkReportPDF = ({ report }: { report: PopulatedWorkReport }) => (
+    <Document>
+        <Page size="A4" style={styles.page}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Reporte de Trabajo</Text>
+                <Text style={styles.headerSubtitle}>{report.crewId?.nombre || 'N/A'}</Text>
+                <Text style={styles.headerMeta}>{`ID: ${report.id.slice(-6).toUpperCase()} | Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy", { locale: es })}`}</Text>
+            </View>
 
-    // Crew Description
-    doc.setFontSize(12);
-    doc.setTextColor(50, 50, 50);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Descripción de la Cuadrilla:', 14, startY);
-    startY += 6;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    const splitDescription = doc.splitTextToSize(report.crewId?.descripcion || 'No disponible.', pageWidth - 28);
-    doc.text(splitDescription, 14, startY);
-    startY += (splitDescription.length * 5) + 5;
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Descripción de la Cuadrilla</Text>
+                <Text style={styles.crewDescription}>{report.crewId?.descripcion || 'No disponible.'}</Text>
+            </View>
 
+            <View style={styles.section}>
+                 <Text style={styles.sectionTitle}>Información General</Text>
+                 <View style={styles.grid}>
+                    <Text style={styles.gridColLabel}>Municipio</Text><Text style={styles.gridColValue}>{report.municipio}</Text>
+                 </View>
+                 <View style={styles.grid}>
+                    <Text style={styles.gridColLabel}>Distancia (m)</Text><Text style={styles.gridColValue}>{report.distancia.toString()}</Text>
+                 </View>
+                 <View style={styles.grid}>
+                    <Text style={styles.gridColLabel}>Comentarios</Text><Text style={styles.gridColValue}>{report.comentarios || 'Sin comentarios.'}</Text>
+                 </View>
+            </View>
+            
+            {report.herramientasUtilizadas && report.herramientasUtilizadas.length > 0 && (
+                 <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Herramientas</Text>
+                    <View style={styles.table}>
+                        <View style={styles.tableRow}>
+                            <Text style={styles.tableColHeader}>Herramienta</Text><Text style={styles.tableColHeader}>Utilizadas</Text><Text style={styles.tableColHeader}>Dañadas</Text><Text style={styles.tableColHeader}>Extraviadas</Text>
+                        </View>
+                        {report.herramientasUtilizadas.map((tool, index) => {
+                             const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
+                             const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
+                            return (
+                                <View style={styles.tableRow} key={index}>
+                                    <Text style={styles.tableCol}>{tool.nombre}</Text><Text style={styles.tableCol}>{tool.cantidad}</Text><Text style={styles.tableCol}>{damaged}</Text><Text style={styles.tableCol}>{lost}</Text>
+                                </View>
+                            )
+                        })}
+                    </View>
+                </View>
+            )}
 
-    // Basic Info
-    doc.autoTable({
-        startY: startY,
-        body: [
-            ['Municipio', report.municipio],
-            ['Distancia (m)', report.distancia.toString()],
-            ['Comentarios', report.comentarios || 'Sin comentarios.'],
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: headerColor, textColor: textColor },
-        styles: { fontSize: 10, cellPadding: 2.5 },
-        columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
-    });
+            {report.crewId && (
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Miembros de la Cuadrilla</Text>
+                     <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Moderador:</Text>
+                    <View style={styles.membersList}>
+                        {report.crewId.moderadores.map(m => <Text key={m.id} style={styles.memberItem}>- {m.nombre} {m.apellido}</Text>)}
+                    </View>
+                    <Text style={{ fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>Obreros:</Text>
+                    <View style={styles.membersList}>
+                        {report.crewId.obreros.map(o => <Text key={o.id} style={styles.memberItem}>- {o.nombre} {o.apellido}</Text>)}
+                    </View>
+                </View>
+            )}
+            
+            <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} fixed />
+        </Page>
+    </Document>
+);
 
-    startY = (doc as any).lastAutoTable.finalY + 10;
-    
-    // Tools
-    if (report.herramientasUtilizadas && report.herramientasUtilizadas.length > 0) {
-        doc.autoTable({
-            startY: startY,
-            head: [['Herramienta', 'Utilizadas', 'Dañadas', 'Extraviadas']],
-            body: report.herramientasUtilizadas.map(tool => {
-                const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
-                const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
-                return [tool.nombre, tool.cantidad, damaged, lost];
-            }),
-            headStyles: { fillColor: headerColor, textColor: textColor },
-        });
-        startY = (doc as any).lastAutoTable.finalY + 10;
-    }
-
-    // Crew Members
-    if (report.crewId) {
-        doc.setFontSize(12);
-        doc.setTextColor(50, 50, 50);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Miembros de la Cuadrilla', 14, startY);
-        startY += 6;
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Moderador: ${report.crewId.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}`, 14, startY);
-        startY += 8;
-        
-        doc.autoTable({
-            startY: startY,
-            head: [['Nombre', 'Apellido']],
-            body: report.crewId.obreros.map(obrero => [obrero.nombre, obrero.apellido]),
-            headStyles: { fillColor: headerColor, textColor: textColor },
-        });
-    }
-
-    // --- Footer ---
-    const qrCodeAsString = ReactDOMServer.renderToString(
-        <QRCode value={report.id} size={30} bgColor="#ffffff" fgColor="#000000" />
-    );
-
-    const qrX = 14;
-    const qrY = pageHeight - 35;
-    doc.addSVG(qrCodeAsString, qrX, qrY, 30, 30);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('Escanee para ver detalles completos del reporte.', qrX + 35, qrY + 18);
-    doc.text(`Página 1 de 1`, pageWidth - 25, pageHeight - 10);
-
-    doc.save(`reporte-${(report.crewId?.nombre || 'cuadrilla').replace(/\s/g, '_')}-${format(new Date(report.fecha), "yyyy-MM-dd")}.pdf`);
+const generateWorkReportPDF = async (report: PopulatedWorkReport) => {
+    const blob = await pdf(<WorkReportPDF report={report} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-${(report.crewId?.nombre || 'cuadrilla').replace(/\s/g, '_')}-${format(new Date(report.fecha), "yyyy-MM-dd")}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 };
-
-// HSL to RGB conversion function
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  s /= 100;
-  l /= 100;
-  const k = (n: number) => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) =>
-    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
-  return [255 * f(0), 255 * f(8), 255 * f(4)];
-}
 
 
 interface WorkReportModalProps {
@@ -343,7 +423,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
 
         const finalValues = {
             ...values,
-            comentarios: values.comentarios?.trim() === '' ? undefined : values.comentarios,
+            comentarios: values.comentarios?.trim() === '' ? "Reporte sin comentarios" : values.comentarios,
             herramientasUtilizadas: values.herramientasUtilizadas?.filter(t => t.nombre && t.nombre.trim() !== '' && t.cantidad > 0),
             herramientasDanadas: values.herramientasDanadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
             herramientasExtraviadas: values.herramientasExtraviadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
@@ -358,7 +438,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
 
         if (result.success && result.data) {
             toast({ title: "Éxito", description: result.message });
-            generateWorkReportPDF(result.data);
+            await generateWorkReportPDF(result.data);
             onReportSaved();
             handleClose();
         } else {
