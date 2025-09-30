@@ -655,7 +655,7 @@ export async function addMembersToChannel(channelId: string, memberIds: string[]
     try {
         await dbConnect();
         const currentUser = await getCurrentUserFromSession();
-        if (!currentUser || currentUser.role !== 'Admin') {
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
             return { success: false, message: 'No tiene permiso para realizar esta acción.' };
         }
 
@@ -678,7 +678,7 @@ export async function removeMembersFromChannel(channelId: string, memberIds: str
     try {
         await dbConnect();
          const currentUser = await getCurrentUserFromSession();
-        if (!currentUser || currentUser.role !== 'Admin') {
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
             return { success: false, message: 'No tiene permiso para realizar esta acción.' };
         }
 
@@ -842,6 +842,36 @@ export async function deleteMessage(messageId: string) {
     }
 }
 
+export async function updateChannelName(channelId: string, newName: string) {
+    try {
+        await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: 'No tiene permiso para realizar esta acción.' };
+        }
+
+        const channel = await Channel.findById(channelId);
+        if (!channel) {
+            return { success: false, message: 'Canal no encontrado.' };
+        }
+
+        if (channel.type !== 'GROUP') {
+            return { success: false, message: 'Solo se puede cambiar el nombre de los grupos.' };
+        }
+
+        channel.nombre = newName;
+        await channel.save();
+        
+        await logActivity(`channel-rename:${channelId}`, currentUser.username);
+
+        return { success: true, message: 'Nombre del grupo actualizado exitosamente.' };
+
+    } catch (error) {
+        console.error('Error al actualizar nombre del canal:', error);
+        return { success: false, message: 'Error al actualizar el nombre del canal.' };
+    }
+}
+
 // Acciones de Reportes de Trabajo
 export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>) {
     try {
@@ -849,10 +879,6 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
         const currentUser = await getCurrentUserFromSession();
         if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
             return { success: false, message: "No tiene permiso para realizar esta acción." };
-        }
-        
-        if (!data.comentarios || data.comentarios.trim() === '') {
-            data.comentarios = "Reporte sin comentarios";
         }
         
         const newWorkReport = new WorkReport({
@@ -890,10 +916,6 @@ export async function updateWorkReport(reportId: string, data: Partial<Omit<Work
         const currentUser = await getCurrentUserFromSession();
         if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
             return { success: false, message: "No tiene permiso para realizar esta acción." };
-        }
-
-        if (!data.comentarios || data.comentarios.trim() === '') {
-            data.comentarios = "Reporte sin comentarios";
         }
 
         const report = await WorkReport.findByIdAndUpdate(reportId, data, { new: true, runValidators: true });
@@ -1019,3 +1041,4 @@ export async function getAdminDashboardStats() {
     
 
     
+

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Paperclip, Send, Trash2, MoreVertical, UserPlus, UserX } from 'lucide-react';
+import { Paperclip, Send, Trash2, MoreVertical, UserPlus, UserX, FileEdit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { ManageGroupMembersModal } from './manage-group-members-modal';
+import { RenameGroupModal } from './rename-group-modal';
 import { MessageItem } from './message-item';
 
 
@@ -39,6 +40,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<PopulatedMessage | null>(null);
   const [showDeleteChannelConfirm, setShowDeleteChannelConfirm] = useState<Channel | null>(null);
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -111,6 +113,11 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     onChannelUpdated();
     setIsManageMembersModalOpen(false);
   };
+  
+  const handleChannelNameUpdated = () => {
+      onChannelUpdated();
+      setIsRenameModalOpen(false);
+  };
 
 
   if (!channel || !currentUser) {
@@ -176,6 +183,10 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
               <DropdownMenuContent align="end">
                  {isGroupChannel && (
                     <>
+                      <DropdownMenuItem onSelect={() => setIsRenameModalOpen(true)}>
+                        <FileEdit className="mr-2 h-4 w-4" />
+                        <span>Cambiar Nombre</span>
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setIsManageMembersModalOpen(true)}>
                         <UserPlus className="mr-2 h-4 w-4" />
                         <span>Añadir Miembro</span>
@@ -277,14 +288,22 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
       </AlertDialog>
       
       {channel && isGroupChannel && (
-          <ManageGroupMembersModal
-            isOpen={isManageMembersModalOpen}
-            onClose={() => setIsManageMembersModalOpen(false)}
-            channel={channel}
-            allUsers={allUsers}
-            currentUser={currentUser}
-            onMembersUpdated={handleMembersUpdated}
-          />
+          <>
+            <ManageGroupMembersModal
+              isOpen={isManageMembersModalOpen}
+              onClose={() => setIsManageMembersModalOpen(false)}
+              channel={channel}
+              allUsers={allUsers}
+              currentUser={currentUser}
+              onMembersUpdated={handleMembersUpdated}
+            />
+            <RenameGroupModal
+                isOpen={isRenameModalOpen}
+                onClose={() => setIsRenameModalOpen(false)}
+                channel={channel}
+                onNameUpdated={handleChannelNameUpdated}
+            />
+          </>
       )}
     </>
   );
