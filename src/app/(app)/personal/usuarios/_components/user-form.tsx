@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -166,7 +167,7 @@ export function UserForm({ user, currentUserRole, crews = [] }: UserFormProps) {
                                     <FormField control={form.control} name="role" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Rol</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole || isEditing}>
+                                            <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole && isEditing}>
                                                 <FormControl>
                                                     <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
                                                 </FormControl>
