@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -152,6 +151,50 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const CrewInfo = ({ crew }: { crew: Crew | PopulatedCrew | null }) => {
+  if (!crew) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground bg-muted/50 rounded-lg p-4">
+        <FileText className="h-10 w-10 mb-4" />
+        <h3 className="font-semibold">Seleccione una cuadrilla</h3>
+        <p className="text-sm">La información de la cuadrilla aparecerá aquí una vez que la seleccione.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Información de la Cuadrilla</CardTitle>
+          <CardDescription>{crew.nombre}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <h4 className="font-semibold text-sm mb-2">Descripción de Actividad:</h4>
+          <p className="text-sm text-muted-foreground">{crew.descripcion || "No hay descripción disponible."}</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Miembros</CardTitle>
+          <CardDescription>Personal asignado a esta cuadrilla.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <h4 className="font-semibold text-sm mb-2">Moderador:</h4>
+          <ul className="text-sm text-muted-foreground list-disc pl-5">
+            {Array.isArray(crew.moderadores) && crew.moderadores.map(m => <li key={m.id}>{m.nombre} {m.apellido}</li>)}
+          </ul>
+          <h4 className="font-semibold text-sm mt-4 mb-2">Obreros:</h4>
+          <ul className="text-sm text-muted-foreground list-disc pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            {Array.isArray(crew.obreros) && crew.obreros.map(o => <li key={o.id}>{o.nombre} {o.apellido}</li>)}
+          </ul>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+
 export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved }: WorkReportModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
@@ -279,7 +322,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[65vh]">
-                           {/* Left Column: Form Fields */}
+                           {/* Main Form Area */}
                            <ScrollArea className="h-full pr-4">
                              <div className="space-y-4">
                                 <FormField control={form.control} name="crewId" render={({ field }) => (
@@ -292,6 +335,12 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                         <FormMessage />
                                     </FormItem>
                                 )} />
+                                
+                                {/* Mobile Crew Info */}
+                                <div className="block md:hidden mt-4">
+                                    <CrewInfo crew={selectedCrew} />
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <FormField control={form.control} name="municipio" render={({ field }) => (
                                         <FormItem><FormLabel>Municipio</FormLabel><FormControl><Input placeholder="Ej: San Cristóbal" {...field} /></FormControl><FormMessage /></FormItem>
@@ -370,44 +419,10 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                 </div>
                              </div>
                            </ScrollArea>
-                           {/* Right Column: Crew Info */}
-                           <ScrollArea className="h-full">
-                               {selectedCrew ? (
-                                   <div className="space-y-4">
-                                       <Card>
-                                           <CardHeader>
-                                                <CardTitle>Información de la Cuadrilla</CardTitle>
-                                                <CardDescription>{selectedCrew.nombre}</CardDescription>
-                                           </CardHeader>
-                                           <CardContent>
-                                               <h4 className="font-semibold text-sm mb-2">Descripción de Actividad:</h4>
-                                               <p className="text-sm text-muted-foreground">{selectedCrew.descripcion || "No hay descripción disponible."}</p>
-                                           </CardContent>
-                                       </Card>
-                                       <Card>
-                                           <CardHeader>
-                                                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Miembros</CardTitle>
-                                                <CardDescription>Personal asignado a esta cuadrilla.</CardDescription>
-                                           </CardHeader>
-                                           <CardContent>
-                                               <h4 className="font-semibold text-sm mb-2">Moderador:</h4>
-                                                <ul className="text-sm text-muted-foreground list-disc pl-5">
-                                                    {Array.isArray(selectedCrew.moderadores) && selectedCrew.moderadores.map(m => <li key={m.id}>{m.nombre} {m.apellido}</li>)}
-                                                </ul>
-                                               <h4 className="font-semibold text-sm mt-4 mb-2">Obreros:</h4>
-                                                <ul className="text-sm text-muted-foreground list-disc pl-5 grid grid-cols-2 gap-x-4">
-                                                    {Array.isArray(selectedCrew.obreros) && selectedCrew.obreros.map(o => <li key={o.id}>{o.nombre} {o.apellido}</li>)}
-                                               </ul>
-                                           </CardContent>
-                                       </Card>
-                                   </div>
-                               ) : (
-                                   <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground bg-muted/50 rounded-lg p-4">
-                                       <FileText className="h-10 w-10 mb-4" />
-                                       <h3 className="font-semibold">Seleccione una cuadrilla</h3>
-                                       <p className="text-sm">La información de la cuadrilla aparecerá aquí una vez que la seleccione.</p>
-                                   </div>
-                               )}
+                           
+                           {/* Desktop Crew Info */}
+                           <ScrollArea className="h-full hidden md:block">
+                               <CrewInfo crew={selectedCrew} />
                            </ScrollArea>
                        </div>
                         <DialogFooter className="pt-6">
