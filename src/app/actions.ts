@@ -801,7 +801,7 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
 
         const newWorkReport = new WorkReport({
             ...data,
-            realizadoPor: currentUser.id,
+            realizadoPor: new mongoose.Types.ObjectId(currentUser.id),
             fecha: new Date(),
         });
 
@@ -867,6 +867,7 @@ export async function getAdminDashboardStats() {
 }
 
     
+
 
 
 
