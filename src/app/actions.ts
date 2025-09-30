@@ -66,9 +66,9 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
             queryFilter.role = { $in: roles };
         }
 
-        // If the user is a Moderator, they can ONLY see Obreros, unless they explicitly ask for other roles
+        // If the user is a Moderator, they can see Admins, other Moderators, and Obreros
         if (currentUser.role === 'Moderador' && !filter.role) {
-            queryFilter.role = { $in: ['Obrero', 'Admin', 'Moderador'] };
+            queryFilter.role = { $in: ['Admin', 'Moderador', 'Obrero'] };
         }
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
@@ -1009,5 +1009,7 @@ export async function getAdminDashboardStats() {
     ],
   };
 }
+
+    
 
     
