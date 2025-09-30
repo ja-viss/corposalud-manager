@@ -66,6 +66,8 @@ export function CrewForm({ crew }: CrewFormProps) {
 
     useEffect(() => {
         if (isEditing && crew) {
+            // This logic correctly extracts the ID of the single moderator,
+            // whether the `moderadores` prop is an array of strings or an array of objects.
             const moderadorId = crew.moderadores[0] ? (typeof crew.moderadores[0] === 'string' ? crew.moderadores[0] : crew.moderadores[0].id) : "";
             form.reset({
                 descripcion: crew.descripcion || "",
@@ -141,7 +143,7 @@ export function CrewForm({ crew }: CrewFormProps) {
                                     <ScrollArea className="h-72">
                                         <RadioGroup
                                             onValueChange={field.onChange}
-                                            defaultValue={field.value}
+                                            value={field.value}
                                             className="p-1"
                                         >
                                             {moderadores.map((mod) => (
@@ -201,5 +203,6 @@ export function CrewForm({ crew }: CrewFormProps) {
 }
 
     
+
 
 
