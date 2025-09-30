@@ -141,27 +141,31 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         const doc = new jsPDF() as jsPDFWithAutoTable;
         const primaryColorH = 173;
         const headerColor = hslToRgb(primaryColorH, 80, 30);
-        const pageHeight = doc.internal.pageSize.height;
         let finalY = 0;
         
         const crewName = report.crewId?.nombre || 'N/A';
         const fileName = `Reporte-${crewName}-${format(new Date(report.fecha), "yyyy-MM-dd")}.pdf`;
 
-        // Header
+        // Header (Letterhead)
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text("CORPOTACHIRA", 14, 15);
+        
+        // Title
         doc.setFontSize(20);
-        doc.text(`Reporte de Trabajo - ${crewName}`, 14, 22);
+        doc.setTextColor(40);
+        doc.text(`Reporte de Trabajo - ${crewName}`, 14, 28);
         doc.setFontSize(11);
         doc.setTextColor(100);
-        doc.text(`Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy")}`, 14, 28);
+        doc.text(`Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy")}`, 14, 34);
         
         // General Info
         doc.autoTable({
-            startY: 35,
+            startY: 40,
             body: [
                 ['Municipio', report.municipio],
                 ['Distancia (m)', report.distancia.toString()],
                 ['Comentarios', report.comentarios],
-                ['Realizado Por', `${report.realizadoPor?.nombre} ${report.realizadoPor?.apellido}`],
             ],
             theme: 'grid',
             styles: { fontSize: 10 },
