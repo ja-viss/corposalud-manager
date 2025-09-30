@@ -82,15 +82,19 @@ const generateWorkReportPDF = (report: PopulatedWorkReport) => {
 
     // Crew Members
     if (report.crewId) {
-         doc.autoTable({
-            startY: (doc as any).lastAutoTable.finalY + 10,
-            head: [['Miembros de la Cuadrilla']],
-            body: [
-                [`Moderador: ${report.crewId.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}`],
-                [`Obreros:\n${report.crewId.obreros.map(o => ` - ${o.nombre} ${o.apellido}`).join('\n')}`]
-            ],
-             headStyles: { fillColor: headerColor, textColor: 255 },
-             styles: { fontSize: 10, cellPadding: 3 },
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Miembros de la Cuadrilla', 14, (doc as any).lastAutoTable.finalY + 15);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Moderador: ${report.crewId.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}`, 14, (doc as any).lastAutoTable.finalY + 22);
+        
+        doc.autoTable({
+            startY: (doc as any).lastAutoTable.finalY + 26,
+            head: [['Nombre', 'Apellido']],
+            body: report.crewId.obreros.map(obrero => [obrero.nombre, obrero.apellido]),
+            headStyles: { fillColor: headerColor, textColor: 255 },
+            styles: { fontSize: 10 },
         });
     }
 
