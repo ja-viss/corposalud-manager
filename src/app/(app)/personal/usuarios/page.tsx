@@ -5,7 +5,6 @@ import { UserList } from "./_components/user-list";
 import { cookies } from "next/headers";
 import type { User } from '@/lib/types';
 import { redirect } from "next/navigation";
-import { PersonalClientLayout } from "../_components/personal-client-layout";
 
 
 async function getCurrentUser(): Promise<User | null> {
@@ -38,9 +37,9 @@ export default async function UsuariosPage() {
   const initialUsers = usersResult.success ? usersResult.data || [] : [];
   
   return (
-    <PersonalClientLayout showUserTab={currentUser.role === 'Admin'}>
+    <div className="space-y-6">
         <UserList initialUsers={initialUsers} canManageUsers={currentUser.role === 'Admin'} />
-    </PersonalClientLayout>
+    </div>
     );
 }
 

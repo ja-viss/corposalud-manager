@@ -32,15 +32,7 @@ export function MainNav({ userRole }: MainNavProps) {
   return (
     <SidebarMenu>
       {navItems.map((item) => {
-        let isActive = false;
-        if (item.href.startsWith('/personal') && pathname.startsWith('/personal')) {
-            isActive = true;
-        } else if (item.href.startsWith('/reportes') && pathname.startsWith('/reportes')) {
-            isActive = true;
-        }
-        else {
-            isActive = pathname.startsWith(item.href);
-        }
+        const isActive = pathname.startsWith(item.href);
 
         return (
             <SidebarMenuItem key={item.href}>
