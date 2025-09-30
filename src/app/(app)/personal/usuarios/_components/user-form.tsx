@@ -111,7 +111,10 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
     }
     
     const canSelectRole = currentUserRole === 'Admin';
-    const showCredentialsFields = roleWatcher === 'Admin';
+    const showCredentialsFields = 
+        (isEditing && (roleWatcher === 'Admin' || roleWatcher === 'Moderador')) ||
+        (!isEditing && roleWatcher === 'Admin');
+
 
     const handleCopyToClipboard = () => {
         const credentialsText = `Usuario: ${generatedCredentials.username}\nContraseña: ${generatedCredentials.password}`;
@@ -171,7 +174,7 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
                                 {showCredentialsFields ? (
                                     <>
                                         <FormField control={form.control} name="username" render={({ field }) => (
-                                            <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>Usuario</FormLabel><FormControl><Input {...field} disabled={isEditing} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={form.control} name="contrasena" render={({ field }) => (
                                             <FormItem className="relative">
@@ -199,7 +202,9 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
                                     </>
                                 ) : (
                                     <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
-                                        Las credenciales para este rol se generarán automáticamente.
+                                       {roleWatcher === 'Obrero' && !isEditing ? 'Las credenciales para Obreros se generan automáticamente (Cédula/Cédula).' :
+                                        roleWatcher === 'Moderador' && !isEditing ? 'Las credenciales para Moderadores se generarán automáticamente.' :
+                                        'Este rol no requiere credenciales manuales.'}
                                     </div>
                                 )}
                             </CardContent>
