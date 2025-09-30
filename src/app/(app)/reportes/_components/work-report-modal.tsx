@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
-import { createWorkReport, updateWorkReport } from "@/app/actions";
+import { createWorkReport, updateWorkReport, getWorkReportById } from "@/app/actions";
 import type { Crew, PopulatedWorkReport, ToolEntry, PopulatedCrew } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle, Users, FileText } from 'lucide-react';
@@ -20,10 +20,124 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import QRCode from "react-qr-code";
+import ReactDOMServer from 'react-dom/server';
 
 interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => void;
+  autoTable: (options: any) => jsPDFWithAutoTable;
 }
+
+const generateWorkReportPDF = (report: PopulatedWorkReport) => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const primaryColorH = 173;
+    const headerColor = hslToRgb(primaryColorH, 80, 30);
+    const textColor = [255, 255, 255];
+    const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+
+    // --- Header ---
+    doc.setFillColor(...headerColor);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setFontSize(22);
+    doc.setTextColor(...textColor);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Reporte de Trabajo', pageWidth / 2, 18, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text(report.crewId?.nombre || 'N/A', pageWidth / 2, 28, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(200, 200, 200);
+    doc.text(`ID: ${report.id.slice(-6).toUpperCase()} | Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy", { locale: es })}`, pageWidth / 2, 34, { align: 'center' });
+    
+
+    // --- Body ---
+    let startY = 50;
+
+    // Crew Description
+    doc.setFontSize(12);
+    doc.setTextColor(50, 50, 50);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Descripción de la Cuadrilla:', 14, startY);
+    startY += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    const splitDescription = doc.splitTextToSize(report.crewId?.descripcion || 'No disponible.', pageWidth - 28);
+    doc.text(splitDescription, 14, startY);
+    startY += (splitDescription.length * 5) + 5;
+
+
+    // Basic Info
+    doc.autoTable({
+        startY: startY,
+        body: [
+            ['Municipio', report.municipio],
+            ['Distancia (m)', report.distancia.toString()],
+            ['Comentarios', report.comentarios || 'Sin comentarios.'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: headerColor, textColor: textColor },
+        styles: { fontSize: 10, cellPadding: 2.5 },
+        columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 240, 240] } }
+    });
+
+    startY = (doc as any).lastAutoTable.finalY + 10;
+    
+    // Tools
+    if (report.herramientasUtilizadas && report.herramientasUtilizadas.length > 0) {
+        doc.autoTable({
+            startY: startY,
+            head: [['Herramienta', 'Utilizadas', 'Dañadas', 'Extraviadas']],
+            body: report.herramientasUtilizadas.map(tool => {
+                const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
+                const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
+                return [tool.nombre, tool.cantidad, damaged, lost];
+            }),
+            headStyles: { fillColor: headerColor, textColor: textColor },
+        });
+        startY = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // Crew Members
+    if (report.crewId) {
+        doc.setFontSize(12);
+        doc.setTextColor(50, 50, 50);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Miembros de la Cuadrilla', 14, startY);
+        startY += 6;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Moderador: ${report.crewId.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}`, 14, startY);
+        startY += 8;
+        
+        doc.autoTable({
+            startY: startY,
+            head: [['Nombre', 'Apellido']],
+            body: report.crewId.obreros.map(obrero => [obrero.nombre, obrero.apellido]),
+            headStyles: { fillColor: headerColor, textColor: textColor },
+        });
+    }
+
+    // --- Footer ---
+    const qrCodeAsString = ReactDOMServer.renderToString(
+        <QRCode value={report.id} size={30} bgColor="#ffffff" fgColor="#000000" />
+    );
+
+    const qrX = 14;
+    const qrY = pageHeight - 35;
+    doc.addSVG(qrCodeAsString, qrX, qrY, 30, 30);
+    
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text('Escanee para ver detalles completos del reporte.', qrX + 35, qrY + 18);
+    doc.text(`Página 1 de 1`, pageWidth - 25, pageHeight - 10);
+
+    doc.save(`reporte-${(report.crewId?.nombre || 'cuadrilla').replace(/\s/g, '_')}-${format(new Date(report.fecha), "yyyy-MM-dd")}.pdf`);
+};
 
 // HSL to RGB conversion function
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
@@ -35,70 +149,6 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
     l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
   return [255 * f(0), 255 * f(8), 255 * f(4)];
 }
-
-const generateWorkReportPDF = (report: PopulatedWorkReport) => {
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    const primaryColorH = 173;
-    const headerColor = hslToRgb(primaryColorH, 80, 30);
-
-    const crewName = report.crewId?.nombre || 'N/A';
-    const reportDate = format(new Date(report.fecha), "dd/MM/yyyy");
-
-    // Header
-    doc.setFontSize(20);
-    doc.text(`Reporte de Trabajo - ${crewName}`, 14, 22);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Fecha del Reporte: ${reportDate}`, 14, 29);
-
-    // Basic Info
-    doc.autoTable({
-        startY: 35,
-        body: [
-            ['Municipio', report.municipio],
-            ['Distancia (m)', report.distancia.toString()],
-            ['Comentarios', report.comentarios],
-        ],
-        theme: 'grid',
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: headerColor, textColor: 255 },
-    });
-
-    // Tools
-    if (report.herramientasUtilizadas && report.herramientasUtilizadas.length > 0) {
-        doc.autoTable({
-            startY: (doc as any).lastAutoTable.finalY + 10,
-            head: [['Herramienta', 'Utilizadas', 'Dañadas', 'Extraviadas']],
-            body: report.herramientasUtilizadas.map(tool => {
-                const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
-                const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
-                return [tool.nombre, tool.cantidad, damaged, lost];
-            }),
-            headStyles: { fillColor: headerColor, textColor: 255 },
-            styles: { fontSize: 10 },
-        });
-    }
-
-    // Crew Members
-    if (report.crewId) {
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Miembros de la Cuadrilla', 14, (doc as any).lastAutoTable.finalY + 15);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.text(`Moderador: ${report.crewId.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ')}`, 14, (doc as any).lastAutoTable.finalY + 22);
-        
-        doc.autoTable({
-            startY: (doc as any).lastAutoTable.finalY + 26,
-            head: [['Nombre', 'Apellido']],
-            body: report.crewId.obreros.map(obrero => [obrero.nombre, obrero.apellido]),
-            headStyles: { fillColor: headerColor, textColor: 255 },
-            styles: { fontSize: 10 },
-        });
-    }
-
-    doc.save(`reporte-${crewName.replace(/\s/g, '_')}-${reportDate}.pdf`);
-};
 
 
 interface WorkReportModalProps {
@@ -118,15 +168,34 @@ const formSchema = z.object({
     crewId: z.string().min(1, "Debe seleccionar una cuadrilla."),
     municipio: z.string().min(3, "El municipio es requerido."),
     distancia: z.coerce.number().min(0, "La distancia no puede ser negativa."),
-    comentarios: z.string().min(10, "Los comentarios son requeridos."),
+    comentarios: z.string().optional(),
     herramientasUtilizadas: z.array(toolEntrySchema).optional(),
     herramientasDanadas: z.array(toolEntrySchema).optional(),
     herramientasExtraviadas: z.array(toolEntrySchema).optional(),
 }).superRefine((data, ctx) => {
     const utilizadas = data.herramientasUtilizadas || [];
+    
+    // Check if at least one tool with a quantity > 0 is provided
+    const hasAtLeastOneTool = utilizadas.some(tool => tool.nombre && tool.nombre.trim() !== '' && tool.cantidad > 0);
+    if (!hasAtLeastOneTool) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [`herramientasUtilizadas`],
+            message: "Debe registrar al menos una herramienta con una cantidad mayor a cero.",
+        });
+    }
 
     utilizadas.forEach((tool, index) => {
-        if (!tool.nombre || tool.cantidad <= 0) return;
+        if (!tool.nombre || tool.nombre.trim() === '') return;
+        
+        // Check if quantity is greater than 0
+        if (tool.cantidad <= 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [`herramientasUtilizadas`, index, `cantidad`],
+                message: "La cantidad debe ser mayor a 0.",
+            });
+        }
         
         const cantidadUtilizada = tool.cantidad || 0;
         const cantidadDanada = data.herramientasDanadas?.[index]?.cantidad ?? 0;
@@ -273,11 +342,10 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
 
         const finalValues = {
             ...values,
-            herramientasUtilizadas: values.herramientasUtilizadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
+            herramientasUtilizadas: values.herramientasUtilizadas?.filter(t => t.nombre && t.nombre.trim() !== '' && t.cantidad > 0),
             herramientasDanadas: values.herramientasDanadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
             herramientasExtraviadas: values.herramientasExtraviadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
         };
-
 
         let result;
         if (isEditing && report) {
@@ -286,11 +354,9 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
             result = await createWorkReport(finalValues);
         }
 
-        if (result.success) {
+        if (result.success && result.data) {
             toast({ title: "Éxito", description: result.message });
-            if (!isEditing && result.data) {
-                generateWorkReportPDF(result.data);
-            }
+            generateWorkReportPDF(result.data);
             onReportSaved();
             handleClose();
         } else {
@@ -355,6 +421,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                 <Separator />
                                 <div>
                                     <FormLabel>Herramientas Utilizadas</FormLabel>
+                                     <FormMessage>{form.formState.errors.herramientasUtilizadas?.message}</FormMessage>
                                     <div className="space-y-3 mt-2">
                                         {utilizadasFields.map((field, index) => (
                                             <div key={field.id} className="flex items-start gap-2">
