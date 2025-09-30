@@ -1,11 +1,10 @@
 
-
 'use server';
 
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage, WorkReport as WorkReportType, PopulatedWorkReport } from '@/lib/types';
+import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage, WorkReport as WorkReportType, PopulatedWorkReport, PopulatedCrew } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
@@ -830,8 +829,8 @@ export async function getWorkReports() {
                 path: 'crewId',
                 model: 'Crew',
                 populate: [
-                    { path: 'moderadores', model: 'User' },
-                    { path: 'obreros', model: 'User' }
+                    { path: 'moderadores', model: 'User', select: 'nombre apellido' },
+                    { path: 'obreros', model: 'User', select: 'nombre apellido' }
                 ]
             })
             .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido')
@@ -843,6 +842,33 @@ export async function getWorkReports() {
     } catch (error) {
         console.error('Error al obtener reportes de trabajo:', error);
         return { success: false, message: 'Error al obtener los reportes de trabajo.' };
+    }
+}
+
+export async function getWorkReportById(reportId: string) {
+    try {
+        await dbConnect();
+        const report = await WorkReport.findById(reportId)
+            .populate<{ crewId: PopulatedCrew }>({
+                path: 'crewId',
+                model: 'Crew',
+                populate: [
+                    { path: 'moderadores', model: 'User', select: 'nombre apellido' },
+                    { path: 'obreros', model: 'User', select: 'nombre apellido' }
+                ]
+            })
+            .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido')
+            .lean()
+            .exec();
+            
+        if (!report) {
+            return { success: false, message: 'Reporte no encontrado' };
+        }
+        
+        return { success: true, data: safeSerialize(report) as PopulatedWorkReport };
+    } catch (error) {
+        console.error('Error fetching work report by ID:', error);
+        return { success: false, message: 'Error al obtener el reporte de trabajo' };
     }
 }
 
@@ -891,10 +917,3 @@ export async function getAdminDashboardStats() {
 }
 
     
-
-
-
-
-
-
-
