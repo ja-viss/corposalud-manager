@@ -57,19 +57,17 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
             return { success: false, message: "Acceso no autorizado." };
         }
         
-        // Start with a filter to exclude the current user
         const queryFilter: any = { _id: { $ne: new mongoose.Types.ObjectId(currentUser.id) } };
-
 
         if (filter.role) {
             const roles = Array.isArray(filter.role) ? filter.role : [filter.role];
             queryFilter.role = { $in: roles };
-        }
-
-        // If the user is a Moderator, they can see Admins, other Moderators, and Obreros
-        if (currentUser.role === 'Moderador' && !filter.role) {
+        } else if (currentUser.role === 'Moderador') {
+            // If the user is a Moderator and no specific role filter is applied,
+            // they should see Admins, other Moderators, and Obreros.
             queryFilter.role = { $in: ['Admin', 'Moderador', 'Obrero'] };
         }
+        // Admins, by default (no role filter), will see everyone (except themselves).
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
 
@@ -853,6 +851,10 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
             return { success: false, message: "No tiene permiso para realizar esta acción." };
         }
         
+        if (!data.comentarios || data.comentarios.trim() === '') {
+            data.comentarios = "Reporte sin comentarios";
+        }
+        
         const newWorkReport = new WorkReport({
             ...data,
             realizadoPor: new mongoose.Types.ObjectId(currentUser.id),
@@ -888,6 +890,10 @@ export async function updateWorkReport(reportId: string, data: Partial<Omit<Work
         const currentUser = await getCurrentUserFromSession();
         if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
             return { success: false, message: "No tiene permiso para realizar esta acción." };
+        }
+
+        if (!data.comentarios || data.comentarios.trim() === '') {
+            data.comentarios = "Reporte sin comentarios";
         }
 
         const report = await WorkReport.findByIdAndUpdate(reportId, data, { new: true, runValidators: true });
