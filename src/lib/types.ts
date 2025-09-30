@@ -1,3 +1,4 @@
+
 export type UserRole = 'Admin' | 'Moderador' | 'Obrero';
 
 export interface User {
@@ -61,4 +62,20 @@ export interface PopulatedMessage {
     content: string;
     fecha: string;
 }
+
+export interface ToolEntry {
+  nombre: string;
+}
+
+export interface WorkReport {
+  id: string;
+  crewId: string;
+  municipio: string;
+  distancia: number;
+  comentarios: string;
+  herramientas?: ToolEntry[];
+  realizadoPor: string;
+  fecha: string;
+}
+
     

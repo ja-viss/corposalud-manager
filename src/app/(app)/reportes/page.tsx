@@ -4,13 +4,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, HardHat, FileDown } from "lucide-react";
+import { FileText, Users, HardHat, FileDown, ClipboardPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, getCrews } from "@/app/actions";
 import type { Crew, User } from "@/lib/types";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
+import { WorkReportModal } from "./_components/work-report-modal";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -30,6 +31,22 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 export default function ReportesPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
+  const [isWorkReportModalOpen, setIsWorkReportModalOpen] = useState(false);
+  const [allCrews, setAllCrews] = useState<Crew[]>([]);
+
+  const fetchCrewsForModal = async () => {
+    const result = await getCrews();
+    if (result.success && result.data) {
+      setAllCrews(result.data);
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron obtener los datos de las cuadrillas.' });
+    }
+  };
+
+  const handleOpenWorkReportModal = async () => {
+    await fetchCrewsForModal();
+    setIsWorkReportModalOpen(true);
+  }
 
   const generatePdf = (title: string, head: any[], body: any[][], filename: string) => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
@@ -137,7 +154,7 @@ export default function ReportesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Reportes Automatizados</h1>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {/* Reporte de Obreros */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -190,14 +207,40 @@ export default function ReportesPage() {
              <CardContent>
                <Button className="w-full" onClick={handleExportCuadrillasPDF} disabled={loading === 'cuadrillas'}>
                 <FileDown className="mr-2 h-4 w-4" />
-                {loading === 'cuadrillas' ? 'Generando...' : 'Exportar a CSV'}
+                {loading === 'cuadrillas' ? 'Generando...' : 'Exportar a PDF'}
+              </Button>
+            </CardContent>
+          </Card>
+          
+          {/* Reporte de Trabajo */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-semibold">Reporte de Trabajo</CardTitle>
+              <ClipboardPlus className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Genera un nuevo reporte de actividad para una cuadrilla específica.
+              </CardDescription>
+            </CardContent>
+             <CardContent>
+               <Button className="w-full" onClick={handleOpenWorkReportModal}>
+                <FileText className="mr-2 h-4 w-4" />
+                Crear Reporte
               </Button>
             </CardContent>
           </Card>
 
         </div>
       </div>
+      
+      <WorkReportModal
+        isOpen={isWorkReportModalOpen}
+        onClose={() => setIsWorkReportModalOpen(false)}
+        crews={allCrews}
+      />
     </>
   );
 }
 
+    
