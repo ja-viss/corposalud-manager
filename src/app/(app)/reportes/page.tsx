@@ -157,12 +157,12 @@ export default function ReportesPage() {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {/* Reporte de Obreros */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="flex flex-col">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-semibold">Reporte de Obreros</CardTitle>
               <Users className="h-6 w-6 text-primary" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <CardDescription>
                 Exporta una lista completa de todos los obreros registrados en la aplicación.
               </CardDescription>
@@ -176,12 +176,12 @@ export default function ReportesPage() {
           </Card>
           
           {/* Reporte de Moderadores */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="flex flex-col">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-semibold">Reporte de Moderadores</CardTitle>
               <Users className="h-6 w-6 text-primary" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <CardDescription>
                 Exporta una lista de todos los moderadores con sus datos personales.
               </CardDescription>
@@ -195,12 +195,12 @@ export default function ReportesPage() {
           </Card>
 
           {/* Reporte de Cuadrillas */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="flex flex-col">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-semibold">Reporte de Cuadrillas</CardTitle>
               <HardHat className="h-6 w-6 text-primary" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <CardDescription>
                 Exporta los detalles, integrantes y actividades de todas las cuadrillas.
               </CardDescription>
@@ -214,27 +214,27 @@ export default function ReportesPage() {
           </Card>
           
           {/* Reporte de Trabajo */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="flex flex-col">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-semibold">Reporte de Trabajo</CardTitle>
               <ClipboardPlus className="h-6 w-6 text-primary" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col flex-1">
               <CardDescription>
                 Genera o visualiza reportes de actividad de las cuadrillas.
               </CardDescription>
-            </CardContent>
-             <CardContent className="flex flex-col sm:flex-row gap-2">
-               <Button className="w-full" onClick={handleOpenWorkReportModal}>
-                <FileText className="mr-2 h-4 w-4" />
-                Crear
-              </Button>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/reportes/trabajo">
-                  <Eye className="mr-2 h-4 w-4" />
-                  Ver Reportes
-                </Link>
-              </Button>
+              <div className="mt-auto flex flex-col sm:flex-row gap-2 pt-4">
+                <Button className="w-full" onClick={handleOpenWorkReportModal}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Crear
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                    <Link href="/reportes/trabajo">
+                    <Eye className="mr-2 h-4 w-4" />
+                    Ver Reportes
+                    </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
