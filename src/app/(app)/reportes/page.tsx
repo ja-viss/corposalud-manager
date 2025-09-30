@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -47,7 +46,8 @@ export default function ReportesPage() {
   };
   
   const handleReportSaved = () => {
-    router.refresh();
+    // This will re-fetch server components on the target page
+    router.push('/reportes/trabajo?refresh=true');
   };
 
   const handleOpenWorkReportModal = async () => {
@@ -158,10 +158,50 @@ export default function ReportesPage() {
     <>
       <div className="space-y-8 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">Reportes Automatizados</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Centro de Reportes</h1>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {/* Tarjeta para Crear Reporte de Trabajo */}
+          <Card className="flex flex-col lg:col-span-1">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-semibold">Nuevo Reporte de Trabajo</CardTitle>
+              <ClipboardPlus className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent className="flex flex-col flex-1">
+              <CardDescription>
+                Genera un nuevo reporte de actividad para una cuadrilla.
+              </CardDescription>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" onClick={handleOpenWorkReportModal}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Crear Reporte
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Tarjeta para Ver Historial de Reportes */}
+          <Card className="flex flex-col lg:col-span-1">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-semibold">Historial de Reportes</CardTitle>
+              <HardHat className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent className="flex flex-col flex-1">
+              <CardDescription>
+                Consulta, filtra y exporta todos los reportes de trabajo guardados.
+              </CardDescription>
+              <div className="mt-auto pt-4">
+                <Button className="w-full" asChild>
+                    <Link href="/reportes/trabajo">
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Historial
+                    </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Reporte de Obreros */}
           <Card className="flex flex-col">
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
@@ -170,13 +210,13 @@ export default function ReportesPage() {
             </CardHeader>
             <CardContent className="flex-1">
               <CardDescription>
-                Exporta una lista completa de todos los obreros registrados en la aplicación.
+                Exporta una lista completa de todos los obreros registrados.
               </CardDescription>
             </CardContent>
             <CardContent>
                <Button className="w-full" onClick={handleExportObrerosPDF} disabled={loading === 'obreros'}>
                 <FileDown className="mr-2 h-4 w-4" />
-                {loading === 'obreros' ? 'Generando...' : 'Exportar a PDF'}
+                {loading === 'obreros' ? 'Generando...' : 'Exportar PDF'}
               </Button>
             </CardContent>
           </Card>
@@ -189,55 +229,16 @@ export default function ReportesPage() {
             </CardHeader>
             <CardContent className="flex-1">
               <CardDescription>
-                Exporta una lista de todos los moderadores con sus datos personales.
+                Exporta una lista de todos los moderadores con sus datos.
               </CardDescription>
             </CardContent>
              <CardContent>
                <Button className="w-full" onClick={handleExportModeradoresPDF} disabled={loading === 'moderadores'}>
                 <FileDown className="mr-2 h-4 w-4" />
-                {loading === 'moderadores' ? 'Generando...' : 'Exportar a PDF'}
+                {loading === 'moderadores' ? 'Generando...' : 'Exportar PDF'}
               </Button>
             </CardContent>
           </Card>
-
-          {/* Reporte de Cuadrillas */}
-          <Card className="flex flex-col">
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-semibold">Reporte de Cuadrillas</CardTitle>
-              <HardHat className="h-6 w-6 text-primary" />
-            </CardHeader>
-            <CardContent className="flex-1">
-              <CardDescription>
-                Exporta los detalles, integrantes y actividades de todas las cuadrillas.
-              </CardDescription>
-            </CardContent>
-             <CardContent>
-               <Button className="w-full" onClick={handleExportCuadrillasPDF} disabled={loading === 'cuadrillas'}>
-                <FileDown className="mr-2 h-4 w-4" />
-                {loading === 'cuadrillas' ? 'Generando...' : 'Exportar a PDF'}
-              </Button>
-            </CardContent>
-          </Card>
-          
-          {/* Reporte de Trabajo */}
-          <Card className="flex flex-col">
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-semibold">Reporte de Trabajo</CardTitle>
-              <ClipboardPlus className="h-6 w-6 text-primary" />
-            </CardHeader>
-            <CardContent className="flex flex-col flex-1">
-              <CardDescription>
-                Genera un nuevo reporte de actividad de las cuadrillas.
-              </CardDescription>
-              <div className="mt-auto pt-4">
-                <Button className="w-full" onClick={handleOpenWorkReportModal}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Crear Reporte
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
         </div>
       </div>
       
