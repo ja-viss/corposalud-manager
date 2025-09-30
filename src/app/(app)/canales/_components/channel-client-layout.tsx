@@ -15,12 +15,6 @@ import { ChatView } from './chat-view';
 import { ChannelList } from './channel-list';
 import { CreateChannelModal } from './create-channel-modal';
 
-interface ChannelClientLayoutProps {
-  channels: Channel[];
-  allUsers: UserType[];
-  currentUser: UserType;
-}
-
 const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers: UserType[]) => {
     if (channel.type !== 'DIRECT') return channel.nombre;
     const otherMemberId = channel.members.find(id => id !== currentUserId);

@@ -612,10 +612,8 @@ export async function createDirectChannel(userId1: string, userId2: string) {
             return { success: true, data: safeSerialize(existingChannel), message: "El canal directo ya existe." };
         }
         
-        const channelNameForUser1 = `Conversación con ${user2.nombre} ${user2.apellido}`;
-        
         const newChannel = new Channel({
-            nombre: channelNameForUser1,
+            nombre: `Conversación Directa`,
             type: 'DIRECT',
             members: [user1._id, user2._id],
             isDeletable: true,
