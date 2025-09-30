@@ -15,7 +15,7 @@ const allNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home, roles: ['Admin', 'Moderador', 'Obrero'] },
   { href: "/personal/usuarios", label: "Usuarios", icon: Users, roles: ['Admin', 'Moderador'] },
   { href: "/personal/cuadrillas", label: "Cuadrillas", icon: HardHat, roles: ['Admin', 'Moderador'] },
-  { href: "/reportes", label: "Reportes", icon: ClipboardList, roles: ['Admin', 'Moderador', 'Obrero'] },
+  { href: "/reportes", label: "Reportes", icon: ClipboardList, roles: ['Admin', 'Moderador'] },
   { href: "/canales", label: "Canales", icon: MessageSquare, roles: ['Admin', 'Moderador', 'Obrero'] },
   { href: "/bitacora", label: "Bitácora", icon: BookText, roles: ['Admin'] },
 ];
