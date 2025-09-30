@@ -11,11 +11,10 @@ import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Crew from "@/models/Crew";
 import { getActivityLogs, getUserById } from "@/app/actions";
-import type { ActivityLog, Crew as CrewType } from "@/lib/types";
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import type { Crew as CrewType } from "@/lib/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { RecentActivity } from "./_components/recent-activity";
 
 
 async function getAdminDashboardStats() {
@@ -45,41 +44,6 @@ async function getObreroDashboardStats(userId: string) {
     return {
         userCrews: JSON.parse(JSON.stringify(userCrews)) as CrewType[],
     }
-}
-
-
-const iconMap: { [key: string]: React.ReactNode } = {
-  'user-creation': <UserCheck className="h-5 w-5" />,
-  'user-login': <LogIn className="h-5 w-5" />,
-  'worker-login': <LogIn className="h-5 w-5" />,
-  'user-deletion': <UserX className="h-5 w-5" />,
-  'db-connection': <Activity className="h-5 w-5" />,
-  'report-generation': <FileText className="h-5 w-5" />,
-  'crew-creation': <PlusCircle className="h-5 w-5" />,
-  default: <Activity className="h-5 w-5" />,
-};
-
-function getLogIcon(action: string) {
-    const actionPrefix = action.split(':')[0];
-    return iconMap[actionPrefix] || iconMap.default;
-}
-
-function formatLogMessage(log: ActivityLog): string {
-  const [actionPrefix, actionDetail] = log.action.split(':');
-  switch (actionPrefix) {
-    case 'user-creation':
-      return `Nuevo usuario creado: ${actionDetail || 'N/A'}`;
-    case 'user-login':
-      return `Usuario "${actionDetail || 'N/A'}" ha iniciado sesión.`;
-    case 'worker-login':
-        return `Obrero con cédula "${actionDetail || 'N/A'}" ha iniciado sesión.`;
-    case 'user-deletion':
-      return `Usuario con ID "${actionDetail || 'N/A'}" ha sido eliminado.`;
-    case 'db-connection':
-      return 'Aplicación conectada a la base de datos.';
-    default:
-      return log.action;
-  }
 }
 
 async function getCurrentUser() {
@@ -211,34 +175,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-       <Card>
-        <CardHeader>
-          <CardTitle>Actividad Reciente</CardTitle>
-          <CardDescription>Un resumen de las últimas acciones en el sistema.</CardDescription>
-        </CardHeader>
-        <CardContent>
-           <div className="space-y-6">
-            {stats.recentActivity && stats.recentActivity.length > 0 ? (
-              stats.recentActivity.map(log => (
-                 <div className="flex items-start" key={log.id}>
-                  <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary mr-4">
-                    {getLogIcon(log.action)}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{formatLogMessage(log)}</p>
-                    <p className="text-sm text-muted-foreground">
-                       Realizado por: {log.realizadoPor} - {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No hay actividad registrada todavía.</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <RecentActivity recentActivity={stats.recentActivity ?? []} />
     </div>
   );
 }
