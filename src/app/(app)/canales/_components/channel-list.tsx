@@ -38,10 +38,10 @@ const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers:
 
 export function ChannelList({ channels, selectedChannel, onSelectChannel, loading, currentUser, allUsers }: ChannelListProps) {
   const channelGroups = {
+    directos: channels.filter(c => c.type === 'DIRECT'),
+    grupos: channels.filter(c => c.type === 'GROUP'),
     general: channels.filter(c => c.type === 'GENERAL' || c.type === 'ROLE'),
     cuadrillas: channels.filter(c => c.type === 'CREW'),
-    grupos: channels.filter(c => c.type === 'GROUP'),
-    directos: channels.filter(c => c.type === 'DIRECT'),
   };
 
   return (
