@@ -62,130 +62,135 @@ export function PerfilClientPage({ user, crews }: PerfilPageProps) {
 
   const userInitials = user ? `${user.nombre.charAt(0)}${user.apellido.charAt(0)}` : "U";
   const isWorkerOrModerator = user.role === 'Obrero' || user.role === 'Moderador';
+  const isAdmin = user.role === 'Admin';
 
   return (
     <div className="space-y-8 py-8">
         <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
-        <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-1 flex flex-col gap-8">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Cambiar Contraseña</CardTitle>
-                        <CardDescription>Actualice su contraseña para mantener su cuenta segura.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                <FormField control={form.control} name="currentPassword" render={({ field }) => (
-                                    <FormItem className="relative">
-                                        <FormLabel>Contraseña Actual</FormLabel>
-                                        <FormControl>
-                                            <Input type={showCurrentPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
-                                        </FormControl>
-                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowCurrentPassword(p => !p)}>
-                                            {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </Button>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                 <FormField control={form.control} name="newPassword" render={({ field }) => (
-                                    <FormItem className="relative">
-                                        <FormLabel>Nueva Contraseña</FormLabel>
-                                        <FormControl>
-                                            <Input type={showNewPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
-                                        </FormControl>
-                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowNewPassword(p => !p)}>
-                                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </Button>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-                                    <FormItem className="relative">
-                                        <FormLabel>Confirmar Contraseña</FormLabel>
-                                        <FormControl>
-                                            <Input type={showConfirmPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
-                                        </FormControl>
-                                         <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowConfirmPassword(p => !p)}>
-                                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </Button>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <Button type="submit" disabled={isLoading}>
-                                    {isLoading ? 'Guardando...' : 'Guardar Cambios'}
-                                </Button>
-                            </form>
-                        </Form>
-                    </CardContent>
-                </Card>
-                 {isWorkerOrModerator && (
+        <div className={`grid gap-8 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-1'}`}>
+            {isAdmin && (
+                <div className="md:col-span-1">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Mis Cuadrillas</CardTitle>
-                            <CardDescription>Las cuadrillas a las que estás asignado actualmente.</CardDescription>
+                            <CardTitle>Cambiar Contraseña</CardTitle>
+                            <CardDescription>Actualice su contraseña para mantener su cuenta segura.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {crews.length > 0 ? (
-                                <ul className="space-y-3">
-                                    {crews.map(crew => (
-                                        <li key={crew.id} className="flex items-center gap-3 text-sm font-medium">
-                                            <HardHat className="h-5 w-5 text-primary" />
-                                            <span>{crew.nombre}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-sm text-muted-foreground">Aún no has sido asignado a ninguna cuadrilla.</p>
-                            )}
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <FormField control={form.control} name="currentPassword" render={({ field }) => (
+                                        <FormItem className="relative">
+                                            <FormLabel>Contraseña Actual</FormLabel>
+                                            <FormControl>
+                                                <Input type={showCurrentPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowCurrentPassword(p => !p)}>
+                                                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </Button>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="newPassword" render={({ field }) => (
+                                        <FormItem className="relative">
+                                            <FormLabel>Nueva Contraseña</FormLabel>
+                                            <FormControl>
+                                                <Input type={showNewPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowNewPassword(p => !p)}>
+                                                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </Button>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                                        <FormItem className="relative">
+                                            <FormLabel>Confirmar Contraseña</FormLabel>
+                                            <FormControl>
+                                                <Input type={showConfirmPassword ? "text" : "password"} {...field} disabled={isLoading} className="pr-10" />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-7 h-7 w-7 text-muted-foreground" onClick={() => setShowConfirmPassword(p => !p)}>
+                                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </Button>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <Button type="submit" disabled={isLoading}>
+                                        {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+                                    </Button>
+                                </form>
+                            </Form>
                         </CardContent>
                     </Card>
-                )}
-            </div>
-             <div className="md:col-span-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Información Personal</CardTitle>
-                        <CardDescription>Estos son sus datos personales. No pueden ser editados desde esta pantalla.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center space-x-4">
-                            <Avatar className="h-20 w-20">
-                              <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-1">
-                                <h2 className="text-2xl font-semibold">{user.nombre} {user.apellido}</h2>
-                                <p className="text-muted-foreground">{user.email}</p>
+                </div>
+            )}
+             <div className={`${isAdmin ? 'md:col-span-2' : 'md:col-span-1'}`}>
+                <div className="flex flex-col gap-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Información Personal</CardTitle>
+                            <CardDescription>Estos son sus datos personales. No pueden ser editados desde esta pantalla.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-center space-x-4">
+                                <Avatar className="h-20 w-20">
+                                <AvatarFallback className="text-3xl">{userInitials}</AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-1">
+                                    <h2 className="text-2xl font-semibold">{user.nombre} {user.apellido}</h2>
+                                    <p className="text-muted-foreground">{user.email}</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <Separator />
+                            <Separator />
 
-                        <div className="grid gap-6 md:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="nombre">Nombre</Label>
-                                <Input id="nombre" value={user.nombre} readOnly />
+                            <div className="grid gap-6 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="nombre">Nombre</Label>
+                                    <Input id="nombre" value={user.nombre} readOnly />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="apellido">Apellido</Label>
+                                    <Input id="apellido" value={user.apellido} readOnly />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="cedula">Cédula</Label>
+                                    <Input id="cedula" value={user.cedula} readOnly />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="telefono">Teléfono</Label>
+                                    <Input id="telefono" value={user.telefono} readOnly />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="role">Rol</Label>
+                                    <Input id="role" value={user.role} readOnly />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="apellido">Apellido</Label>
-                                <Input id="apellido" value={user.apellido} readOnly />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="cedula">Cédula</Label>
-                                <Input id="cedula" value={user.cedula} readOnly />
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="telefono">Teléfono</Label>
-                                <Input id="telefono" value={user.telefono} readOnly />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="role">Rol</Label>
-                                <Input id="role" value={user.role} readOnly />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                    {isWorkerOrModerator && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Mis Cuadrillas</CardTitle>
+                                <CardDescription>Las cuadrillas a las que estás asignado actualmente.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {crews.length > 0 ? (
+                                    <ul className="space-y-3">
+                                        {crews.map(crew => (
+                                            <li key={crew.id} className="flex items-center gap-3 text-sm font-medium">
+                                                <HardHat className="h-5 w-5 text-primary" />
+                                                <span>{crew.nombre}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">Aún no has sido asignado a ninguna cuadrilla.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
             </div>
         </div>
     </div>
