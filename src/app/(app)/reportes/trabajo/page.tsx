@@ -1,5 +1,6 @@
+
 import { getWorkReports } from '@/app/actions';
-import { WorkReportList } from './_components/work-report-list';
+import { WorkReportList } from '@/app/(app)/reportes/trabajo/_components/work-report-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, ClipboardPlus } from 'lucide-react';
