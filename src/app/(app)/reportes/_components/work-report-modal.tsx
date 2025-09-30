@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
-import { createWorkReport, getCrewById } from "@/app/actions";
+import { createWorkReport, getCrewById, updateWorkReport } from "@/app/actions";
 import type { Crew, PopulatedWorkReport, ToolEntry } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle, Users, FileText } from 'lucide-react';
@@ -32,10 +32,12 @@ interface WorkReportModalProps {
     isOpen: boolean;
     onClose: () => void;
     crews: Crew[];
+    report?: PopulatedWorkReport | null; // Add report prop for editing
+    onReportSaved: () => void;
 }
 
 const toolEntrySchema = z.object({
-    nombre: z.string().min(1, "El nombre es requerido."),
+    nombre: z.string().min(1, "El nombre es requerido.").optional().or(z.literal('')),
     cantidad: z.coerce.number().min(0, "La cantidad no puede ser negativa.").default(0),
 });
 
@@ -44,11 +46,12 @@ const formSchema = z.object({
     municipio: z.string().min(3, "El municipio es requerido."),
     distancia: z.coerce.number().min(0, "La distancia no puede ser negativa."),
     comentarios: z.string().min(10, "Los comentarios son requeridos."),
-    herramientasUtilizadas: z.array(toolEntrySchema).min(1, "Debe agregar al menos una herramienta utilizada."),
+    herramientasUtilizadas: z.array(toolEntrySchema).optional(),
     herramientasDanadas: z.array(toolEntrySchema).optional(),
     herramientasExtraviadas: z.array(toolEntrySchema).optional(),
 }).refine((data) => {
     // For each used tool, check if the sum of damaged and lost tools exceeds the used quantity.
+    if (!data.herramientasUtilizadas) return true;
     for (let i = 0; i < data.herramientasUtilizadas.length; i++) {
         const utilizada = data.herramientasUtilizadas[i];
         if (!utilizada.nombre) continue; // Skip validation for empty tool names
@@ -63,10 +66,7 @@ const formSchema = z.object({
     return true;
 }, {
     message: "La suma de herramientas dañadas y extraviadas no puede superar el total de utilizadas.",
-    // We can't point to a specific field easily in this complex check,
-    // so a general message will appear or we can handle it in the component.
-    // For now, let's add a more targeted check inside the component logic.
-    path: ["herramientasDanadas"], // Arbitrary path for general error display
+    path: ["herramientasDanadas"], 
 });
 
 
@@ -82,10 +82,12 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   return [255 * f(0), 255 * f(8), 255 * f(4)];
 }
 
-export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps) {
+export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved }: WorkReportModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+    const isEditing = !!report;
+
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -103,24 +105,45 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
     const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove } = useFieldArray({
         control: form.control, name: "herramientasUtilizadas",
     });
-    const { fields: danadasFields, append: danadasAppend, remove: danadasRemove } = useFieldArray({
+    const { fields: danadasFields } = useFieldArray({
         control: form.control, name: "herramientasDanadas",
     });
-    const { fields: extraviadasFields, append: extraviadasAppend, remove: extraviadasRemove } = useFieldArray({
+    const { fields: extraviadasFields } = useFieldArray({
         control: form.control, name: "herramientasExtraviadas",
     });
 
     const herramientasUtilizadasValues = form.watch('herramientasUtilizadas');
     const crewIdWatcher = form.watch('crewId');
 
+     useEffect(() => {
+        const crewToSet = isEditing ? (report?.crewId as Crew) : crews.find(c => c.id === crewIdWatcher);
+        setSelectedCrew(crewToSet || null);
+    }, [crewIdWatcher, crews, isEditing, report]);
+
+
     useEffect(() => {
-        if (crewIdWatcher) {
-            const crew = crews.find(c => c.id === crewIdWatcher) || null;
-            setSelectedCrew(crew);
+        if (isEditing && report) {
+            form.reset({
+                crewId: (report.crewId as Crew)?.id || '',
+                municipio: report.municipio,
+                distancia: report.distancia,
+                comentarios: report.comentarios,
+                herramientasUtilizadas: report.herramientasUtilizadas,
+                herramientasDanadas: report.herramientasDanadas,
+                herramientasExtraviadas: report.herramientasExtraviadas,
+            });
         } else {
-            setSelectedCrew(null);
+             form.reset({
+                crewId: "",
+                municipio: "",
+                distancia: 0,
+                comentarios: "",
+                herramientasUtilizadas: [{ nombre: "", cantidad: 0 }],
+                herramientasDanadas: [],
+                herramientasExtraviadas: [],
+            });
         }
-    }, [crewIdWatcher, crews]);
+    }, [isEditing, report, form]);
     
      // Sync logic for tool arrays
     useEffect(() => {
@@ -166,19 +189,28 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
     };
 
 
-    const generatePdf = (report: PopulatedWorkReport) => {
-        // ... (PDF generation logic remains the same)
-    };
-
     async function onSubmit(values: FormValues) {
         setIsLoading(true);
-        const result = await createWorkReport(values);
 
-        if (result.success && result.data) {
-            toast({ title: "Éxito", description: "Reporte creado. Descargando PDF..." });
-            // generatePdf(result.data); // PDF generation logic can be re-enabled if needed
-            form.reset();
-            onClose();
+        const finalValues = {
+            ...values,
+            herramientasUtilizadas: values.herramientasUtilizadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
+            herramientasDanadas: values.herramientasDanadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
+            herramientasExtraviadas: values.herramientasExtraviadas?.filter(t => t.nombre && t.nombre.trim() !== ''),
+        };
+
+
+        let result;
+        if (isEditing && report) {
+            result = await updateWorkReport(report.id, finalValues);
+        } else {
+            result = await createWorkReport(finalValues);
+        }
+
+        if (result.success) {
+            toast({ title: "Éxito", description: result.message });
+            onReportSaved();
+            handleClose();
         } else {
             toast({ variant: "destructive", title: "Error", description: result.message });
         }
@@ -199,8 +231,10 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Crear Reporte de Trabajo</DialogTitle>
-                    <DialogDescription>Complete los detalles de la actividad realizada por la cuadrilla.</DialogDescription>
+                    <DialogTitle>{isEditing ? 'Editar Reporte de Trabajo' : 'Crear Reporte de Trabajo'}</DialogTitle>
+                    <DialogDescription>
+                        {isEditing ? 'Actualice los detalles de la actividad.' : 'Complete los detalles de la actividad realizada por la cuadrilla.'}
+                    </DialogDescription>
                 </DialogHeader>
                 
                 <Form {...form}>
@@ -212,7 +246,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                 <FormField control={form.control} name="crewId" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Cuadrilla</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={isEditing}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una cuadrilla" /></SelectTrigger></FormControl>
                                             <SelectContent>{crews.map(crew => (<SelectItem key={crew.id} value={crew.id}>{crew.nombre}</SelectItem>))}</SelectContent>
                                         </Select>
@@ -326,7 +360,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                         <DialogFooter className="pt-6">
                             <DialogClose asChild><Button type="button" variant="secondary" disabled={isLoading}>Cancelar</Button></DialogClose>
                             <Button type="submit" disabled={isLoading}>
-                                {isLoading ? 'Guardando...' : 'Guardar y Exportar PDF'}
+                                {isLoading ? (isEditing ? 'Guardando...' : 'Creando...') : (isEditing ? 'Guardar Cambios' : 'Crear Reporte')}
                             </Button>
                         </DialogFooter>
                     </form>
