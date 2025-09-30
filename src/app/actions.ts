@@ -57,7 +57,7 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
         }
         
         // Start with a filter to exclude the current user
-        let queryFilter: any = { _id: { $ne: new mongoose.Types.ObjectId(currentUser.id) } };
+        const queryFilter: any = { _id: { $ne: new mongoose.Types.ObjectId(currentUser.id) } };
 
 
         if (filter.role) {
@@ -921,5 +921,3 @@ export async function getAdminDashboardStats() {
     ],
   };
 }
-
-    

@@ -42,6 +42,3 @@ export default async function UsuariosPage() {
     </div>
     );
 }
-
-
-    
