@@ -3,15 +3,17 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { PopulatedWorkReport, PopulatedCrew, ToolEntry } from "@/lib/types";
+import type { PopulatedWorkReport, ToolEntry } from "@/lib/types";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { FileDown, Building, Calendar, QrCode } from "lucide-react";
+import { FileDown, QrCode, HardHat, MapPin, Calendar, Wrench, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import QRCode from "react-qr-code";
+import { Badge } from "@/components/ui/badge";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -21,6 +23,7 @@ interface WorkReportsListProps {
   reports: PopulatedWorkReport[];
 }
 
+// HSL to RGB conversion function for PDF header styling
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   s /= 100;
   l /= 100;
@@ -33,7 +36,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 const formatToolsForQR = (title: string, tools: ToolEntry[] | undefined) => {
     if (!tools || tools.filter(t => t.cantidad > 0).length === 0) return '';
-    const header = `--- ${title} ---\n`;
+    const header = `--- ${title.toUpperCase()} ---\n`;
     const toolLines = tools
         .filter(t => t.cantidad > 0)
         .map(t => `${t.nombre}: ${t.cantidad}`)
@@ -44,7 +47,7 @@ const formatToolsForQR = (title: string, tools: ToolEntry[] | undefined) => {
 const generateReportQRString = (report: PopulatedWorkReport | null): string => {
     if (!report) return "Información no disponible.";
 
-    const crew = report.crewId as PopulatedCrew | null;
+    const crew = report.crewId;
     const moderators = crew ? crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ') : 'N/A';
     const workers = crew ? crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join(', ') : 'N/A';
 
@@ -59,11 +62,9 @@ Municipio: ${report.municipio}
 Distancia (m): ${report.distancia}
 Comentarios: ${report.comentarios}
 
-=== ESTADO DE HERRAMIENTAS ===
-${formatToolsForQR('Utilizadas', report.herramientasUtilizadas)}
-${formatToolsForQR('Dañadas', report.herramientasDanadas)}
-${formatToolsForQR('Extraviadas', report.herramientasExtraviadas)}
-
+${formatToolsForQR('Herramientas Utilizadas', report.herramientasUtilizadas)}
+${formatToolsForQR('Herramientas Dañadas', report.herramientasDanadas)}
+${formatToolsForQR('Herramientas Extraviadas', report.herramientasExtraviadas)}
 === PERSONAL ASIGNADO ===
 --- Moderadores ---
 ${moderators}
@@ -73,14 +74,45 @@ ${workers}
     `.trim().replace(/(\n\s*\n)+/g, '\n\n'); 
 };
 
+function ToolsTable({ title, tools, variant }: { title: string, tools?: ToolEntry[], variant?: "default" | "secondary" | "destructive" | "outline" | null }) {
+    const filteredTools = tools?.filter(tool => tool.cantidad > 0);
+
+    if (!filteredTools || filteredTools.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center gap-2">
+                <Wrench className="h-4 w-4 text-muted-foreground" />
+                <h4 className="font-semibold text-sm">{title}</h4>
+                <Badge variant={variant ?? "secondary"}>{filteredTools.length}</Badge>
+            </div>
+            <div className="border rounded-md">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Herramienta</TableHead>
+                            <TableHead className="text-right">Cantidad</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredTools.map((tool, index) => (
+                            <TableRow key={index}>
+                                <TableCell className="font-medium">{tool.nombre}</TableCell>
+                                <TableCell className="text-right">{tool.cantidad}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+    );
+}
+
 
 export function WorkReportsList({ reports }: WorkReportsListProps) {
-  const [isClient, setIsClient] = useState(false);
   const [selectedReport, setSelectedReport] = useState<PopulatedWorkReport | null>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const handleOpenQRModal = (report: PopulatedWorkReport) => {
     setSelectedReport(report);
@@ -92,20 +124,23 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
 
   const handleExportPDF = () => {
     const doc = new jsPDF() as jsPDFWithAutoTable;
-
     const primaryColorH = 173; 
     const headerColor = hslToRgb(primaryColorH, 80, 30);
 
     doc.text("Historial de Reportes de Trabajo", 14, 15);
-    doc.autoTable({
-      startY: 20,
-      head: [['Cuadrilla', 'Municipio', 'Distancia (m)', 'Fecha']],
-      body: reports.map(report => [
+    
+    const body = reports.map(report => [
         report.crewId?.nombre ?? 'N/A',
         report.municipio,
         report.distancia,
-        format(new Date(report.fecha), "dd/MM/yyyy")
-      ]),
+        format(new Date(report.fecha), "dd/MM/yyyy"),
+        report.comentarios
+    ]);
+
+    doc.autoTable({
+      startY: 20,
+      head: [['Cuadrilla', 'Municipio', 'Distancia (m)', 'Fecha', 'Comentarios']],
+      body: body,
       headStyles: {
         fillColor: headerColor,
         textColor: [255, 255, 255],
@@ -114,11 +149,14 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
       alternateRowStyles: { fillColor: [240, 240, 240] },
       styles: {
         cellPadding: 3,
-        fontSize: 10,
+        fontSize: 8,
         valign: 'middle',
         overflow: 'linebreak',
         halign: 'left',
       },
+      columnStyles: {
+          4: { cellWidth: 60 } // Comments column
+      }
     });
     doc.save('historial-reportes-trabajo.pdf');
   };
@@ -138,76 +176,67 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
             </Button>
         </div>
 
-        {/* Desktop Table View */}
-        <div className="hidden md:block border rounded-lg">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Cuadrilla</TableHead>
-                        <TableHead>Municipio</TableHead>
-                        <TableHead>Distancia (m)</TableHead>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead className="text-center">Info. Reporte (QR)</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {reports.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
-                            No hay reportes de trabajo registrados.
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        reports.map((report) => (
-                            <TableRow key={report.id}>
-                                <TableCell className="font-medium">{report.crewId?.nombre ?? 'N/A'}</TableCell>
-                                <TableCell>{report.municipio}</TableCell>
-                                <TableCell>{report.distancia}</TableCell>
-                                <TableCell>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</TableCell>
-                                <TableCell className="text-center">
-                                  {report.crewId && (
-                                    <Button variant="ghost" size="icon" onClick={() => handleOpenQRModal(report)}>
-                                        <QrCode className="h-5 w-5" />
-                                    </Button>
-                                  )}
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
-        </div>
+        {reports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center text-muted-foreground border-dashed border-2 rounded-lg p-12">
+                <HardHat className="h-12 w-12 mb-4" />
+                <h3 className="text-lg font-semibold">No hay reportes de trabajo</h3>
+                <p>Cuando se cree un reporte, aparecerá aquí.</p>
+            </div>
+        ) : (
+            <Accordion type="single" collapsible className="w-full space-y-4">
+            {reports.map((report) => (
+                <AccordionItem value={report.id} key={report.id} className="border bg-card rounded-lg shadow-sm">
+                    <AccordionTrigger className="p-4 hover:no-underline">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full text-left gap-2 sm:gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-md">
+                                    <HardHat className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-base">{report.crewId?.nombre ?? 'N/A'}</h3>
+                                    <p className="text-sm text-muted-foreground">{report.municipio}</p>
+                                </div>
+                            </div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-2 pl-11 sm:pl-0">
+                                <Calendar className="h-4 w-4" />
+                                {format(new Date(report.fecha), "dd MMM yyyy", { locale: es })}
+                            </div>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="p-4 pt-0">
+                       <div className="space-y-6">
+                           {/* Job Details */}
+                           <div className="space-y-2">
+                               <div className="flex items-center gap-2">
+                                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                   <h4 className="font-semibold text-sm">Detalles de la Actividad</h4>
+                               </div>
+                                <p className="text-sm text-muted-foreground pl-6 border-l-2 ml-2">
+                                    <span className="font-medium text-foreground">Distancia: {report.distancia}m.</span><br/>
+                                    {report.comentarios}
+                                </p>
+                           </div>
 
-        {/* Mobile Card View */}
-        <div className="grid gap-4 md:hidden">
-            {reports.length === 0 ? (
-                <p className="text-center text-muted-foreground">No hay reportes de trabajo registrados.</p>
-            ) : (
-                reports.map(report => (
-                    <div key={report.id} className="p-4 space-y-3 border bg-card text-card-foreground shadow-sm rounded-lg">
-                        <div className="flex justify-between items-start">
-                            <h3 className="font-bold">{report.crewId?.nombre ?? 'N/A'}</h3>
-                            {report.crewId && (
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenQRModal(report)}>
-                                    <QrCode className="h-5 w-5" />
-                                </Button>
-                            )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{report.municipio}</p>
-                        <div className="text-sm space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Building className="h-4 w-4 text-muted-foreground" />
-                                <span>Distancia: {report.distancia}m</span>
+                            {/* Tools Tables */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                <ToolsTable title="Utilizadas" tools={report.herramientasUtilizadas} variant="secondary" />
+                                <ToolsTable title="Dañadas" tools={report.herramientasDanadas} variant="destructive"/>
+                                <ToolsTable title="Extraviadas" tools={report.herramientasExtraviadas} variant="outline" />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <span>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</span>
-                            </div>
-                        </div>
-                    </div>
-                ))
-            )}
-        </div>
+
+                           {/* QR Code Button */}
+                           <div className="flex justify-end pt-4">
+                               <Button variant="outline" size="sm" onClick={() => handleOpenQRModal(report)}>
+                                   <QrCode className="mr-2 h-4 w-4" />
+                                   Ver QR de Reporte Completo
+                               </Button>
+                           </div>
+                       </div>
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
+        )}
         
         {/* QR Code Modal */}
         <Dialog open={!!selectedReport} onOpenChange={(isOpen) => !isOpen && handleCloseQRModal()}>
@@ -216,7 +245,7 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
                     <DialogTitle>Reporte: {selectedReport?.crewId?.nombre}</DialogTitle>
                     <DialogDescription>Escanee el código para ver todos los detalles del reporte.</DialogDescription>
                 </DialogHeader>
-                <div className="flex items-center justify-center p-4 bg-white rounded-lg">
+                <div className="flex items-center justify-center p-4 bg-white rounded-lg my-4">
                    <QRCode
                         size={256}
                         style={{ height: "auto", maxWidth: "100%", width: "100%" }}
@@ -229,3 +258,4 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
     </div>
   );
 }
+
