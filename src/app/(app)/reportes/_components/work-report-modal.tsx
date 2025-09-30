@@ -49,24 +49,30 @@ const formSchema = z.object({
     herramientasUtilizadas: z.array(toolEntrySchema).optional(),
     herramientasDanadas: z.array(toolEntrySchema).optional(),
     herramientasExtraviadas: z.array(toolEntrySchema).optional(),
-}).refine((data) => {
-    // For each used tool, check if the sum of damaged and lost tools exceeds the used quantity.
-    if (!data.herramientasUtilizadas) return true;
+}).superRefine((data, ctx) => {
+    if (!data.herramientasUtilizadas) return;
+
     for (let i = 0; i < data.herramientasUtilizadas.length; i++) {
         const utilizada = data.herramientasUtilizadas[i];
-        if (!utilizada.nombre) continue; // Skip validation for empty tool names
+        if (!utilizada || !utilizada.nombre) continue;
 
         const danada = data.herramientasDanadas?.[i]?.cantidad ?? 0;
         const extraviada = data.herramientasExtraviadas?.[i]?.cantidad ?? 0;
-        
+
         if (danada + extraviada > utilizada.cantidad) {
-            return false;
+             const message = `La suma de dañadas (${danada}) y extraviadas (${extraviada}) no puede superar el total (${utilizada.cantidad}).`;
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [`herramientasDanadas`, `${i}`, `cantidad`],
+                message: message,
+            });
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: [`herramientasExtraviadas`, `${i}`, `cantidad`],
+                message: message,
+            });
         }
     }
-    return true;
-}, {
-    message: "La suma de herramientas dañadas y extraviadas no puede superar el total de utilizadas.",
-    path: ["herramientasDanadas"], 
 });
 
 
@@ -172,16 +178,12 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
         const utilizadas = form.getValues(`herramientasUtilizadas.${index}.cantidad`) || 0;
         const danadas = form.getValues(`herramientasDanadas.${index}.cantidad`) || 0;
         const extraviadas = form.getValues(`herramientasExtraviadas.${index}.cantidad`) || 0;
+        
+        const message = `La suma de dañadas (${danadas}) y extraviadas (${extraviadas}) no puede superar el total (${utilizadas}).`;
 
         if (danadas + extraviadas > utilizadas) {
-            form.setError(`herramientasDanadas.${index}.cantidad`, {
-                type: 'manual',
-                message: `La suma de dañadas (${danadas}) y extraviadas (${extraviadas}) no puede superar el total (${utilizadas}).`
-            });
-             form.setError(`herramientasExtraviadas.${index}.cantidad`, {
-                type: 'manual',
-                message: `La suma de dañadas (${danadas}) y extraviadas (${extraviadas}) no puede superar el total (${utilizadas}).`
-            });
+            form.setError(`herramientasDanadas.${index}.cantidad`, { type: 'manual', message });
+            form.setError(`herramientasExtraviadas.${index}.cantidad`, { type: 'manual', message });
         } else {
             form.clearErrors(`herramientasDanadas.${index}.cantidad`);
             form.clearErrors(`herramientasExtraviadas.${index}.cantidad`);
