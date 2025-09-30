@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Paperclip, Send, Trash2, MoreVertical } from 'lucide-react';
+import { Paperclip, Send, Trash2, MoreVertical, UserPlus, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,8 +14,9 @@ import type { PopulatedMessage, Channel, User } from '@/lib/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
+import { ManageGroupMembersModal } from './manage-group-members-modal';
 
 
 interface ChatViewProps {
@@ -23,6 +24,7 @@ interface ChatViewProps {
   currentUser: User | null;
   allUsers: User[];
   onChannelDeleted: () => void;
+  onChannelUpdated: () => void;
 }
 
 const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers: User[]) => {
@@ -33,12 +35,13 @@ const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers:
     return otherUser ? `${otherUser.nombre} ${otherUser.apellido}` : "Usuario Eliminado";
 }
 
-export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: ChatViewProps) {
+export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onChannelUpdated }: ChatViewProps) {
   const [messages, setMessages] = useState<PopulatedMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<PopulatedMessage | null>(null);
   const [showDeleteChannelConfirm, setShowDeleteChannelConfirm] = useState<Channel | null>(null);
+  const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -106,6 +109,11 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
       setShowDeleteChannelConfirm(null);
     }
   };
+  
+  const handleMembersUpdated = () => {
+    onChannelUpdated();
+    setIsManageMembersModalOpen(false);
+  };
 
 
   if (!channel || !currentUser) {
@@ -151,7 +159,8 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
     return channel.nombre;
   }
   
-  const canDeleteChannel = channel.isDeletable && currentUser.role === 'Admin';
+  const canManageChannel = channel.isDeletable && currentUser.role === 'Admin';
+  const isGroupChannel = channel.type === 'GROUP';
 
 
   return (
@@ -159,7 +168,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
       <div className="flex flex-col h-full bg-muted/20">
         <header className="flex items-center justify-between p-4 border-b bg-card flex-shrink-0">
           <h2 className="text-lg font-semibold">{getChannelTitle()}</h2>
-          {canDeleteChannel && (
+          {canManageChannel && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -168,10 +177,24 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                 {isGroupChannel && (
+                    <>
+                      <DropdownMenuItem onSelect={() => setIsManageMembersModalOpen(true)}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        <span>Añadir Miembro</span>
+                      </DropdownMenuItem>
+                       <DropdownMenuItem onSelect={() => setIsManageMembersModalOpen(true)}>
+                        <UserX className="mr-2 h-4 w-4" />
+                        <span>Expulsar Miembro</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                 <DropdownMenuItem 
                   className="text-destructive"
                   onSelect={() => setShowDeleteChannelConfirm(channel)}
                 >
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Eliminar Conversación
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -283,6 +306,17 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted }: C
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {channel && isGroupChannel && (
+          <ManageGroupMembersModal
+            isOpen={isManageMembersModalOpen}
+            onClose={() => setIsManageMembersModalOpen(false)}
+            channel={channel}
+            allUsers={allUsers}
+            currentUser={currentUser}
+            onMembersUpdated={handleMembersUpdated}
+          />
+      )}
     </>
   );
 }

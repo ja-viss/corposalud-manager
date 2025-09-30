@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import dbConnect from '@/lib/db';
@@ -653,6 +654,56 @@ export async function createGroupChannel(name: string, memberIds: string[], crea
         return { success: false, message: 'Error al crear el grupo.' };
     }
 }
+
+export async function addMembersToChannel(channelId: string, memberIds: string[]) {
+    try {
+        await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || currentUser.role !== 'Admin') {
+            return { success: false, message: 'No tiene permiso para realizar esta acción.' };
+        }
+
+        const channel = await Channel.findById(channelId);
+        if (!channel || channel.type !== 'GROUP') {
+            return { success: false, message: 'Canal no encontrado o no es un grupo.' };
+        }
+
+        await Channel.findByIdAndUpdate(channelId, { $addToSet: { members: { $each: memberIds } } });
+        
+        await logActivity(`channel-members-add:${channel.nombre}`, currentUser.username);
+        return { success: true, message: 'Miembros añadidos exitosamente.' };
+    } catch (error) {
+        console.error('Error al añadir miembros al canal:', error);
+        return { success: false, message: 'Error al añadir miembros al canal.' };
+    }
+}
+
+export async function removeMembersFromChannel(channelId: string, memberIds: string[]) {
+    try {
+        await dbConnect();
+         const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || currentUser.role !== 'Admin') {
+            return { success: false, message: 'No tiene permiso para realizar esta acción.' };
+        }
+
+        const channel = await Channel.findById(channelId);
+        if (!channel || channel.type !== 'GROUP') {
+            return { success: false, message: 'Canal no encontrado o no es un grupo.' };
+        }
+        
+        // Ensure the creator/admin is not removed
+        const safeMemberIds = memberIds.filter(id => id !== currentUser.id);
+
+        await Channel.findByIdAndUpdate(channelId, { $pullAll: { members: safeMemberIds } });
+        
+        await logActivity(`channel-members-remove:${channel.nombre}`, currentUser.username);
+        return { success: true, message: 'Miembros expulsados exitosamente.' };
+    } catch (error) {
+        console.error('Error al expulsar miembros del canal:', error);
+        return { success: false, message: 'Error al expulsar miembros del canal.' };
+    }
+}
+
 
 export async function deleteChannel(channelId: string, userId: string) {
     try {
