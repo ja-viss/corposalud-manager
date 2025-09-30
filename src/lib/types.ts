@@ -91,8 +91,9 @@ export interface WorkReport {
 
 export type PopulatedWorkReport = Omit<WorkReport, 'crewId' | 'realizadoPor'> & {
   crewId: PopulatedCrew | null;
-  realizadoPor: Pick<User, 'id' | 'nombre' | 'apellido'> | null;
+  realizadoPor: Pick<User, 'id' | 'nombre' | 'apellido' | 'role'> | null;
 };
     
 
     
+

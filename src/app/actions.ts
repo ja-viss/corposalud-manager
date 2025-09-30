@@ -955,7 +955,7 @@ export async function getWorkReports() {
                     { path: 'obreros', model: 'User', select: 'nombre apellido' }
                 ]
             })
-            .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido')
+            .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido role')
             .sort({ fecha: -1 })
             .lean()
             .exec();
@@ -979,7 +979,7 @@ export async function getWorkReportById(reportId: string) {
                     { path: 'obreros', model: 'User', select: 'nombre apellido' }
                 ]
             })
-            .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido')
+            .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido role')
             .lean()
             .exec();
             
@@ -1070,3 +1070,4 @@ export async function getAdminDashboardStats() {
 
 
     
+
