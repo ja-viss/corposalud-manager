@@ -4,14 +4,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, HardHat, FileDown, Eye } from "lucide-react";
+import { FileText, Users, HardHat, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, getCrews } from "@/app/actions";
-import type { Crew } from "@/lib/types";
+import type { Crew, User } from "@/lib/types";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
-import { ModeratorReportView } from "./_components/moderator-report-view";
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -31,7 +30,22 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 export default function ReportesPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
-  const [isModeratorModalOpen, setIsModeratorModalOpen] = useState(false);
+
+  const generatePdf = (title: string, head: any[], body: any[][], filename: string) => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const primaryColorH = 173;
+    const headerColor = hslToRgb(primaryColorH, 80, 30);
+
+    doc.text(title, 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: head,
+      body: body,
+      headStyles: { fillColor: headerColor, textColor: [255, 255, 255] },
+      styles: { fontSize: 8 },
+    });
+    doc.save(filename);
+  };
 
   const handleExportObrerosPDF = async () => {
     setLoading("obreros");
@@ -41,16 +55,11 @@ export default function ReportesPage() {
       setLoading(null);
       return;
     }
-
-    const doc = new jsPDF() as jsPDFWithAutoTable;
-    const primaryColorH = 173;
-    const headerColor = hslToRgb(primaryColorH, 80, 30);
-
-    doc.text("Reporte de Obreros", 14, 15);
-    doc.autoTable({
-      startY: 20,
-      head: [['Nombre', 'Cédula', 'Email', 'Teléfono', 'Status', 'Creado el']],
-      body: result.data.map(obrero => [
+    
+    generatePdf(
+      "Reporte de Obreros",
+      [['Nombre', 'Cédula', 'Email', 'Teléfono', 'Status', 'Creado el']],
+      result.data.map(obrero => [
         `${obrero.nombre} ${obrero.apellido}`,
         obrero.cedula,
         obrero.email,
@@ -58,14 +67,37 @@ export default function ReportesPage() {
         obrero.status,
         format(new Date(obrero.fechaCreacion), "dd/MM/yyyy")
       ]),
-      headStyles: { fillColor: headerColor, textColor: [255, 255, 255] },
-      styles: { fontSize: 8 },
-    });
-    doc.save('reporte-obreros.pdf');
+      "reporte-obreros.pdf"
+    );
+    setLoading(null);
+  };
+
+  const handleExportModeradoresPDF = async () => {
+    setLoading("moderadores");
+    const result = await getUsers({ role: 'Moderador' });
+    if (!result.success || !result.data) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron obtener los datos de los moderadores.' });
+      setLoading(null);
+      return;
+    }
+
+    generatePdf(
+      "Reporte de Moderadores",
+      [['Nombre', 'Cédula', 'Email', 'Teléfono', 'Status', 'Creado el']],
+      result.data.map(moderador => [
+        `${moderador.nombre} ${moderador.apellido}`,
+        moderador.cedula,
+        moderador.email,
+        moderador.telefono,
+        moderador.status,
+        format(new Date(moderador.fechaCreacion), "dd/MM/yyyy")
+      ]),
+      "reporte-moderadores.pdf"
+    );
     setLoading(null);
   };
   
-  const handleExportCuadrillasCSV = async () => {
+  const handleExportCuadrillasPDF = async () => {
       setLoading("cuadrillas");
       const result = await getCrews();
       if (!result.success || !result.data) {
@@ -73,31 +105,27 @@ export default function ReportesPage() {
           setLoading(null);
           return;
       }
-
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Nombre Cuadrilla,Descripcion,Fecha Creacion,Creado Por,ID Moderadores,Nombres Moderadores,ID Obreros,Nombres Obreros\n";
-
-      result.data.forEach((crew: Crew) => {
-          const row = [
-              `"${crew.nombre}"`,
-              `"${crew.descripcion || ''}"`,
-              `"${format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}"`,
-              `"${crew.creadoPor}"`,
-              `"${crew.moderadores.map(m => typeof m === 'string' ? m : m.id).join(';')}"`,
-              `"${crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(';')}"`,
-              `"${crew.obreros.map(o => typeof o === 'string' ? o : o.id).join(';')}"`,
-              `"${crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join(';')}"`
-          ].join(',');
-          csvContent += row + "\n";
+      
+      const body = result.data.flatMap((crew: Crew) => {
+        const moderadores = crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ');
+        const obreros = crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join('\n');
+        return [[
+          crew.nombre,
+          crew.descripcion || 'N/A',
+          moderadores,
+          obreros,
+          crew.creadoPor,
+          format(new Date(crew.fechaCreacion), "dd/MM/yyyy")
+        ]];
       });
 
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "reporte-cuadrillas.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      generatePdf(
+        "Reporte de Cuadrillas",
+        [['Nombre', 'Descripción', 'Moderadores', 'Obreros', 'Creado Por', 'Fecha Creación']],
+        body,
+        "reporte-cuadrillas.pdf"
+      );
+
       setLoading(null);
   };
 
@@ -137,13 +165,13 @@ export default function ReportesPage() {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Visualiza una lista de todos los moderadores con sus datos personales.
+                Exporta una lista de todos los moderadores con sus datos personales.
               </CardDescription>
             </CardContent>
              <CardContent>
-               <Button className="w-full" variant="outline" onClick={() => setIsModeratorModalOpen(true)}>
-                <Eye className="mr-2 h-4 w-4" />
-                Ver Reporte
+               <Button className="w-full" onClick={handleExportModeradoresPDF} disabled={loading === 'moderadores'}>
+                <FileDown className="mr-2 h-4 w-4" />
+                {loading === 'moderadores' ? 'Generando...' : 'Exportar a PDF'}
               </Button>
             </CardContent>
           </Card>
@@ -160,7 +188,7 @@ export default function ReportesPage() {
               </CardDescription>
             </CardContent>
              <CardContent>
-               <Button className="w-full" onClick={handleExportCuadrillasCSV} disabled={loading === 'cuadrillas'}>
+               <Button className="w-full" onClick={handleExportCuadrillasPDF} disabled={loading === 'cuadrillas'}>
                 <FileDown className="mr-2 h-4 w-4" />
                 {loading === 'cuadrillas' ? 'Generando...' : 'Exportar a CSV'}
               </Button>
@@ -169,11 +197,7 @@ export default function ReportesPage() {
 
         </div>
       </div>
-      
-      <ModeratorReportView
-        isOpen={isModeratorModalOpen}
-        onClose={() => setIsModeratorModalOpen(false)}
-      />
     </>
   );
 }
+
