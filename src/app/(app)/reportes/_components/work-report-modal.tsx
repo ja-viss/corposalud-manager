@@ -12,32 +12,24 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
-import { createWorkReport, getCrewById, updateWorkReport } from "@/app/actions";
+import { createWorkReport, updateWorkReport } from "@/app/actions";
 import type { Crew, PopulatedWorkReport, ToolEntry } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle, Users, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-
-interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => jsPDF;
-}
 
 interface WorkReportModalProps {
     isOpen: boolean;
     onClose: () => void;
     crews: Crew[];
-    report?: PopulatedWorkReport | null; // Add report prop for editing
+    report?: PopulatedWorkReport | null;
     onReportSaved: () => void;
 }
 
 const toolEntrySchema = z.object({
-    nombre: z.string().min(1, "El nombre es requerido.").optional().or(z.literal('')),
+    nombre: z.string().optional().or(z.literal('')),
     cantidad: z.coerce.number().min(0, "La cantidad no puede ser negativa.").default(0),
 });
 
@@ -50,75 +42,69 @@ const formSchema = z.object({
     herramientasDanadas: z.array(toolEntrySchema).optional(),
     herramientasExtraviadas: z.array(toolEntrySchema).optional(),
 }).superRefine((data, ctx) => {
-    if (!data.herramientasUtilizadas) return;
+    const utilizadas = data.herramientasUtilizadas || [];
+    const danadas = data.herramientasDanadas || [];
+    const extraviadas = data.herramientasExtraviadas || [];
 
-    for (let i = 0; i < data.herramientasUtilizadas.length; i++) {
-        const utilizada = data.herramientasUtilizadas[i];
-        if (!utilizada || !utilizada.nombre) continue;
+    utilizadas.forEach((tool, index) => {
+        // Solo valida si la herramienta tiene un nombre y una cantidad
+        if (!tool.nombre || tool.cantidad <= 0) return;
+        
+        const cantidadUtilizada = tool.cantidad || 0;
+        const cantidadDanada = danadas[index]?.cantidad || 0;
+        const cantidadExtraviada = extraviadas[index]?.cantidad || 0;
 
-        const danada = data.herramientasDanadas?.[i]?.cantidad ?? 0;
-        const extraviada = data.herramientasExtraviadas?.[i]?.cantidad ?? 0;
-
-        if (danada + extraviada > utilizada.cantidad) {
-             const message = `La suma de dañadas (${danada}) y extraviadas (${extraviada}) no puede superar el total (${utilizada.cantidad}).`;
+        if (cantidadDanada + cantidadExtraviada > cantidadUtilizada) {
+             const message = `La suma de dañadas (${cantidadDanada}) y extraviadas (${cantidadExtraviada}) no puede superar el total (${cantidadUtilizada}).`;
+            // Añade el error a los campos correspondientes
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: [`herramientasDanadas`, `${i}`, `cantidad`],
+                path: [`herramientasDanadas`, `${index}`, `cantidad`],
                 message: message,
             });
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                path: [`herramientasExtraviadas`, `${i}`, `cantidad`],
-                message: message,
+                path: [`herramientasExtraviadas`, `${index}`, `cantidad`],
+                message: " ", // Mensaje vacío para no duplicar el texto
             });
         }
-    }
+    });
 });
 
 
 type FormValues = z.infer<typeof formSchema>;
 
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  s /= 100;
-  l /= 100;
-  const k = (n: number) => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) =>
-    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
-  return [255 * f(0), 255 * f(8), 255 * f(4)];
-}
-
 export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved }: WorkReportModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedCrew, setSelectedCrew] = useState<Crew | null>(null);
+    const [selectedCrew, setSelectedCrew] = useState<Crew | PopulatedCrew | null>(null);
     const isEditing = !!report;
 
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
+        mode: "onChange", // Validar en cada cambio
         defaultValues: {
             crewId: "",
             municipio: "",
             distancia: 0,
             comentarios: "",
             herramientasUtilizadas: [{ nombre: "", cantidad: 0 }],
-            herramientasDanadas: [],
-            herramientasExtraviadas: [],
+            herramientasDanadas: [{ nombre: "", cantidad: 0 }],
+            herramientasExtraviadas: [{ nombre: "", cantidad: 0 }],
         },
     });
 
-    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove } = useFieldArray({
+    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove, update: utilizadasUpdate } = useFieldArray({
         control: form.control, name: "herramientasUtilizadas",
     });
-    const { fields: danadasFields } = useFieldArray({
+    const { fields: danadasFields, update: danadasUpdate } = useFieldArray({
         control: form.control, name: "herramientasDanadas",
     });
-    const { fields: extraviadasFields } = useFieldArray({
+    const { fields: extraviadasFields, update: extraviadasUpdate } = useFieldArray({
         control: form.control, name: "herramientasExtraviadas",
     });
 
-    const herramientasUtilizadasValues = form.watch('herramientasUtilizadas');
     const crewIdWatcher = form.watch('crewId');
 
      useEffect(() => {
@@ -134,9 +120,9 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                 municipio: report.municipio,
                 distancia: report.distancia,
                 comentarios: report.comentarios,
-                herramientasUtilizadas: report.herramientasUtilizadas,
-                herramientasDanadas: report.herramientasDanadas,
-                herramientasExtraviadas: report.herramientasExtraviadas,
+                herramientasUtilizadas: report.herramientasUtilizadas || [{ nombre: "", cantidad: 0 }],
+                herramientasDanadas: report.herramientasDanadas || [{ nombre: "", cantidad: 0 }],
+                herramientasExtraviadas: report.herramientasExtraviadas || [{ nombre: "", cantidad: 0 }],
             });
         } else {
              form.reset({
@@ -145,51 +131,34 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                 distancia: 0,
                 comentarios: "",
                 herramientasUtilizadas: [{ nombre: "", cantidad: 0 }],
-                herramientasDanadas: [],
-                herramientasExtraviadas: [],
+                herramientasDanadas: [{ nombre: "", cantidad: 0 }],
+                herramientasExtraviadas: [{ nombre: "", cantidad: 0 }],
             });
         }
-    }, [isEditing, report, form]);
+    }, [isEditing, report, form, isOpen]);
     
-     // Sync logic for tool arrays
-    useEffect(() => {
-        if (!herramientasUtilizadasValues) return;
-        
-        const currentDanadas = form.getValues('herramientasDanadas') || [];
-        const currentExtraviadas = form.getValues('herramientasExtraviadas') || [];
+    // Sincroniza los arrays de herramientas dañadas/extraviadas con las utilizadas
+    const syncToolArrays = (updatedTools: typeof utilizadasFields) => {
+        const danadas = form.getValues('herramientasDanadas') || [];
+        const extraviadas = form.getValues('herramientasExtraviadas') || [];
 
-        const newDanadas = herramientasUtilizadasValues.map((tool, index) => ({
-            nombre: tool.nombre,
-            cantidad: currentDanadas[index]?.cantidad ?? 0,
-        }));
-        const newExtraviadas = herramientasUtilizadasValues.map((tool, index) => ({
-            nombre: tool.nombre,
-            cantidad: currentExtraviadas[index]?.cantidad ?? 0,
-        }));
-
-        form.setValue('herramientasDanadas', newDanadas, { shouldValidate: true });
-        form.setValue('herramientasExtraviadas', newExtraviadas, { shouldValidate: true });
-
-    }, [herramientasUtilizadasValues, form]);
-
-
-    // Real-time validation logic
-    const validateToolQuantities = (index: number) => {
-        const utilizadas = form.getValues(`herramientasUtilizadas.${index}.cantidad`) || 0;
-        const danadas = form.getValues(`herramientasDanadas.${index}.cantidad`) || 0;
-        const extraviadas = form.getValues(`herramientasExtraviadas.${index}.cantidad`) || 0;
-        
-        const message = `La suma de dañadas (${danadas}) y extraviadas (${extraviadas}) no puede superar el total (${utilizadas}).`;
-
-        if (danadas + extraviadas > utilizadas) {
-            form.setError(`herramientasDanadas.${index}.cantidad`, { type: 'manual', message });
-            form.setError(`herramientasExtraviadas.${index}.cantidad`, { type: 'manual', message });
-        } else {
-            form.clearErrors(`herramientasDanadas.${index}.cantidad`);
-            form.clearErrors(`herramientasExtraviadas.${index}.cantidad`);
-        }
+        updatedTools.forEach((tool, index) => {
+            danadasUpdate(index, { nombre: tool.nombre, cantidad: danadas[index]?.cantidad ?? 0 });
+            extraviadasUpdate(index, { nombre: tool.nombre, cantidad: extraviadas[index]?.cantidad ?? 0 });
+        });
     };
 
+    const handleAddTool = () => {
+        utilizadasAppend({ nombre: '', cantidad: 0 });
+        danadasUpdate(utilizadasFields.length, { nombre: '', cantidad: 0 });
+        extraviadasUpdate(utilizadasFields.length, { nombre: '', cantidad: 0 });
+    };
+
+    const handleRemoveTool = (index: number) => {
+        utilizadasRemove(index);
+        // La sincronización se encargará de remover de los otros arrays implicitamente
+        // al re-renderizar con menos campos.
+    };
 
     async function onSubmit(values: FormValues) {
         setIsLoading(true);
@@ -273,16 +242,29 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                         {utilizadasFields.map((field, index) => (
                                             <div key={field.id} className="flex items-start gap-2">
                                                 <FormField control={form.control} name={`herramientasUtilizadas.${index}.nombre`} render={({ field }) => (
-                                                    <FormItem className="flex-grow"><FormControl><Input placeholder={`Herramienta #${index + 1}`} {...field} onKeyDown={handleToolNameKeyDown} /></FormControl><FormMessage /></FormItem>
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl>
+                                                            <Input 
+                                                                placeholder={`Herramienta #${index + 1}`} {...field} 
+                                                                onKeyDown={handleToolNameKeyDown}
+                                                                onChange={(e) => {
+                                                                    field.onChange(e);
+                                                                    danadasUpdate(index, { ...form.getValues(`herramientasDanadas.${index}`), nombre: e.target.value });
+                                                                    extraviadasUpdate(index, { ...form.getValues(`herramientasExtraviadas.${index}`), nombre: e.target.value });
+                                                                }}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
                                                 )} />
                                                 <FormField control={form.control} name={`herramientasUtilizadas.${index}.cantidad`} render={({ field }) => (
-                                                    <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} onChange={(e) => { field.onChange(e); validateToolQuantities(index); }} /></FormControl><FormMessage /></FormItem>
+                                                    <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage /></FormItem>
                                                 )} />
-                                                <Button type="button" variant="destructive" size="icon" onClick={() => utilizadasRemove(index)} disabled={utilizadasFields.length <= 1}><Trash2 className="h-4 w-4" /></Button>
+                                                <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveTool(index)} disabled={utilizadasFields.length <= 1}><Trash2 className="h-4 w-4" /></Button>
                                             </div>
                                         ))}
                                     </div>
-                                    <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => utilizadasAppend({ nombre: '', cantidad: 0 })}><PlusCircle className="h-3.5 w-3.5" />Agregar Herramienta</Button>
+                                    <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={handleAddTool}><PlusCircle className="h-3.5 w-3.5" />Agregar Herramienta</Button>
                                     <FormField control={form.control} name="herramientasUtilizadas" render={() => (<FormItem><FormMessage /></FormItem>)} />
                                 </div>
                                 <Separator />
@@ -294,7 +276,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                                 <div key={field.id} className="flex items-start gap-2">
                                                     <FormItem className="flex-grow"><FormControl><Input disabled value={form.getValues(`herramientasUtilizadas.${index}.nombre`)} /></FormControl></FormItem>
                                                     <FormField control={form.control} name={`herramientasDanadas.${index}.cantidad`} render={({ field }) => (
-                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} onChange={(e) => { field.onChange(e); validateToolQuantities(index); }} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                 </div>
                                             )
@@ -310,7 +292,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                                 <div key={field.id} className="flex items-start gap-2">
                                                     <FormItem className="flex-grow"><FormControl><Input disabled value={form.getValues(`herramientasUtilizadas.${index}.nombre`)} /></FormControl></FormItem>
                                                     <FormField control={form.control} name={`herramientasExtraviadas.${index}.cantidad`} render={({ field }) => (
-                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} onChange={(e) => { field.onChange(e); validateToolQuantities(index); }} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem className="w-24"><FormControl><Input type="number" placeholder="Cant." {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                 </div>
                                              )
@@ -340,12 +322,12 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
                                            </CardHeader>
                                            <CardContent>
                                                <h4 className="font-semibold text-sm mb-2">Moderador:</h4>
-                                               <ul className="text-sm text-muted-foreground list-disc pl-5">
-                                                   {selectedCrew.moderadores.map(m => <li key={m.id}>{m.nombre} {m.apellido}</li>)}
-                                               </ul>
+                                                <ul className="text-sm text-muted-foreground list-disc pl-5">
+                                                    {Array.isArray(selectedCrew.moderadores) && selectedCrew.moderadores.map(m => <li key={m.id}>{m.nombre} {m.apellido}</li>)}
+                                                </ul>
                                                <h4 className="font-semibold text-sm mt-4 mb-2">Obreros:</h4>
                                                 <ul className="text-sm text-muted-foreground list-disc pl-5 grid grid-cols-2 gap-x-4">
-                                                   {selectedCrew.obreros.map(o => <li key={o.id}>{o.nombre} {o.apellido}</li>)}
+                                                    {Array.isArray(selectedCrew.obreros) && selectedCrew.obreros.map(o => <li key={o.id}>{o.nombre} {o.apellido}</li>)}
                                                </ul>
                                            </CardContent>
                                        </Card>
