@@ -3,6 +3,7 @@
 export type UserRole = 'Admin' | 'Moderador' | 'Obrero';
 
 export interface User {
+  _id: string;
   id: string;
   nombre: string;
   apellido: string;
@@ -18,6 +19,7 @@ export interface User {
 }
 
 export interface Crew {
+    _id: string;
     id: string;
     nombre: string;
     descripcion?: string;
@@ -94,5 +96,3 @@ export type PopulatedWorkReport = Omit<WorkReport, 'crewId' | 'realizadoPor'> & 
     
 
     
-
-

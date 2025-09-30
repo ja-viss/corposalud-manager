@@ -62,7 +62,7 @@ export default async function DashboardPage() {
                {stats.userCrews.length > 0 ? (
                 <ul className="space-y-4">
                   {stats.userCrews.map(crew => (
-                    <li key={crew.id} className="p-3 rounded-lg border bg-card flex justify-between items-center">
+                    <li key={crew._id} className="p-3 rounded-lg border bg-card flex justify-between items-center">
                       <div>
                         <p className="font-semibold">{crew.nombre}</p>
                         <p className="text-sm text-muted-foreground">
