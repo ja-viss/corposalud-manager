@@ -113,7 +113,7 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
               {!selectedChannel && <p className="text-muted-foreground">Comunicación unidireccional con el personal.</p>}
             </div>
         </div>
-        {canCreateDirectMessage && (
+        {canCreateDirectMessage && !selectedChannel && (
           <Button size="sm" className="gap-1" onClick={() => setIsModalOpen(true)}>
             <PlusCircle className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
