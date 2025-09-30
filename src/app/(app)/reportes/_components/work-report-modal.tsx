@@ -187,7 +187,7 @@ const WorkReportPDF = ({ report }: { report: PopulatedWorkReport }) => (
                         <View style={styles.tableRow}>
                             <Text style={styles.tableColHeader}>Herramienta</Text><Text style={styles.tableColHeader}>Utilizadas</Text><Text style={styles.tableColHeader}>Dañadas</Text><Text style={styles.tableColHeader}>Extraviadas</Text>
                         </View>
-                        {report.herramientasUtilizadas.map((tool, index) => {
+                        {report.herramientasUtilizadas && report.herramientasUtilizadas.map((tool, index) => {
                              const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
                              const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
                             return (
@@ -205,11 +205,11 @@ const WorkReportPDF = ({ report }: { report: PopulatedWorkReport }) => (
                     <Text style={styles.sectionTitle}>Miembros de la Cuadrilla</Text>
                      <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Moderador:</Text>
                     <View style={styles.membersList}>
-                        {report.crewId.moderadores.map(m => <Text key={m.id} style={styles.memberItem}>- {m.nombre} {m.apellido}</Text>)}
+                        {report.crewId.moderadores && report.crewId.moderadores.map(m => <Text key={m.id} style={styles.memberItem}>- {m.nombre} {m.apellido}</Text>)}
                     </View>
                     <Text style={{ fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>Obreros:</Text>
                     <View style={styles.membersList}>
-                        {report.crewId.obreros.map(o => <Text key={o.id} style={styles.memberItem}>- {o.nombre} {o.apellido}</Text>)}
+                        {report.crewId.obreros && report.crewId.obreros.map(o => <Text key={o.id} style={styles.memberItem}>- {o.nombre} {o.apellido}</Text>)}
                     </View>
                 </View>
             )}
