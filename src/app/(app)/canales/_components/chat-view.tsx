@@ -7,16 +7,14 @@ import { Paperclip, Send, Trash2, MoreVertical, UserPlus, UserX } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getMessages, sendMessage, deleteMessage, deleteChannel } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { PopulatedMessage, Channel, User } from '@/lib/types';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { ManageGroupMembersModal } from './manage-group-members-modal';
+import { MessageItem } from './message-item';
 
 
 interface ChatViewProps {
@@ -214,43 +212,15 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
                     <p>No hay mensajes en este canal todavía.<br/>Sé el primero en enviar uno.</p>
                 </div>
                 ) : (
-                messages.map((msg) => {
-                    const sender = msg.senderId;
-                    const senderName = sender ? `${sender.nombre} ${sender.apellido} (${sender.role})` : "Usuario Eliminado";
-                    const senderInitials = sender ? `${sender.nombre.charAt(0)}${sender.apellido.charAt(0)}` : "UE";
-
-                    const canDelete = currentUser.role === 'Admin' || (currentUser.role === 'Moderador' && channel.type !== 'DIRECT') || msg.senderId?.id === currentUser.id;
-
-                    return (
-                    <div key={msg.id} className="flex items-start gap-3 group relative">
-                        <Avatar className="h-8 w-8">
-                        <AvatarFallback>{senderInitials}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                            <p className="font-semibold text-sm">{senderName}</p>
-                            <p className="text-xs text-muted-foreground">
-                            {format(new Date(msg.fecha), "dd MMM, HH:mm", { locale: es })}
-                            </p>
-                        </div>
-                        <div className="p-2 mt-1 rounded-lg bg-card text-sm break-words">
-                            <p>{msg.content}</p>
-                        </div>
-                        </div>
-                        {canDelete && (
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-0 right-0 h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100"
-                                onClick={() => setShowDeleteConfirm(msg)}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                <span className="sr-only">Eliminar mensaje</span>
-                            </Button>
-                        )}
-                    </div>
-                    );
-                })
+                messages.map((msg) => (
+                    <MessageItem
+                        key={msg.id}
+                        message={msg}
+                        currentUser={currentUser}
+                        channel={channel}
+                        onDeleteRequest={() => setShowDeleteConfirm(msg)}
+                    />
+                ))
                 )}
             </div>
             </ScrollArea>
