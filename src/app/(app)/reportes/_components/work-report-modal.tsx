@@ -35,7 +35,7 @@ const formSchema = z.object({
     municipio: z.string().min(3, "El municipio es requerido."),
     distancia: z.coerce.number().min(0, "La distancia no puede ser negativa."),
     comentarios: z.string().min(10, "Los comentarios son requeridos."),
-    herramientasUtilizadas: z.array(toolEntrySchema).optional(),
+    herramientasUtilizadas: z.array(toolEntrySchema).min(1, "Debe agregar al menos una herramienta utilizada."),
     herramientasDanadas: z.array(toolEntrySchema).optional(),
     herramientasExtraviadas: z.array(toolEntrySchema).optional(),
 });
@@ -147,7 +147,6 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
     const handleToolNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            utilizadasAppend({ nombre: '', cantidad: 0 });
         }
     };
 
@@ -261,6 +260,11 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                     <PlusCircle className="h-3.5 w-3.5" />
                                     Agregar Herramienta
                                 </Button>
+                                <FormField control={form.control} name="herramientasUtilizadas" render={({ field }) => (
+                                    <FormItem>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
                             </div>
                             
                             <Separator />

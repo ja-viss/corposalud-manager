@@ -811,9 +811,14 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
 
         return { success: true, message: "Reporte de trabajo guardado exitosamente." };
 
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof mongoose.Error.ValidationError) {
+            // Extrae el primer mensaje de error de validación
+            const messages = Object.values(error.errors).map(e => e.message);
+            return { success: false, message: `Error de validación: ${messages[0]}` };
+        }
         console.error('Error al crear reporte de trabajo:', error);
-        return { success: false, message: 'Error al guardar el reporte de trabajo.' };
+        return { success: false, message: 'Ocurrió un error inesperado al guardar el reporte.' };
     }
 }
 
@@ -862,6 +867,7 @@ export async function getAdminDashboardStats() {
 }
 
     
+
 
 
 
