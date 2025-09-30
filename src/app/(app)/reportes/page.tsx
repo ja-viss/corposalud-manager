@@ -221,18 +221,12 @@ export default function ReportesPage() {
             </CardHeader>
             <CardContent className="flex flex-col flex-1">
               <CardDescription>
-                Genera o visualiza reportes de actividad de las cuadrillas.
+                Genera un nuevo reporte de actividad de las cuadrillas.
               </CardDescription>
-              <div className="mt-auto flex flex-col sm:flex-row gap-2 pt-4">
+              <div className="mt-auto pt-4">
                 <Button className="w-full" onClick={handleOpenWorkReportModal}>
                     <FileText className="mr-2 h-4 w-4" />
-                    Crear
-                </Button>
-                <Button variant="outline" className="w-full" asChild>
-                    <Link href="/reportes/trabajo">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Ver Reportes
-                    </Link>
+                    Crear Reporte
                 </Button>
               </div>
             </CardContent>
