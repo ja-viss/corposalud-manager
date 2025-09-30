@@ -82,6 +82,11 @@ export interface WorkReport {
   fecha: string;
 }
 
+export type PopulatedWorkReport = Omit<WorkReport, 'crewId' | 'realizadoPor'> & {
+  crewId: Pick<Crew, 'id' | 'nombre'> | null;
+  realizadoPor: Pick<User, 'id' | 'nombre' | 'apellido'>;
+};
     
 
     
+

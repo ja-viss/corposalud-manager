@@ -2,9 +2,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, HardHat, FileDown, ClipboardPlus } from "lucide-react";
+import { FileText, Users, HardHat, FileDown, ClipboardPlus, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getUsers, getCrews } from "@/app/actions";
 import type { Crew, User } from "@/lib/types";
@@ -220,13 +221,19 @@ export default function ReportesPage() {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Genera un nuevo reporte de actividad para una cuadrilla específica.
+                Genera o visualiza reportes de actividad de las cuadrillas.
               </CardDescription>
             </CardContent>
-             <CardContent>
+             <CardContent className="flex flex-col sm:flex-row gap-2">
                <Button className="w-full" onClick={handleOpenWorkReportModal}>
                 <FileText className="mr-2 h-4 w-4" />
-                Crear Reporte
+                Crear
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href="/reportes/trabajo">
+                  <Eye className="mr-2 h-4 w-4" />
+                  Ver Reportes
+                </Link>
               </Button>
             </CardContent>
           </Card>
@@ -242,5 +249,3 @@ export default function ReportesPage() {
     </>
   );
 }
-
-    

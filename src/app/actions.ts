@@ -5,7 +5,7 @@
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ActivityLog from '@/models/ActivityLog';
-import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage, WorkReport as WorkReportType } from '@/lib/types';
+import type { User as UserType, ActivityLog as ActivityLogType, Crew as CrewType, UserRole, Channel as ChannelType, Message as MessageType, PopulatedMessage, WorkReport as WorkReportType, PopulatedWorkReport } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 import { logActivity } from '@/lib/activity-log';
 import Crew from '@/models/Crew';
@@ -822,6 +822,23 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
     }
 }
 
+export async function getWorkReports() {
+    try {
+        await dbConnect();
+        const reports = await WorkReport.find({})
+            .populate<{ crewId: CrewType }>('crewId', 'nombre')
+            .populate<{ realizadoPor: UserType }>('realizadoPor', 'nombre apellido')
+            .sort({ fecha: -1 })
+            .lean()
+            .exec();
+        
+        return { success: true, data: safeSerialize(reports) as PopulatedWorkReport[] };
+    } catch (error) {
+        console.error('Error al obtener reportes de trabajo:', error);
+        return { success: false, message: 'Error al obtener los reportes de trabajo.' };
+    }
+}
+
 
 // Dashboard actions
 export async function getAdminDashboardStats() {
@@ -867,6 +884,7 @@ export async function getAdminDashboardStats() {
 }
 
     
+
 
 
 

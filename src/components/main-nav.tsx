@@ -35,7 +35,10 @@ export function MainNav({ userRole }: MainNavProps) {
         let isActive = false;
         if (item.href.startsWith('/personal') && pathname.startsWith('/personal')) {
             isActive = true;
-        } else {
+        } else if (item.href.startsWith('/reportes') && pathname.startsWith('/reportes')) {
+            isActive = true;
+        }
+        else {
             isActive = pathname.startsWith(item.href);
         }
 
