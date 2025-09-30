@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface CrewFormProps {
     crew?: Crew | null;
@@ -26,7 +27,7 @@ interface CrewFormProps {
 
 const formSchema = z.object({
     descripcion: z.string().optional(),
-    moderadores: z.array(z.string()).min(1, "Debe seleccionar al menos un moderador."),
+    moderadores: z.string({ required_error: "Debe seleccionar un moderador." }),
     obreros: z.array(z.string()).min(4, "Debe seleccionar al menos 4 obreros.").max(40, "No puede seleccionar más de 40 obreros."),
 });
 
@@ -41,7 +42,7 @@ export function CrewForm({ crew }: CrewFormProps) {
         resolver: zodResolver(formSchema),
         defaultValues: {
             descripcion: "",
-            moderadores: [],
+            moderadores: "",
             obreros: [],
         },
     });
@@ -65,9 +66,10 @@ export function CrewForm({ crew }: CrewFormProps) {
 
     useEffect(() => {
         if (isEditing && crew) {
+            const moderadorId = crew.moderadores[0] ? (typeof crew.moderadores[0] === 'string' ? crew.moderadores[0] : crew.moderadores[0].id) : "";
             form.reset({
                 descripcion: crew.descripcion || "",
-                moderadores: crew.moderadores.map(m => typeof m === 'string' ? m : m.id),
+                moderadores: moderadorId,
                 obreros: crew.obreros.map(o => typeof o === 'string' ? o : o.id),
             });
         }
@@ -75,7 +77,7 @@ export function CrewForm({ crew }: CrewFormProps) {
 
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        const payload = { ...values, nombre: crew?.nombre };
+        const payload = { ...values, moderadores: [values.moderadores], nombre: crew?.nombre };
         
         let result;
         if (isEditing && crew) {
@@ -132,27 +134,25 @@ export function CrewForm({ crew }: CrewFormProps) {
                 </Card>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <Card>
-                        <CardHeader><CardTitle>Moderadores</CardTitle></CardHeader>
+                        <CardHeader><CardTitle>Moderador</CardTitle></CardHeader>
                         <CardContent>
                             <FormField control={form.control} name="moderadores" render={({ field }) => (
                                 <FormItem>
                                     <ScrollArea className="h-72">
-                                        <div className="p-1">
+                                        <RadioGroup
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                            className="p-1"
+                                        >
                                             {moderadores.map((mod) => (
-                                                <div key={mod.id} className="flex items-center space-x-2 mb-2 p-2 rounded-md hover:bg-muted">
-                                                    <Checkbox
-                                                        id={`mod-${mod.id}`}
-                                                        checked={field.value?.includes(mod.id)}
-                                                        onCheckedChange={(checked) => {
-                                                            return checked
-                                                                ? field.onChange([...field.value, mod.id])
-                                                                : field.onChange(field.value?.filter((value) => value !== mod.id))
-                                                        }}
-                                                    />
+                                                <FormItem key={mod.id} className="flex items-center space-x-2 mb-2 p-2 rounded-md hover:bg-muted">
+                                                    <FormControl>
+                                                        <RadioGroupItem value={mod.id} id={`mod-${mod.id}`} />
+                                                    </FormControl>
                                                     <Label htmlFor={`mod-${mod.id}`} className="font-normal w-full cursor-pointer">{mod.nombre} {mod.apellido}</Label>
-                                                </div>
+                                                </FormItem>
                                             ))}
-                                        </div>
+                                        </RadioGroup>
                                     </ScrollArea>
                                     <FormMessage />
                                 </FormItem>
@@ -201,4 +201,5 @@ export function CrewForm({ crew }: CrewFormProps) {
 }
 
     
+
 
