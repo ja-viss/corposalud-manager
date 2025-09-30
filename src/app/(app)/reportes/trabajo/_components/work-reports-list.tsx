@@ -3,9 +3,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { PopulatedWorkReport, ToolEntry } from "@/lib/types";
+import type { PopulatedWorkReport, PopulatedCrew, ToolEntry } from "@/lib/types";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
@@ -45,7 +44,7 @@ const formatToolsForQR = (title: string, tools: ToolEntry[] | undefined) => {
 const generateReportQRString = (report: PopulatedWorkReport | null): string => {
     if (!report) return "Información no disponible.";
 
-    const crew = report.crewId;
+    const crew = report.crewId as PopulatedCrew | null;
     const moderators = crew ? crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ') : 'N/A';
     const workers = crew ? crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join(', ') : 'N/A';
 
@@ -71,7 +70,7 @@ ${moderators}
 
 --- Obreros ---
 ${workers}
-    `.trim().replace(/(\n\s*\n)+/g, '\n\n'); // Clean up extra newlines
+    `.trim().replace(/(\n\s*\n)+/g, '\n\n'); 
 };
 
 
@@ -140,46 +139,44 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
         </div>
 
         {/* Desktop Table View */}
-        <Card className="hidden md:block">
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
+        <div className="hidden md:block border rounded-lg">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Cuadrilla</TableHead>
+                        <TableHead>Municipio</TableHead>
+                        <TableHead>Distancia (m)</TableHead>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead className="text-center">Info. Reporte (QR)</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {reports.length === 0 ? (
                         <TableRow>
-                            <TableHead>Cuadrilla</TableHead>
-                            <TableHead>Municipio</TableHead>
-                            <TableHead>Distancia (m)</TableHead>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead className="text-center">Info. Reporte (QR)</TableHead>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                            No hay reportes de trabajo registrados.
+                            </TableCell>
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {reports.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">
-                                No hay reportes de trabajo registrados.
+                    ) : (
+                        reports.map((report) => (
+                            <TableRow key={report.id}>
+                                <TableCell className="font-medium">{report.crewId?.nombre ?? 'N/A'}</TableCell>
+                                <TableCell>{report.municipio}</TableCell>
+                                <TableCell>{report.distancia}</TableCell>
+                                <TableCell>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</TableCell>
+                                <TableCell className="text-center">
+                                  {report.crewId && (
+                                    <Button variant="ghost" size="icon" onClick={() => handleOpenQRModal(report)}>
+                                        <QrCode className="h-5 w-5" />
+                                    </Button>
+                                  )}
                                 </TableCell>
                             </TableRow>
-                        ) : (
-                            reports.map(report => (
-                                <TableRow key={report.id}>
-                                    <TableCell className="font-medium">{report.crewId?.nombre ?? 'N/A'}</TableCell>
-                                    <TableCell>{report.municipio}</TableCell>
-                                    <TableCell>{report.distancia}</TableCell>
-                                    <TableCell>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</TableCell>
-                                    <TableCell className="text-center">
-                                      {report.crewId && (
-                                        <Button variant="ghost" size="icon" onClick={() => handleOpenQRModal(report)}>
-                                            <QrCode className="h-5 w-5" />
-                                        </Button>
-                                      )}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+                        ))
+                    )}
+                </TableBody>
+            </Table>
+        </div>
 
         {/* Mobile Card View */}
         <div className="grid gap-4 md:hidden">
@@ -187,29 +184,27 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
                 <p className="text-center text-muted-foreground">No hay reportes de trabajo registrados.</p>
             ) : (
                 reports.map(report => (
-                    <Card key={report.id}>
-                        <CardContent className="p-4 space-y-3">
-                             <div className="flex justify-between items-start">
-                                <h3 className="font-bold">{report.crewId?.nombre ?? 'N/A'}</h3>
-                                {report.crewId && (
-                                    <Button variant="ghost" size="icon" onClick={() => handleOpenQRModal(report)}>
-                                        <QrCode className="h-5 w-5" />
-                                    </Button>
-                                )}
+                    <div key={report.id} className="p-4 space-y-3 border bg-card text-card-foreground shadow-sm rounded-lg">
+                        <div className="flex justify-between items-start">
+                            <h3 className="font-bold">{report.crewId?.nombre ?? 'N/A'}</h3>
+                            {report.crewId && (
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenQRModal(report)}>
+                                    <QrCode className="h-5 w-5" />
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{report.municipio}</p>
+                        <div className="text-sm space-y-2">
+                            <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-muted-foreground" />
+                                <span>Distancia: {report.distancia}m</span>
                             </div>
-                             <p className="text-sm text-muted-foreground">{report.municipio}</p>
-                             <div className="text-sm space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Building className="h-4 w-4 text-muted-foreground" />
-                                    <span>Distancia: {report.distancia}m</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <span>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</span>
-                                </div>
-                             </div>
-                        </CardContent>
-                    </Card>
+                            <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</span>
+                            </div>
+                        </div>
+                    </div>
                 ))
             )}
         </div>
