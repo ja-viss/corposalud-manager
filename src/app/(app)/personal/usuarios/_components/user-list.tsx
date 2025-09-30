@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import type { User } from "@/lib/types";
+import type { User, UserRole } from "@/lib/types";
 import { getUsers, deleteUser } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
@@ -34,10 +34,10 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 interface UserListProps {
   initialUsers: User[];
-  canManageUsers: boolean;
+  currentUserRole: UserRole;
 }
 
-export function UserList({ initialUsers, canManageUsers }: UserListProps) {
+export function UserList({ initialUsers, currentUserRole }: UserListProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
@@ -52,12 +52,12 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
     setLoading(true);
     const result = await getUsers();
     if (result.success && result.data) {
-      setUsers(result.data.filter(user => !initialUsers.some(u => u.id === user.id))); // Simple filter to avoid showing self if logic changes
+      setUsers(result.data);
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
     }
     setLoading(false);
-  }, [toast, initialUsers]);
+  }, [toast]);
   
   useEffect(() => {
     setUsers(initialUsers);
@@ -113,6 +113,8 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
     });
     doc.save('listado-usuarios.pdf');
   };
+  
+  const canManageUsers = currentUserRole === 'Admin' || currentUserRole === 'Moderador';
 
   return (
     <>
@@ -183,7 +185,7 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
                     </TableCell>
                     <TableCell>{isClient ? format(new Date(user.fechaCreacion), "dd/MM/yyyy") : '...'}</TableCell>
-                    {canManageUsers && (
+                    {canManageUsers && (currentUserRole === 'Admin' || (currentUserRole === 'Moderador' && user.role === 'Obrero')) && (
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -230,7 +232,7 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
                                 {user.nombre} {user.apellido}
                                 <p className="text-sm font-normal text-muted-foreground">C.I: {user.cedula}</p>
                             </CardTitle>
-                            {canManageUsers && (
+                            {canManageUsers && (currentUserRole === 'Admin' || (currentUserRole === 'Moderador' && user.role === 'Obrero')) && (
                               <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                   <Button aria-haspopup="true" size="icon" variant="ghost">
