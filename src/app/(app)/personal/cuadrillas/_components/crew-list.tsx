@@ -42,6 +42,11 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Crew | null>(null);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const fetchCrews = useCallback(async () => {
     setLoading(true);
@@ -183,7 +188,7 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
                     <TableCell>
                        {crew.creadoPor}
                     </TableCell>
-                    <TableCell>{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>{isClient ? format(new Date(crew.fechaCreacion), "dd/MM/yyyy") : '...'}</TableCell>
                     {canManageCrews && (
                       <TableCell>
                         <DropdownMenu>
@@ -264,7 +269,7 @@ export function CrewList({ initialCrews, canManageCrews }: CrewListProps) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Fecha:</span>
-                            <span>{format(new Date(crew.fechaCreacion), "dd/MM/yyyy")}</span>
+                            <span>{isClient ? format(new Date(crew.fechaCreacion), "dd/MM/yyyy") : '...'}</span>
                         </div>
                     </CardContent>
                 </Card>

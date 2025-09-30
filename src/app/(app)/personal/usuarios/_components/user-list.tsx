@@ -42,6 +42,11 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<User | null>(null);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -177,7 +182,7 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
                     <TableCell>
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className={user.status === 'active' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{user.status}</Badge>
                     </TableCell>
-                    <TableCell>{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>{isClient ? format(new Date(user.fechaCreacion), "dd/MM/yyyy") : '...'}</TableCell>
                     {canManageUsers && (
                       <TableCell>
                         <DropdownMenu>
@@ -262,7 +267,7 @@ export function UserList({ initialUsers, canManageUsers }: UserListProps) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Creado:</span>
-                            <span>{format(new Date(user.fechaCreacion), "dd/MM/yyyy")}</span>
+                            <span>{isClient ? format(new Date(user.fechaCreacion), "dd/MM/yyyy") : '...'}</span>
                         </div>
                     </CardContent>
                 </Card>

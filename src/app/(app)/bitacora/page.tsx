@@ -73,8 +73,10 @@ function formatLogMessage(log: ActivityLog): string {
 export default function BitacoraPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     async function fetchLogs() {
       setLoading(true);
       const logResult = await getActivityLogs();
@@ -168,7 +170,7 @@ export default function BitacoraPage() {
                           </TableCell>
                           <TableCell className="font-medium">{formatLogMessage(log)}</TableCell>
                           <TableCell>{log.realizadoPor}</TableCell>
-                          <TableCell>{formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}</TableCell>
+                          <TableCell>{isClient ? formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es }) : '...'}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -194,7 +196,7 @@ export default function BitacoraPage() {
                           {formatLogMessage(log)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {log.realizadoPor} • {formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es })}
+                          {log.realizadoPor} • {isClient ? formatDistanceToNow(new Date(log.fecha), { addSuffix: true, locale: es }) : '...'}
                         </p>
                       </div>
                     </div>
