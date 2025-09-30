@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Admin' | 'Moderador' | 'Obrero';
 
 export interface User {
@@ -73,7 +74,9 @@ export interface WorkReport {
   municipio: string;
   distancia: number;
   comentarios: string;
-  herramientas?: ToolEntry[];
+  herramientasUtilizadas?: ToolEntry[];
+  herramientasDanadas?: ToolEntry[];
+  herramientasExtraviadas?: ToolEntry[];
   realizadoPor: string;
   fecha: string;
 }

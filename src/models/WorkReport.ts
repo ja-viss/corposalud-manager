@@ -1,4 +1,5 @@
 
+
 import mongoose, { Schema, models, model } from 'mongoose';
 
 const ToolEntrySchema = new Schema({
@@ -10,7 +11,9 @@ const WorkReportSchema = new Schema({
   municipio: { type: String, required: true },
   distancia: { type: Number, required: true },
   comentarios: { type: String, required: true },
-  herramientas: [ToolEntrySchema],
+  herramientasUtilizadas: [ToolEntrySchema],
+  herramientasDanadas: [ToolEntrySchema],
+  herramientasExtraviadas: [ToolEntrySchema],
   realizadoPor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   fecha: { type: Date, default: Date.now },
 }, {

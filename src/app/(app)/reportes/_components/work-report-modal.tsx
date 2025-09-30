@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { createWorkReport } from "@/app/actions";
 import type { Crew } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 interface WorkReportModalProps {
     isOpen: boolean;
@@ -28,7 +29,13 @@ const formSchema = z.object({
     municipio: z.string().min(3, "El municipio es requerido."),
     distancia: z.coerce.number().min(0, "La distancia no puede ser negativa."),
     comentarios: z.string().min(10, "Los comentarios son requeridos."),
-    herramientas: z.array(z.object({
+    herramientasUtilizadas: z.array(z.object({
+        nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
+    })).optional(),
+    herramientasDanadas: z.array(z.object({
+        nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
+    })).optional(),
+    herramientasExtraviadas: z.array(z.object({
         nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
     })).optional(),
 });
@@ -44,14 +51,25 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
             municipio: "",
             distancia: 0,
             comentarios: "",
-            herramientas: [{ nombre: "" }],
+            herramientasUtilizadas: [{ nombre: "" }],
+            herramientasDanadas: [{ nombre: "" }],
+            herramientasExtraviadas: [{ nombre: "" }],
         },
     });
     
-    const { fields, append, remove } = useFieldArray({
+    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove } = useFieldArray({
         control: form.control,
-        name: "herramientas",
+        name: "herramientasUtilizadas",
     });
+    const { fields: danadasFields, append: danadasAppend, remove: danadasRemove } = useFieldArray({
+        control: form.control,
+        name: "herramientasDanadas",
+    });
+    const { fields: extraviadasFields, append: extraviadasAppend, remove: extraviadasRemove } = useFieldArray({
+        control: form.control,
+        name: "herramientasExtraviadas",
+    });
+
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
@@ -131,15 +149,18 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                     <FormMessage />
                                 </FormItem>
                             )} />
+                            
+                            <Separator />
 
+                            {/* Herramientas Utilizadas */}
                             <div>
                                 <FormLabel>Herramientas Utilizadas</FormLabel>
                                 <div className="mt-2 space-y-3">
-                                    {fields.map((field, index) => (
+                                    {utilizadasFields.map((field, index) => (
                                         <div key={field.id} className="flex items-center gap-2">
                                             <FormField
                                                 control={form.control}
-                                                name={`herramientas.${index}.nombre`}
+                                                name={`herramientasUtilizadas.${index}.nombre`}
                                                 render={({ field }) => (
                                                     <FormItem className="flex-grow">
                                                         <FormControl>
@@ -149,13 +170,77 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                                     </FormItem>
                                                 )}
                                             />
-                                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                            <Button type="button" variant="destructive" size="icon" onClick={() => utilizadasRemove(index)} disabled={utilizadasFields.length <= 1}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     ))}
                                 </div>
-                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => append({ nombre: '' })}>
+                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => utilizadasAppend({ nombre: '' })}>
+                                    <PlusCircle className="h-3.5 w-3.5" />
+                                    Agregar Herramienta
+                                </Button>
+                            </div>
+                            
+                            <Separator />
+
+                             {/* Herramientas Dañadas */}
+                            <div>
+                                <FormLabel>Herramientas Dañadas</FormLabel>
+                                <div className="mt-2 space-y-3">
+                                    {danadasFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`herramientasDanadas.${index}.nombre`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl>
+                                                            <Input placeholder={`Herramienta #${index + 1}`} {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="destructive" size="icon" onClick={() => danadasRemove(index)} disabled={danadasFields.length <= 1}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => danadasAppend({ nombre: '' })}>
+                                    <PlusCircle className="h-3.5 w-3.5" />
+                                    Agregar Herramienta
+                                </Button>
+                            </div>
+                            
+                            <Separator />
+
+                            {/* Herramientas Extraviadas */}
+                            <div>
+                                <FormLabel>Herramientas Extraviadas</FormLabel>
+                                <div className="mt-2 space-y-3">
+                                    {extraviadasFields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <FormField
+                                                control={form.control}
+                                                name={`herramientasExtraviadas.${index}.nombre`}
+                                                render={({ field }) => (
+                                                    <FormItem className="flex-grow">
+                                                        <FormControl>
+                                                            <Input placeholder={`Herramienta #${index + 1}`} {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <Button type="button" variant="destructive" size="icon" onClick={() => extraviadasRemove(index)} disabled={extraviadasFields.length <= 1}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => extraviadasAppend({ nombre: '' })}>
                                     <PlusCircle className="h-3.5 w-3.5" />
                                     Agregar Herramienta
                                 </Button>
