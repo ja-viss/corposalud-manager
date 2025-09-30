@@ -68,7 +68,7 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
 
         // If the user is a Moderator, they can ONLY see Obreros, unless they explicitly ask for other roles
         if (currentUser.role === 'Moderador' && !filter.role) {
-            queryFilter.role = 'Obrero';
+            queryFilter.role = { $in: ['Obrero', 'Admin', 'Moderador'] };
         }
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
@@ -853,10 +853,6 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
             return { success: false, message: "No tiene permiso para realizar esta acción." };
         }
         
-        if (!data.comentarios || data.comentarios.trim() === '') {
-            data.comentarios = "Reporte sin comentarios";
-        }
-
         const newWorkReport = new WorkReport({
             ...data,
             realizadoPor: new mongoose.Types.ObjectId(currentUser.id),
@@ -1013,3 +1009,5 @@ export async function getAdminDashboardStats() {
     ],
   };
 }
+
+    
