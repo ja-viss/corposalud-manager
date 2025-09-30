@@ -32,7 +32,7 @@ const generateWorkReportPDF = (report: PopulatedWorkReport) => {
     const primaryColorH = 173;
     const headerColor = hslToRgb(primaryColorH, 80, 30);
 
-    const reportId = report?.id?.slice(-6).toUpperCase() ?? 'N/A';
+    const reportId = report?._id?.slice(-6).toUpperCase() ?? 'N/A';
     const reportDate = report?.fecha ? format(new Date(report.fecha), "dd/MM/yyyy", { locale: es }) : 'N/A';
     const crewName = report?.crewId?.nombre ?? 'Cuadrilla no especificada';
 
@@ -141,7 +141,7 @@ export function WorkReportList({ initialReports = [] }: WorkReportListProps) {
         </Card>
       ) : (
         reports.map((report) => (
-          <Card key={report.id}>
+          <Card key={report._id}>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                 <div>
@@ -150,7 +150,7 @@ export function WorkReportList({ initialReports = [] }: WorkReportListProps) {
                     {report.crewId?.nombre || 'Reporte sin cuadrilla'}
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    ID del Reporte: {report.id?.slice(-6).toUpperCase() ?? 'N/A'}
+                    ID del Reporte: {report._id?.slice(-6).toUpperCase() ?? 'N/A'}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 mt-2 sm:mt-0">
