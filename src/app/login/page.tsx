@@ -31,7 +31,7 @@ export default function LoginPage() {
     if (result.success) {
       toast({ title: "Éxito", description: result.message });
       // Redirect to dashboard after successful login
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
       setLoading(false);
@@ -48,7 +48,7 @@ export default function LoginPage() {
      if (result.success) {
       toast({ title: "Éxito", description: result.message });
       // Redirect to dashboard after successful login
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
       setLoading(false);
