@@ -52,7 +52,7 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
         report.crewId?.nombre ?? 'N/A',
         report.municipio,
         report.distancia,
-        `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}`,
+        report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'Usuario Eliminado',
         format(new Date(report.fecha), "dd/MM/yyyy")
       ]),
       headStyles: {
@@ -115,7 +115,7 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
                                     <TableCell>{report.distancia}</TableCell>
                                     <TableCell>
                                         <Badge variant="secondary">
-                                            {`${report.realizadoPor.nombre} ${report.realizadoPor.apellido}`}
+                                            {report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'Usuario Eliminado'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>{isClient ? format(new Date(report.fecha), "dd/MM/yyyy") : '...'}</TableCell>
@@ -146,7 +146,7 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <User className="h-4 w-4 text-muted-foreground" />
-                                    <span>{`${report.realizadoPor.nombre} ${report.realizadoPor.apellido}`}</span>
+                                    <span>{report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'Usuario Eliminado'}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
