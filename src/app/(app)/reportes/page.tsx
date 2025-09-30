@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -130,22 +131,22 @@ export default function ReportesPage() {
           return;
       }
       
-      const body = result.data.flatMap((crew: Crew) => {
+      const body = result.data.map((crew: Crew) => {
         const moderadores = crew.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ');
-        const obreros = crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join('\n');
-        return [[
+        const obreros = crew.obreros.map(o => `${o.nombre} ${o.apellido}`).join(', ');
+        return [
           crew.nombre,
           crew.descripcion || 'N/A',
           moderadores,
           obreros,
           crew.creadoPor,
           format(new Date(crew.fechaCreacion), "dd/MM/yyyy")
-        ]];
+        ];
       });
 
       generatePdf(
         "Reporte de Cuadrillas",
-        [['Nombre', 'Descripción', 'Moderadores', 'Obreros', 'Creado Por', 'Fecha Creación']],
+        [['Nombre', 'Descripción', 'Moderador', 'Obreros', 'Creado Por', 'Fecha Creación']],
         body,
         "reporte-cuadrillas.pdf"
       );
@@ -161,9 +162,9 @@ export default function ReportesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Centro de Reportes</h1>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {/* Tarjeta para Crear Reporte de Trabajo */}
-          <Card className="flex flex-col lg:col-span-1">
+          <Card className="flex flex-col">
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-semibold">Nuevo Reporte de Trabajo</CardTitle>
               <ClipboardPlus className="h-6 w-6 text-primary" />
@@ -182,7 +183,7 @@ export default function ReportesPage() {
           </Card>
           
           {/* Tarjeta para Ver Historial de Reportes */}
-          <Card className="flex flex-col lg:col-span-1">
+          <Card className="flex flex-col">
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg font-semibold">Historial de Reportes</CardTitle>
               <HardHat className="h-6 w-6 text-primary" />
@@ -239,6 +240,26 @@ export default function ReportesPage() {
               </Button>
             </CardContent>
           </Card>
+          
+           {/* Reporte de Cuadrillas */}
+          <Card className="flex flex-col">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-semibold">Reporte de Cuadrillas</CardTitle>
+              <HardHat className="h-6 w-6 text-primary" />
+            </CardHeader>
+            <CardContent className="flex-1">
+              <CardDescription>
+                Exporta una lista completa de todas las cuadrillas activas.
+              </CardDescription>
+            </CardContent>
+             <CardContent>
+               <Button className="w-full" onClick={handleExportCuadrillasPDF} disabled={loading === 'cuadrillas'}>
+                <FileDown className="mr-2 h-4 w-4" />
+                {loading === 'cuadrillas' ? 'Generando...' : 'Exportar PDF'}
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
       
