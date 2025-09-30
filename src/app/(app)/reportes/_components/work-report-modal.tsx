@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,6 +17,7 @@ import type { Crew } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface WorkReportModalProps {
     isOpen: boolean;
@@ -24,27 +25,27 @@ interface WorkReportModalProps {
     crews: Crew[];
 }
 
+const toolEntrySchema = z.object({
+    nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
+});
+
 const formSchema = z.object({
     crewId: z.string().min(1, "Debe seleccionar una cuadrilla."),
     municipio: z.string().min(3, "El municipio es requerido."),
     distancia: z.coerce.number().min(0, "La distancia no puede ser negativa."),
     comentarios: z.string().min(10, "Los comentarios son requeridos."),
-    herramientasUtilizadas: z.array(z.object({
-        nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
-    })).optional(),
-    herramientasDanadas: z.array(z.object({
-        nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
-    })).optional(),
-    herramientasExtraviadas: z.array(z.object({
-        nombre: z.string().min(1, "El nombre de la herramienta es requerido."),
-    })).optional(),
+    herramientasUtilizadas: z.array(toolEntrySchema).optional(),
+    herramientasDanadas: z.array(toolEntrySchema).optional(),
+    herramientasExtraviadas: z.array(toolEntrySchema).optional(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             crewId: "",
@@ -56,8 +57,8 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
             herramientasExtraviadas: [{ nombre: "" }],
         },
     });
-    
-    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove } = useFieldArray({
+
+    const { fields: utilizadasFields, append: utilizadasAppend, remove: utilizadasRemove, update: utilizadasUpdate } = useFieldArray({
         control: form.control,
         name: "herramientasUtilizadas",
     });
@@ -69,9 +70,57 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         control: form.control,
         name: "herramientasExtraviadas",
     });
+    
+    const herramientasUtilizadasValues = form.watch('herramientasUtilizadas');
 
+    useEffect(() => {
+        if (!herramientasUtilizadasValues) return;
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+        // Sync lengths
+        const utilizadasLength = herramientasUtilizadasValues.length;
+        const danadasLength = form.getValues('herramientasDanadas')?.length ?? 0;
+        const extraviadasLength = form.getValues('herramientasExtraviadas')?.length ?? 0;
+
+        // Sync add
+        if (utilizadasLength > danadasLength) {
+            for (let i = danadasLength; i < utilizadasLength; i++) {
+                danadasAppend({ nombre: herramientasUtilizadasValues[i]?.nombre || "" });
+            }
+        }
+        if (utilizadasLength > extraviadasLength) {
+            for (let i = extraviadasLength; i < utilizadasLength; i++) {
+                extraviadasAppend({ nombre: herramientasUtilizadasValues[i]?.nombre || "" });
+            }
+        }
+        
+        // Sync remove
+        if (utilizadasLength < danadasLength) {
+            for (let i = danadasLength - 1; i >= utilizadasLength; i--) {
+                danadasRemove(i);
+            }
+        }
+        if (utilizadasLength < extraviadasLength) {
+            for (let i = extraviadasLength - 1; i >= utilizadasLength; i--) {
+                extraviadasRemove(i);
+            }
+        }
+
+        // Sync values
+        herramientasUtilizadasValues.forEach((tool, index) => {
+            const danadaValue = form.getValues(`herramientasDanadas.${index}.nombre`);
+            const extraviadaValue = form.getValues(`herramientasExtraviadas.${index}.nombre`);
+
+            if (tool.nombre !== danadaValue) {
+                form.setValue(`herramientasDanadas.${index}.nombre`, tool.nombre, { shouldDirty: true });
+            }
+            if (tool.nombre !== extraviadaValue) {
+                form.setValue(`herramientasExtraviadas.${index}.nombre`, tool.nombre, { shouldDirty: true });
+            }
+        });
+
+    }, [herramientasUtilizadasValues, form, danadasAppend, danadasRemove, extraviadasAppend, extraviadasRemove]);
+
+    async function onSubmit(values: FormValues) {
         setIsLoading(true);
         const result = await createWorkReport(values);
 
@@ -89,6 +138,11 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         form.reset();
         onClose();
     }
+    
+    const getFilteredCount = (fields: { nombre: string }[] | undefined) => {
+        if (!fields) return 0;
+        return fields.filter(field => field.nombre.trim() !== '').length;
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -154,8 +208,11 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
 
                             {/* Herramientas Utilizadas */}
                             <div>
-                                <FormLabel>Herramientas Utilizadas</FormLabel>
-                                <div className="mt-2 space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <FormLabel>Herramientas Utilizadas</FormLabel>
+                                    <Badge variant="secondary">{getFilteredCount(form.getValues('herramientasUtilizadas'))}</Badge>
+                                </div>
+                                <div className="space-y-3">
                                     {utilizadasFields.map((field, index) => (
                                         <div key={field.id} className="flex items-center gap-2">
                                             <FormField
@@ -186,8 +243,11 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
 
                              {/* Herramientas Dañadas */}
                             <div>
-                                <FormLabel>Herramientas Dañadas</FormLabel>
-                                <div className="mt-2 space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <FormLabel>Herramientas Dañadas</FormLabel>
+                                     <Badge variant="destructive">{getFilteredCount(form.getValues('herramientasDanadas'))}</Badge>
+                                </div>
+                                <div className="space-y-3">
                                     {danadasFields.map((field, index) => (
                                         <div key={field.id} className="flex items-center gap-2">
                                             <FormField
@@ -202,24 +262,21 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                                     </FormItem>
                                                 )}
                                             />
-                                            <Button type="button" variant="destructive" size="icon" onClick={() => danadasRemove(index)} disabled={danadasFields.length <= 1}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                             {/* Remove button is intentionally omitted from this synchronized list */}
                                         </div>
                                     ))}
                                 </div>
-                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => danadasAppend({ nombre: '' })}>
-                                    <PlusCircle className="h-3.5 w-3.5" />
-                                    Agregar Herramienta
-                                </Button>
                             </div>
                             
                             <Separator />
 
                             {/* Herramientas Extraviadas */}
-                            <div>
-                                <FormLabel>Herramientas Extraviadas</FormLabel>
-                                <div className="mt-2 space-y-3">
+                             <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <FormLabel>Herramientas Extraviadas</FormLabel>
+                                     <Badge variant="outline">{getFilteredCount(form.getValues('herramientasExtraviadas'))}</Badge>
+                                </div>
+                                <div className="space-y-3">
                                     {extraviadasFields.map((field, index) => (
                                         <div key={field.id} className="flex items-center gap-2">
                                             <FormField
@@ -234,16 +291,10 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                                     </FormItem>
                                                 )}
                                             />
-                                            <Button type="button" variant="destructive" size="icon" onClick={() => extraviadasRemove(index)} disabled={extraviadasFields.length <= 1}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {/* Remove button is intentionally omitted from this synchronized list */}
                                         </div>
                                     ))}
                                 </div>
-                                 <Button type="button" variant="outline" size="sm" className="mt-3 gap-1" onClick={() => extraviadasAppend({ nombre: '' })}>
-                                    <PlusCircle className="h-3.5 w-3.5" />
-                                    Agregar Herramienta
-                                </Button>
                             </div>
                         </div>
                        </ScrollArea>
