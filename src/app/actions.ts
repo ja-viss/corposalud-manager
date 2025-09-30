@@ -878,6 +878,34 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
     }
 }
 
+export async function updateWorkReport(reportId: string, data: Partial<Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>>) {
+    try {
+        await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: "No tiene permiso para realizar esta acción." };
+        }
+
+        const report = await WorkReport.findByIdAndUpdate(reportId, data, { new: true, runValidators: true });
+
+        if (!report) {
+            return { success: false, message: 'Reporte de trabajo no encontrado.' };
+        }
+
+        await logActivity(`work-report-update:${report._id}`, currentUser.username);
+
+        return { success: true, data: safeSerialize(report), message: 'Reporte de trabajo actualizado exitosamente.' };
+
+    } catch (error: any) {
+        if (error instanceof mongoose.Error.ValidationError) {
+            const messages = Object.values(error.errors).map(e => e.message);
+            return { success: false, message: `Error de validación: ${messages[0]}` };
+        }
+        console.error('Error al actualizar reporte de trabajo:', error);
+        return { success: false, message: 'Ocurrió un error inesperado al actualizar el reporte.' };
+    }
+}
+
 export async function getWorkReports() {
     try {
         await dbConnect();
