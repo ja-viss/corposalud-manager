@@ -167,15 +167,22 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
             generatedPasswordForResponse = finalPassword;
         }
 
-        if (!finalUsername) {
-             const existingByUsername = await User.findOne({ username: userData.username });
-             if(existingByUsername) return { success: false, message: 'Ya existe un usuario con el mismo nombre de usuario.' };
-             finalUsername = userData.username;
+        if (userData.role === 'Admin') {
+            if (!finalUsername) {
+                 const existingByUsername = await User.findOne({ username: userData.username });
+                 if(existingByUsername) return { success: false, message: 'Ya existe un usuario con el mismo nombre de usuario.' };
+                 finalUsername = userData.username;
+            }
+    
+            if (!finalPassword) {
+                return { success: false, message: 'La contraseña es obligatoria para el rol de Admin.' };
+            }
         }
 
-        if (!finalPassword) {
-            return { success: false, message: 'La contraseña es obligatoria.' };
+        if (!finalUsername || !finalPassword) {
+             return { success: false, message: 'Faltan credenciales para crear el usuario.' };
         }
+
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(finalPassword, salt);
@@ -192,9 +199,9 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
         await newUser.save();
         await logActivity(`user-creation:${newUser.username}`, currentUser.username);
         
-        const responseData = safeSerialize(newUser);
+        const responseData = safeSerialize(newUser) as any;
         if (generatedPasswordForResponse) {
-           (responseData as any).generatedPassword = generatedPasswordForResponse;
+           responseData.generatedPassword = generatedPasswordForResponse;
         }
 
         return { success: true, data: responseData, message: 'Usuario creado exitosamente.' };

@@ -80,8 +80,8 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const dataToSubmit = { ...values, role: values.role as UserRole };
         
-        if (!isEditing && values.role !== 'Obrero' && !values.contrasena) {
-            form.setError("contrasena", { type: "manual", message: "La contraseña es obligatoria para nuevos usuarios." });
+        if (!isEditing && values.role === 'Admin' && !values.contrasena) {
+            form.setError("contrasena", { type: "manual", message: "La contraseña es obligatoria para nuevos Admins." });
             return;
         }
         
@@ -111,7 +111,7 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
     }
     
     const canSelectRole = currentUserRole === 'Admin';
-    const showCredentialsFields = roleWatcher === 'Admin' || roleWatcher === 'Moderador';
+    const showCredentialsFields = roleWatcher === 'Admin';
 
     const handleCopyToClipboard = () => {
         const credentialsText = `Usuario: ${generatedCredentials.username}\nContraseña: ${generatedCredentials.password}`;
@@ -199,7 +199,7 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
                                     </>
                                 ) : (
                                     <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
-                                        El usuario y la contraseña para este rol se generarán automáticamente usando el número de cédula.
+                                        Las credenciales para este rol se generarán automáticamente.
                                     </div>
                                 )}
                             </CardContent>
