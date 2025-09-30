@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { createWorkReport, updateWorkReport } from "@/app/actions";
-import type { Crew, PopulatedWorkReport, PopulatedCrew } from '@/lib/types';
+import type { Crew, PopulatedWorkReport, PopulatedCrew, ToolEntry } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle, Users, FileText } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -153,71 +153,84 @@ const styles = StyleSheet.create({
     },
 });
 
-const WorkReportPDF = ({ report }: { report: PopulatedWorkReport }) => (
-    <Document>
-        <Page size="A4" style={styles.page}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Reporte de Trabajo</Text>
-                <Text style={styles.headerSubtitle}>{report.crewId?.nombre || 'N/A'}</Text>
-                <Text style={styles.headerMeta}>{`ID: ${report.id.slice(-6).toUpperCase()} | Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy", { locale: es })}`}</Text>
-            </View>
+const WorkReportPDF = ({ report }: { report: PopulatedWorkReport }) => {
+    // Ensure data is safe to access
+    const reportId = report?.id?.slice(-6).toUpperCase() ?? 'N/A';
+    const reportDate = report?.fecha ? format(new Date(report.fecha), "dd/MM/yyyy", { locale: es }) : 'N/A';
+    const crewName = report?.crewId?.nombre ?? 'Cuadrilla no especificada';
+    const crewDescription = report?.crewId?.descripcion ?? 'No disponible.';
+    const herramientasUtilizadas = report?.herramientasUtilizadas ?? [];
+    const herramientasDanadas = report?.herramientasDanadas ?? [];
+    const herramientasExtraviadas = report?.herramientasExtraviadas ?? [];
+    const moderadores = report?.crewId?.moderadores ?? [];
+    const obreros = report?.crewId?.obreros ?? [];
 
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Descripción de la Cuadrilla</Text>
-                <Text style={styles.crewDescription}>{report.crewId?.descripcion || 'No disponible.'}</Text>
-            </View>
-
-            <View style={styles.section}>
-                 <Text style={styles.sectionTitle}>Información General</Text>
-                 <View style={styles.grid}>
-                    <Text style={styles.gridColLabel}>Municipio</Text><Text style={styles.gridColValue}>{report.municipio}</Text>
-                 </View>
-                 <View style={styles.grid}>
-                    <Text style={styles.gridColLabel}>Distancia (m)</Text><Text style={styles.gridColValue}>{report.distancia.toString()}</Text>
-                 </View>
-                 <View style={styles.grid}>
-                    <Text style={styles.gridColLabel}>Comentarios</Text><Text style={styles.gridColValue}>{report.comentarios || 'Sin comentarios.'}</Text>
-                 </View>
-            </View>
-            
-            {report.herramientasUtilizadas && report.herramientasUtilizadas.length > 0 && (
-                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Herramientas</Text>
-                    <View style={styles.table}>
-                        <View style={styles.tableRow}>
-                            <Text style={styles.tableColHeader}>Herramienta</Text><Text style={styles.tableColHeader}>Utilizadas</Text><Text style={styles.tableColHeader}>Dañadas</Text><Text style={styles.tableColHeader}>Extraviadas</Text>
-                        </View>
-                        {report.herramientasUtilizadas && report.herramientasUtilizadas.map((tool, index) => {
-                             const damaged = report.herramientasDanadas?.find(d => d.nombre === tool.nombre)?.cantidad || 0;
-                             const lost = report.herramientasExtraviadas?.find(l => l.nombre === tool.nombre)?.cantidad || 0;
-                            return (
-                                <View style={styles.tableRow} key={index}>
-                                    <Text style={styles.tableCol}>{tool.nombre}</Text><Text style={styles.tableCol}>{tool.cantidad}</Text><Text style={styles.tableCol}>{damaged}</Text><Text style={styles.tableCol}>{lost}</Text>
-                                </View>
-                            )
-                        })}
-                    </View>
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Reporte de Trabajo</Text>
+                    <Text style={styles.headerSubtitle}>{crewName}</Text>
+                    <Text style={styles.headerMeta}>{`ID: ${reportId} | Fecha: ${reportDate}`}</Text>
                 </View>
-            )}
 
-            {report.crewId && (
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Miembros de la Cuadrilla</Text>
-                     <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Moderador:</Text>
-                    <View style={styles.membersList}>
-                        {report.crewId.moderadores && report.crewId.moderadores.map(m => <Text key={m.id} style={styles.memberItem}>- {m.nombre} {m.apellido}</Text>)}
-                    </View>
-                    <Text style={{ fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>Obreros:</Text>
-                    <View style={styles.membersList}>
-                        {report.crewId.obreros && report.crewId.obreros.map(o => <Text key={o.id} style={styles.memberItem}>- {o.nombre} {o.apellido}</Text>)}
-                    </View>
+                    <Text style={styles.sectionTitle}>Descripción de la Cuadrilla</Text>
+                    <Text style={styles.crewDescription}>{crewDescription}</Text>
                 </View>
-            )}
-            
-            <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} fixed />
-        </Page>
-    </Document>
-);
+
+                <View style={styles.section}>
+                     <Text style={styles.sectionTitle}>Información General</Text>
+                     <View style={styles.grid}>
+                        <Text style={styles.gridColLabel}>Municipio</Text><Text style={styles.gridColValue}>{report.municipio}</Text>
+                     </View>
+                     <View style={styles.grid}>
+                        <Text style={styles.gridColLabel}>Distancia (m)</Text><Text style={styles.gridColValue}>{report.distancia.toString()}</Text>
+                     </View>
+                     <View style={styles.grid}>
+                        <Text style={styles.gridColLabel}>Comentarios</Text><Text style={styles.gridColValue}>{report.comentarios || 'Sin comentarios.'}</Text>
+                     </View>
+                </View>
+                
+                {herramientasUtilizadas.length > 0 && (
+                     <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Herramientas</Text>
+                        <View style={styles.table}>
+                            <View style={styles.tableRow}>
+                                <Text style={styles.tableColHeader}>Herramienta</Text><Text style={styles.tableColHeader}>Utilizadas</Text><Text style={styles.tableColHeader}>Dañadas</Text><Text style={styles.tableColHeader}>Extraviadas</Text>
+                            </View>
+                            {herramientasUtilizadas.map((tool: ToolEntry, index: number) => {
+                                 const damaged = herramientasDanadas.find(d => d.nombre === tool.nombre)?.cantidad || 0;
+                                 const lost = herramientasExtraviadas.find(l => l.nombre === tool.nombre)?.cantidad || 0;
+                                return (
+                                    <View style={styles.tableRow} key={index}>
+                                        <Text style={styles.tableCol}>{tool.nombre}</Text><Text style={styles.tableCol}>{tool.cantidad}</Text><Text style={styles.tableCol}>{damaged}</Text><Text style={styles.tableCol}>{lost}</Text>
+                                    </View>
+                                )
+                            })}
+                        </View>
+                    </View>
+                )}
+
+                {report.crewId && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Miembros de la Cuadrilla</Text>
+                         <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Moderador:</Text>
+                        <View style={styles.membersList}>
+                            {moderadores.map(m => <Text key={m.id} style={styles.memberItem}>- {m.nombre} {m.apellido}</Text>)}
+                        </View>
+                        <Text style={{ fontWeight: 'bold', marginTop: 10, marginBottom: 5 }}>Obreros:</Text>
+                        <View style={styles.membersList}>
+                            {obreros.map(o => <Text key={o.id} style={styles.memberItem}>- {o.nombre} {o.apellido}</Text>)}
+                        </View>
+                    </View>
+                )}
+                
+                <Text style={styles.pageNumber} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} fixed />
+            </Page>
+        </Document>
+    );
+};
 
 const generateWorkReportPDF = async (report: PopulatedWorkReport) => {
     const blob = await pdf(<WorkReportPDF report={report} />).toBlob();
@@ -586,5 +599,7 @@ export function WorkReportModal({ isOpen, onClose, crews, report, onReportSaved 
         </Dialog>
     );
 }
+
+    
 
     
