@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getUserById } from '@/app/actions';
 import type { User } from '@/lib/types';
-import { PersonalClientLayout } from './_components/personal-client-layout';
 
 async function getCurrentUser(): Promise<User | null> {
     const cookieStore = cookies();
@@ -35,17 +34,5 @@ export default async function PersonalLayout({ children }: { children: React.Rea
         redirect('/dashboard');
     }
 
-    return (
-        <div className="space-y-8 py-8">
-            <h1 className="text-3xl font-bold tracking-tight">
-                Gestión de Personal
-            </h1>
-            
-            <PersonalClientLayout 
-                showUserTab={canManagePersonal}
-            >
-                {children}
-            </PersonalClientLayout>
-        </div>
-    )
+    return <>{children}</>;
 }

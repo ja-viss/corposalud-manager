@@ -1,4 +1,5 @@
 
+
 import { getUsers, getUserById } from "@/app/actions";
 import { UserList } from "./_components/user-list";
 import { cookies } from "next/headers";
@@ -35,7 +36,14 @@ export default async function UsuariosPage() {
   // The getUsers action already filters out the current user.
   const initialUsers = usersResult.success ? usersResult.data || [] : [];
   
-  return <UserList initialUsers={initialUsers} canManageUsers={currentUser.role === 'Admin' || currentUser.role === 'Moderador'} />;
+  return (
+    <div className="space-y-8 py-8">
+        <h1 className="text-3xl font-bold tracking-tight">
+            Gestión de Usuarios
+        </h1>
+        <UserList initialUsers={initialUsers} canManageUsers={currentUser.role === 'Admin' || currentUser.role === 'Moderador'} />
+    </div>
+    );
 }
 
 

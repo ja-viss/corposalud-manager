@@ -36,9 +36,14 @@ export default async function CuadrillasPage() {
     const canManageCrews = user.role === 'Admin' || user.role === 'Moderador';
 
     return (
-        <CrewList 
-            initialCrews={initialCrews}
-            canManageCrews={canManageCrews}
-        />
+        <div className="space-y-8 py-8">
+            <h1 className="text-3xl font-bold tracking-tight">
+                Gestión de Cuadrillas
+            </h1>
+            <CrewList 
+                initialCrews={initialCrews}
+                canManageCrews={canManageCrews}
+            />
+        </div>
     );
 }
