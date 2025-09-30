@@ -174,13 +174,6 @@ export function WorkReportList({ initialReports = [] }: WorkReportListProps) {
               </div>
             </CardHeader>
             <CardContent className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <div>
-                        <span className="font-semibold text-foreground">Realizado por:</span>
-                        <p>{report.realizadoPor ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido}` : 'N/A'}</p>
-                    </div>
-                </div>
                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <div>
