@@ -113,9 +113,10 @@ export function UserForm({ user, currentUserRole, crews = [] }: UserFormProps) {
     }
     
     const canSelectRole = currentUserRole === 'Admin';
-    const showCredentialsFields = 
-        (isEditing && (roleWatcher === 'Admin' || roleWatcher === 'Moderador')) ||
-        (!isEditing && roleWatcher === 'Admin');
+    
+    // Updated logic: credentials fields only show for Admin role.
+    const showCredentialsFields = roleWatcher === 'Admin';
+    const isEditingModerator = isEditing && user?.role === 'Moderador';
 
     const isWorkerOrModerator = user?.role === 'Obrero' || user?.role === 'Moderador';
 
@@ -164,22 +165,32 @@ export function UserForm({ user, currentUserRole, crews = [] }: UserFormProps) {
                                     <CardTitle>Información de la Cuenta</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="role" render={({ field }) => (
+                                    {isEditingModerator ? (
                                         <FormItem>
                                             <FormLabel>Rol</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole && isEditing}>
-                                                <FormControl>
-                                                    <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {currentUserRole === 'Admin' && <SelectItem value="Admin">Admin</SelectItem>}
-                                                    {currentUserRole === 'Admin' && <SelectItem value="Moderador">Moderador</SelectItem>}
-                                                    <SelectItem value="Obrero">Obrero</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                            <FormControl>
+                                                <Input value="Moderador" readOnly disabled />
+                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
-                                    )} />
+                                    ) : (
+                                        <FormField control={form.control} name="role" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Rol</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} disabled={!canSelectRole && isEditing}>
+                                                    <FormControl>
+                                                        <SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {currentUserRole === 'Admin' && <SelectItem value="Admin">Admin</SelectItem>}
+                                                        {currentUserRole === 'Admin' && <SelectItem value="Moderador">Moderador</SelectItem>}
+                                                        <SelectItem value="Obrero">Obrero</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    )}
                                     
                                     {showCredentialsFields ? (
                                         <>
@@ -211,11 +222,13 @@ export function UserForm({ user, currentUserRole, crews = [] }: UserFormProps) {
                                             )} />
                                         </>
                                     ) : (
-                                        <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
-                                        {roleWatcher === 'Obrero' && !isEditing ? 'Las credenciales para Obreros se generan automáticamente (Cédula/Cédula).' :
-                                            roleWatcher === 'Moderador' && !isEditing ? 'Las credenciales para Moderadores se generarán automáticamente.' :
-                                            'Este rol no requiere credenciales manuales.'}
-                                        </div>
+                                        !isEditingModerator && (
+                                            <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
+                                                {roleWatcher === 'Obrero' && !isEditing ? 'Las credenciales para Obreros se generan automáticamente (Cédula/Cédula).' :
+                                                    roleWatcher === 'Moderador' && !isEditing ? 'Las credenciales para Moderadores se generarán automáticamente.' :
+                                                    'Este rol no requiere credenciales manuales.'}
+                                            </div>
+                                        )
                                     )}
                                 </CardContent>
                             </Card>
