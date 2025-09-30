@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Users, Building, ClipboardList, UserCheck, UserX, Activity, LogIn, FileText, PlusCircle } from "lucide-react";
+import { Users, Building, ClipboardList, UserCheck, UserX } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Crew from "@/models/Crew";
