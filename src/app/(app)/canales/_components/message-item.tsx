@@ -28,7 +28,7 @@ export function MessageItem({ message, currentUser, channel, onDeleteRequest }: 
             <Avatar className="h-8 w-8">
                 <AvatarFallback>{senderInitials}</AvatarFallback>
             </Avatar>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
                     <p className="font-semibold text-sm">{senderName}</p>
                     <p className="text-xs text-muted-foreground">
