@@ -144,6 +144,14 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         return fields.filter(field => field.nombre.trim() !== '').length;
     };
 
+    const handleToolNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            utilizadasAppend({ nombre: '', cantidad: 0 });
+        }
+    };
+
+
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-2xl">
@@ -187,7 +195,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                 )} />
                                 <FormField control={form.control} name="distancia" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Distancia (Km)</FormLabel>
+                                        <FormLabel>Distancia (m)</FormLabel>
                                         <FormControl><Input type="number" placeholder="Ej: 15.5" {...field} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -221,7 +229,11 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                                                 render={({ field }) => (
                                                     <FormItem className="flex-grow w-full">
                                                         <FormControl>
-                                                            <Input placeholder={`Nombre Herramienta #${index + 1}`} {...field} />
+                                                            <Input 
+                                                                placeholder={`Nombre Herramienta #${index + 1}`} 
+                                                                {...field} 
+                                                                onKeyDown={handleToolNameKeyDown}
+                                                            />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
@@ -330,7 +342,3 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
         </Dialog>
     );
 }
-
-    
-
-    
