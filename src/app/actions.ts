@@ -808,7 +808,13 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
         
         await logActivity(`work-report-creation:${newWorkReport._id}`, currentUser.username);
 
-        return { success: true, message: "Reporte de trabajo guardado exitosamente." };
+        // Fetch the newly created report to populate it
+        const populatedReport = await getWorkReportById(newWorkReport._id.toString());
+        if (!populatedReport.success) {
+            return { success: false, message: "Reporte creado, pero no se pudo recuperar para la exportación." };
+        }
+
+        return { success: true, data: populatedReport.data, message: "Reporte de trabajo guardado exitosamente." };
 
     } catch (error: any) {
         if (error instanceof mongoose.Error.ValidationError) {

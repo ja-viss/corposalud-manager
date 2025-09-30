@@ -13,11 +13,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from "@/hooks/use-toast";
 import { createWorkReport } from "@/app/actions";
-import type { Crew } from '@/lib/types';
+import type { Crew, PopulatedWorkReport, ToolEntry } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, PlusCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { format } from 'date-fns';
+
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
+}
 
 interface WorkReportModalProps {
     isOpen: boolean;
@@ -41,6 +48,16 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  return [255 * f(0), 255 * f(8), 255 * f(4)];
+}
 
 export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps) {
     const { toast } = useToast();
@@ -120,12 +137,82 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
 
     }, [herramientasUtilizadasValues, form, danadasAppend, danadasRemove, extraviadasAppend, extraviadasRemove]);
 
+    const generatePdf = (report: PopulatedWorkReport) => {
+        const doc = new jsPDF() as jsPDFWithAutoTable;
+        const primaryColorH = 173;
+        const headerColor = hslToRgb(primaryColorH, 80, 30);
+        const pageHeight = doc.internal.pageSize.height;
+        let finalY = 0;
+        
+        const crewName = report.crewId?.nombre || 'N/A';
+        const fileName = `Reporte-${crewName}-${format(new Date(report.fecha), "yyyy-MM-dd")}.pdf`;
+
+        // Header
+        doc.setFontSize(20);
+        doc.text(`Reporte de Trabajo - ${crewName}`, 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Fecha: ${format(new Date(report.fecha), "dd/MM/yyyy")}`, 14, 28);
+        
+        // General Info
+        doc.autoTable({
+            startY: 35,
+            body: [
+                ['Municipio', report.municipio],
+                ['Distancia (m)', report.distancia.toString()],
+                ['Comentarios', report.comentarios],
+                ['Realizado Por', `${report.realizadoPor?.nombre} ${report.realizadoPor?.apellido}`],
+            ],
+            theme: 'grid',
+            styles: { fontSize: 10 },
+            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } },
+        });
+
+        finalY = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Members
+        const moderadores = report.crewId?.moderadores.map(m => `${m.nombre} ${m.apellido}`).join(', ') || 'N/A';
+        const obreros = report.crewId?.obreros.map(o => `${o.nombre} ${o.apellido}`).join(',\n') || 'N/A';
+
+        doc.autoTable({
+            startY: finalY,
+            head: [['Miembros de la Cuadrilla']],
+            body: [
+                [{ content: `Moderadores: ${moderadores}`, styles: { fontStyle: 'bold' } }],
+                [{ content: `Obreros: \n${obreros}` }],
+            ],
+            headStyles: { fillColor: headerColor, textColor: [255, 255, 255] },
+            theme: 'striped',
+        });
+        finalY = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Tools functions
+        const createToolTable = (title: string, tools: ToolEntry[] | undefined, startY: number) => {
+            if (!tools || tools.filter(t => t.nombre && t.cantidad > 0).length === 0) return startY;
+            doc.autoTable({
+                startY: startY,
+                head: [[title, 'Cantidad']],
+                body: tools.filter(t => t.nombre && t.cantidad > 0).map(t => [t.nombre, t.cantidad]),
+                headStyles: { fillColor: headerColor, textColor: [255, 255, 255] },
+                theme: 'striped',
+            });
+            return (doc as any).lastAutoTable.finalY + 10;
+        };
+
+        finalY = createToolTable('Herramientas Utilizadas', report.herramientasUtilizadas, finalY);
+        finalY = createToolTable('Herramientas Dañadas', report.herramientasDanadas, finalY);
+        createToolTable('Herramientas Extraviadas', report.herramientasExtraviadas, finalY);
+        
+        doc.save(fileName);
+    };
+
     async function onSubmit(values: FormValues) {
         setIsLoading(true);
         const result = await createWorkReport(values);
 
-        if (result.success) {
-            toast({ title: "Éxito", description: "Reporte de trabajo creado exitosamente." });
+        if (result.success && result.data) {
+            toast({ title: "Éxito", description: "Reporte creado. Descargando PDF..." });
+            generatePdf(result.data);
             form.reset();
             onClose();
         } else {
@@ -337,7 +424,7 @@ export function WorkReportModal({ isOpen, onClose, crews }: WorkReportModalProps
                         <DialogFooter className="pt-6">
                             <DialogClose asChild><Button type="button" variant="secondary" disabled={isLoading}>Cancelar</Button></DialogClose>
                             <Button type="submit" disabled={isLoading}>
-                                {isLoading ? 'Guardando...' : 'Guardar Reporte'}
+                                {isLoading ? 'Guardando...' : 'Guardar y Exportar PDF'}
                             </Button>
                         </DialogFooter>
                     </form>
