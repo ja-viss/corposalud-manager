@@ -120,7 +120,8 @@ export function WorkReportList({ initialReports = [] }: WorkReportListProps) {
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    setReports(initialReports);
+  }, [initialReports]);
 
   const handleExportPDF = (report: PopulatedWorkReport) => {
     generateWorkReportPDF(report);
@@ -149,7 +150,7 @@ export function WorkReportList({ initialReports = [] }: WorkReportListProps) {
                     {report.crewId?.nombre || 'Reporte sin cuadrilla'}
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    ID del Reporte: {report.id.slice(-6).toUpperCase()}
+                    ID del Reporte: {report.id?.slice(-6).toUpperCase() ?? 'N/A'}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2 mt-2 sm:mt-0">
