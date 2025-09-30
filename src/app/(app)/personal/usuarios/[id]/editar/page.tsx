@@ -4,6 +4,7 @@ import { UserForm } from "../../_components/user-form";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { User, Crew } from "@/lib/types";
+import { FormHeader } from "../../../_components/form-header";
 
 async function getCurrentUser(): Promise<User | null> {
     const cookieStore = cookies();
@@ -43,10 +44,11 @@ export default async function EditarUsuarioPage({ params }: { params: { id: stri
 
   return (
      <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Editar Usuario</h1>
-        <p className="text-muted-foreground">Actualice la información del usuario.</p>
-      </div>
+      <FormHeader
+        title="Editar Usuario"
+        description="Actualice la información del usuario."
+        backHref="/personal/usuarios"
+      />
       <UserForm 
         user={userResult.data} 
         currentUserRole={currentUser.role}

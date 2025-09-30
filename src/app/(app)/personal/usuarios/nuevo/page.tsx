@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getUserById } from '@/app/actions';
 import type { User } from '@/lib/types';
+import { FormHeader } from '../../_components/form-header';
 
 
 async function getCurrentUser(): Promise<User | null> {
@@ -23,10 +24,11 @@ export default async function NuevoUsuarioPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Crear Nuevo Usuario</h1>
-        <p className="text-muted-foreground">Complete el formulario para agregar un nuevo usuario al sistema.</p>
-      </div>
+      <FormHeader
+        title="Crear Nuevo Usuario"
+        description="Complete el formulario para agregar un nuevo usuario al sistema."
+        backHref="/personal/usuarios"
+      />
       <UserForm currentUserRole={currentUser.role}/>
     </div>
   );

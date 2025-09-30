@@ -2,6 +2,7 @@
 import { getCrewById } from "@/app/actions";
 import { CrewForm } from "../../_components/crew-form";
 import { notFound } from "next/navigation";
+import { FormHeader } from "../../../_components/form-header";
 
 export default async function EditarCuadrillaPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -13,13 +14,12 @@ export default async function EditarCuadrillaPage({ params }: { params: { id: st
 
   return (
      <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Editar {crewResult.data.nombre}</h1>
-        <p className="text-muted-foreground">Actualice la información de la cuadrilla.</p>
-      </div>
+      <FormHeader 
+        title={`Editar ${crewResult.data.nombre}`}
+        description="Actualice la información de la cuadrilla."
+        backHref="/personal/cuadrillas"
+      />
       <CrewForm crew={crewResult.data} />
     </div>
   );
 }
-
-    
