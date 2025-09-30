@@ -994,6 +994,30 @@ export async function getWorkReportById(reportId: string) {
     }
 }
 
+export async function deleteWorkReport(reportId: string) {
+    try {
+        await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: "No tiene permiso para realizar esta acción." };
+        }
+
+        const report = await WorkReport.findByIdAndDelete(reportId);
+
+        if (!report) {
+            return { success: false, message: 'Reporte de trabajo no encontrado.' };
+        }
+
+        await logActivity(`work-report-deletion:${report._id}`, currentUser.username);
+        
+        return { success: true, message: 'Reporte de trabajo eliminado exitosamente.' };
+
+    } catch (error) {
+        console.error('Error al eliminar reporte de trabajo:', error);
+        return { success: false, message: 'Error al eliminar el reporte de trabajo.' };
+    }
+}
+
 
 // Dashboard actions
 export async function getAdminDashboardStats() {
