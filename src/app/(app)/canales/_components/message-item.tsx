@@ -30,13 +30,13 @@ export function MessageItem({ message, currentUser, channel, onDeleteRequest }: 
             </Avatar>
             <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
-                    <p className="font-semibold text-sm">{senderName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-semibold text-sm truncate">{senderName}</p>
+                    <p className="text-xs text-muted-foreground flex-shrink-0">
                         {format(new Date(fecha), "dd MMM, HH:mm", { locale: es })}
                     </p>
                 </div>
-                <div className="p-2 mt-1 rounded-lg bg-card text-sm break-words">
-                    <p>{content}</p>
+                <div className="p-2 mt-1 rounded-lg bg-card text-sm">
+                    <p className="break-words">{content}</p>
                 </div>
             </div>
             {canDelete && (
