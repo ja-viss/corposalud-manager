@@ -58,7 +58,8 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
         }
         
         // Start with a filter to exclude the current user
-        let queryFilter: any = { _id: { $ne: currentUser.id } };
+        let queryFilter: any = { _id: { $ne: new mongoose.Types.ObjectId(currentUser.id) } };
+
 
         if (filter.role) {
             const roles = Array.isArray(filter.role) ? filter.role : [filter.role];
@@ -163,15 +164,13 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
             const initialLastName = userData.apellido?.charAt(0).toUpperCase() ?? '';
             finalPassword = `${initialName}${initialLastName}${userData.cedula}`;
             generatedPasswordForResponse = finalPassword;
-        }
-
-        if (userData.role === 'Admin') {
+        } else if (userData.role === 'Admin') {
             if (!finalUsername) {
-                 const existingByUsername = await User.findOne({ username: userData.username });
-                 if(existingByUsername) return { success: false, message: 'Ya existe un usuario con el mismo nombre de usuario.' };
-                 finalUsername = userData.username;
+                return { success: false, message: 'El nombre de usuario es obligatorio para el rol de Admin.' };
             }
-    
+             const existingByUsername = await User.findOne({ username: finalUsername });
+             if(existingByUsername) return { success: false, message: 'Ya existe un usuario con el mismo nombre de usuario.' };
+
             if (!finalPassword) {
                 return { success: false, message: 'La contraseña es obligatoria para el rol de Admin.' };
             }
@@ -493,16 +492,28 @@ export async function deleteCrew(crewId: string) {
     try {
         await dbConnect();
         const currentUser = await getCurrentUserFromSession();
-         if (!currentUser) {
+        if (!currentUser) {
             return { success: false, message: "Acceso no autorizado." };
         }
 
+        const crewObjectId = new mongoose.Types.ObjectId(crewId);
+
+        // Find and delete the associated channel and its messages
+        const channelToDelete = await Channel.findOne({ crewId: crewObjectId });
+        if (channelToDelete) {
+            await Message.deleteMany({ channelId: channelToDelete._id });
+            await Channel.findByIdAndDelete(channelToDelete._id);
+            await logActivity(`channel-deletion-auto:${channelToDelete.nombre}`, currentUser.username);
+        }
+
+        // Delete the crew
         const crew = await Crew.findByIdAndDelete(crewId);
         if (!crew) {
             return { success: false, message: 'Cuadrilla no encontrada.' };
         }
+        
         await logActivity(`crew-deletion:${crew.nombre}`, currentUser.username);
-        return { success: true, message: 'Cuadrilla eliminada exitosamente.' };
+        return { success: true, message: 'Cuadrilla y su canal de chat han sido eliminados.' };
     } catch (error) {
         console.error('Error al eliminar cuadrilla:', error);
         return { success: false, message: 'Error al eliminar la cuadrilla.' };
@@ -796,4 +807,49 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
     }
 }
 
+
+// Dashboard actions
+export async function getAdminDashboardStats() {
+  await dbConnect();
+
+  const userCountsByRole = await User.aggregate([
+    { $group: { _id: '$role', count: { $sum: 1 } } },
+  ]);
+
+  const roleCounts = {
+    Admin: 0,
+    Moderador: 0,
+    Obrero: 0,
+  };
+
+  userCountsByRole.forEach(role => {
+    if (role._id in roleCounts) {
+      roleCounts[role._id as UserRole] = role.count;
+    }
+  });
+
+  const totalUsers = await User.countDocuments();
+  const activeUsers = await User.countDocuments({ status: 'active' });
+  const inactiveUsers = totalUsers - activeUsers;
+  const logResult = await getActivityLogs(5);
+  
+  const activeCrews = await Crew.countDocuments(); 
+  const reportsGenerated = 0; // Placeholder
+
+  return {
+    totalUsers,
+    activeCrews,
+    reportsGenerated,
+    activeUsers,
+    inactiveUsers,
+    recentActivity: logResult.success ? logResult.data ?? [] : [],
+    roleDistribution: [
+      { role: 'Admins', total: roleCounts.Admin },
+      { role: 'Moderadores', total: roleCounts.Moderador },
+      { role: 'Obreros', total: roleCounts.Obrero },
+    ],
+  };
+}
+
     
+

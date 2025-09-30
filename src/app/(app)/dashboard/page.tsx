@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -10,32 +11,13 @@ import { Users, Building, ClipboardList, UserCheck, UserX } from "lucide-react";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
 import Crew from "@/models/Crew";
-import { getActivityLogs, getUserById } from "@/app/actions";
+import { getActivityLogs, getUserById, getAdminDashboardStats } from "@/app/actions";
 import type { Crew as CrewType } from "@/lib/types";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { RecentActivity } from "./_components/recent-activity";
+import { UserRolesChart } from "./_components/user-roles-chart";
 
-
-async function getAdminDashboardStats() {
-  await dbConnect();
-  const totalUsers = await User.countDocuments();
-  const activeUsers = await User.countDocuments({ status: 'active' });
-  const inactiveUsers = totalUsers - activeUsers;
-  const logResult = await getActivityLogs(3);
-  
-  const activeCrews = await Crew.countDocuments(); 
-  const reportsGenerated = 0; // Placeholder until report generation is implemented
-
-  return {
-    totalUsers,
-    activeCrews,
-    reportsGenerated,
-    activeUsers,
-    inactiveUsers,
-    recentActivity: logResult.success ? logResult.data : [],
-  };
-}
 
 async function getObreroDashboardStats(userId: string) {
     await dbConnect();
@@ -175,7 +157,14 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-      <RecentActivity recentActivity={stats.recentActivity ?? []} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+            <RecentActivity recentActivity={stats.recentActivity ?? []} />
+        </div>
+        <div>
+            <UserRolesChart data={stats.roleDistribution} />
+        </div>
+      </div>
     </div>
   );
 }
