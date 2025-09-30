@@ -111,7 +111,7 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
     }
     
     const canSelectRole = currentUserRole === 'Admin';
-    const showCredentialsFields = isEditing || roleWatcher === 'Admin';
+    const showCredentialsFields = roleWatcher === 'Admin' || roleWatcher === 'Moderador';
 
     const handleCopyToClipboard = () => {
         const credentialsText = `Usuario: ${generatedCredentials.username}\nContraseña: ${generatedCredentials.password}`;
@@ -199,7 +199,7 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
                                     </>
                                 ) : (
                                     <div className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg">
-                                        El usuario y la contraseña para este rol se generarán automáticamente.
+                                        El usuario y la contraseña para este rol se generarán automáticamente usando el número de cédula.
                                     </div>
                                 )}
                             </CardContent>
@@ -256,4 +256,3 @@ export function UserForm({ user, currentUserRole }: UserFormProps) {
         </>
     );
 }
-
