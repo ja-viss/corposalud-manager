@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
 import { WorkReportModal } from "./_components/work-report-modal";
+import { useRouter } from 'next/navigation';
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: any) => jsPDF;
@@ -31,6 +32,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 export default function ReportesPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [isWorkReportModalOpen, setIsWorkReportModalOpen] = useState(false);
   const [allCrews, setAllCrews] = useState<Crew[]>([]);
@@ -42,6 +44,10 @@ export default function ReportesPage() {
     } else {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudieron obtener los datos de las cuadrillas.' });
     }
+  };
+  
+  const handleReportSaved = () => {
+    router.refresh();
   };
 
   const handleOpenWorkReportModal = async () => {
@@ -239,6 +245,7 @@ export default function ReportesPage() {
         isOpen={isWorkReportModalOpen}
         onClose={() => setIsWorkReportModalOpen(false)}
         crews={allCrews}
+        onReportSaved={handleReportSaved}
       />
     </>
   );
