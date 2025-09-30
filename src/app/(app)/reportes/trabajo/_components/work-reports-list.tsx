@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { PopulatedWorkReport, ToolEntry } from "@/lib/types";
 import { format } from 'date-fns';
@@ -98,7 +98,7 @@ function ToolsTable({ title, tools, variant }: { title: string, tools?: ToolEntr
                     </TableHeader>
                     <TableBody>
                         {filteredTools.map((tool, index) => (
-                            <TableRow key={index}>
+                            <TableRow key={`${tool.nombre}-${index}`}>
                                 <TableCell className="font-medium">{tool.nombre}</TableCell>
                                 <TableCell className="text-right">{tool.cantidad}</TableCell>
                             </TableRow>
@@ -258,4 +258,3 @@ export function WorkReportsList({ reports }: WorkReportsListProps) {
     </div>
   );
 }
-
