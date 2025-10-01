@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { Channel, User as UserType } from '@/lib/types';
 import { getChannels } from '@/app/actions';
@@ -122,32 +121,28 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
         )}
       </div>
 
-      <Card className="h-[calc(100vh-15rem)]">
-        <CardContent className="p-0 h-full">
-          <div className="grid md:grid-cols-[300px_1fr] h-full">
-            <div className={cn("h-full border-r", selectedChannel && "hidden md:block")}>
-              <ChannelList
-                channels={channels}
-                selectedChannel={selectedChannel}
-                onSelectChannel={handleSelectChannel}
-                loading={loading}
-                currentUser={currentUser}
+      <div className="grid md:grid-cols-[300px_1fr] h-[calc(100vh-15rem)] border rounded-lg">
+        <div className={cn("h-full border-r", selectedChannel && "hidden md:block")}>
+          <ChannelList
+            channels={channels}
+            selectedChannel={selectedChannel}
+            onSelectChannel={handleSelectChannel}
+            loading={loading}
+            currentUser={currentUser}
+            allUsers={allUsers}
+          />
+        </div>
+        
+        <div className={cn("h-full", !selectedChannel && "hidden md:flex")}>
+            <ChatView 
+                channel={selectedChannel} 
+                currentUser={currentUser} 
                 allUsers={allUsers}
-              />
-            </div>
-            
-            <div className={cn("h-full", !selectedChannel && "hidden md:flex")}>
-                <ChatView 
-                    channel={selectedChannel} 
-                    currentUser={currentUser} 
-                    allUsers={allUsers}
-                    onChannelDeleted={handleChannelAction}
-                    onChannelUpdated={handleChannelAction}
-                />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                onChannelDeleted={handleChannelAction}
+                onChannelUpdated={handleChannelAction}
+            />
+        </div>
+      </div>
 
       <CreateChannelModal
         isOpen={isModalOpen}
