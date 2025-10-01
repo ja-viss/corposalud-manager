@@ -1,0 +1,22 @@
+
+services:
+  - type: web
+    name: corpotachira-manager
+    env: node
+    plan: free # o el plan que prefieras
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm start"
+    envVars:
+      - key: MONGODB_URI
+        fromDatabase:
+          name: mongodb-database-name # Reemplaza con el nombre de tu base de datos en Render si la usas
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+
+# Si no usas una base de datos de Render, puedes definir la variable así:
+# envVars:
+#   - key: MONGODB_URI
+#     value: "tu_string_de_conexion_a_mongodb_externo"
+#   - key: NODE_ENV
+#     value: production
