@@ -33,5 +33,9 @@ export default async function CanalesPage() {
     const channels = channelResult.success ? channelResult.data || [] : [];
     const allUsers = usersResult.success ? usersResult.data || [] : [];
 
-    return <ChannelClientLayout channels={channels} allUsers={allUsers} currentUser={currentUser} />;
+    return (
+      <div className="flex flex-col h-full">
+        <ChannelClientLayout channels={channels} allUsers={allUsers} currentUser={currentUser} />
+      </div>
+    );
 }

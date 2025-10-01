@@ -121,7 +121,7 @@ export function ChannelClientLayout({ channels: initialChannels, allUsers, curre
         )}
       </div>
 
-      <div className="grid md:grid-cols-[300px_1fr] h-[calc(100vh-15rem)] border rounded-lg">
+      <div className="grid md:grid-cols-[300px_1fr] flex-1 border rounded-lg overflow-hidden">
         <div className={cn("h-full border-r", selectedChannel && "hidden md:block")}>
           <ChannelList
             channels={channels}
