@@ -61,17 +61,12 @@ const generateWorkReportPDF = (report: PopulatedWorkReport) => {
     };
 
     addSection("Información General", () => {
-        const realizadoPorInfo = report.realizadoPor
-            ? `${report.realizadoPor.nombre} ${report.realizadoPor.apellido} (${report.realizadoPor.role})`
-            : 'N/A';
-
         doc.autoTable({
             startY: yPos,
             body: [
                 ['Municipio', report.municipio],
                 ['Distancia (m)', report.distancia.toString()],
                 ['Comentarios', report.comentarios || 'Sin comentarios.'],
-                ['Realizado por', realizadoPorInfo],
             ],
             theme: 'grid',
             styles: { fontSize: 9 },

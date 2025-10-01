@@ -47,8 +47,8 @@ export default function ReportesPage() {
   };
   
   const handleReportSaved = () => {
-    // This will re-fetch server components on the target page
-    router.push('/reportes/trabajo?refresh=true');
+    // No longer redirects, user stays on this page.
+    router.refresh();
   };
 
   const handleOpenWorkReportModal = async () => {
