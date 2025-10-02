@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { loginUser, loginObrero } from "@/app/actions";
-import { Eye, EyeOff, LifeBuoy } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const StrongArmIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        {...props}
+    >
+        <path d="M13 5.5s-1-1.5-2.5-1.5-2.5 1.5-2.5 1.5S6.5 8.5 8 10.5c1.5 2 1.5 3.5 1.5 3.5" />
+        <path d="M18 12.5s-1.5-1-3-1-3 1-3 1" />
+        <path d="M12 11.5V14" />
+        <path d="M14.5 13.5h-5" />
+        <path d="M6 16.5c-1 1-1.5 2.5-1.5 2.5s1 1.5 2.5 1.5 2.5-1.5 2.5-1.5" />
+        <path d="M19.5 16.5c1 1 1.5 2.5 1.5 2.5s-1 1.5-2.5 1.5-2.5-1.5-2.5-1.5" />
+    </svg>
+);
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -149,7 +172,7 @@ export default function LoginPage() {
         className="fixed bottom-4 right-4 rounded-full h-12 w-12 shadow-lg"
         onClick={() => setShowSupportDialog(true)}
       >
-        <LifeBuoy className="h-6 w-6" />
+        <StrongArmIcon className="h-6 w-6" />
         <span className="sr-only">Soporte</span>
       </Button>
 
