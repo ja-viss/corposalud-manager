@@ -1,5 +1,16 @@
 
 "use client";
+/**
+ * @file recent-activity.tsx
+ * @description Componente que muestra una lista de las actividades recientes del sistema.
+ * Es utilizado en el Dashboard para dar una visión rápida de las últimas acciones.
+ *
+ * @requires react
+ * @requires @/components/ui/card
+ * @requires lucide-react
+ * @requires @/lib/types
+ * @requires date-fns
+ */
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +19,7 @@ import type { ActivityLog } from "@/lib/types";
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+// Mapeo de acciones a iconos para una representación visual.
 const iconMap: { [key: string]: React.ReactNode } = {
   'user-creation': <UserCheck className="h-5 w-5" />,
   'user-login': <LogIn className="h-5 w-5" />,
@@ -19,11 +31,21 @@ const iconMap: { [key: string]: React.ReactNode } = {
   default: <Activity className="h-5 w-5" />,
 };
 
+/**
+ * Devuelve un icono basado en el tipo de acción del log.
+ * @param {string} action - La cadena de la acción (ej. 'user-creation:john').
+ * @returns {React.ReactNode} El componente de icono.
+ */
 function getLogIcon(action: string) {
     const actionPrefix = action.split(':')[0];
     return iconMap[actionPrefix] || iconMap.default;
 }
 
+/**
+ * Formatea el mensaje del log para que sea más legible para el usuario.
+ * @param {ActivityLog} log - El objeto del log de actividad.
+ * @returns {string} El mensaje formateado.
+ */
 function formatLogMessage(log: ActivityLog): string {
   const [actionPrefix, actionDetail] = log.action.split(':');
   switch (actionPrefix) {
@@ -42,13 +64,26 @@ function formatLogMessage(log: ActivityLog): string {
   }
 }
 
+/**
+ * Props para el componente RecentActivity.
+ * @interface RecentActivityProps
+ * @property {ActivityLog[]} recentActivity - Una lista de los logs de actividad más recientes.
+ */
 interface RecentActivityProps {
     recentActivity: ActivityLog[];
 }
 
+/**
+ * Componente que muestra una tarjeta con la actividad reciente del sistema.
+ *
+ * @param {RecentActivityProps} props - Las props del componente.
+ * @returns {JSX.Element} La tarjeta de actividad reciente.
+ */
 export function RecentActivity({ recentActivity }: RecentActivityProps) {
     const [isClient, setIsClient] = useState(false);
 
+    // Se utiliza `isClient` para evitar errores de hidratación con `formatDistanceToNow`,
+    // que puede devolver valores diferentes en el servidor y en el cliente.
     useEffect(() => {
         setIsClient(true);
     }, []);

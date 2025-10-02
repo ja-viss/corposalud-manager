@@ -1,5 +1,15 @@
 
 "use client";
+/**
+ * @file rename-group-modal.tsx
+ * @description Componente modal que permite a un usuario cambiar el nombre de un canal de grupo.
+ *
+ * @requires react
+ * @requires @/components/ui/*
+ * @requires @/hooks/use-toast
+ * @requires @/app/actions
+ * @requires @/lib/types
+ */
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
@@ -10,6 +20,14 @@ import type { Channel } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
+/**
+ * Props para el componente RenameGroupModal.
+ * @interface RenameGroupModalProps
+ * @property {boolean} isOpen - Controla la visibilidad del modal.
+ * @property {() => void} onClose - Función para cerrar el modal.
+ * @property {Channel} channel - El canal de grupo cuyo nombre se va a cambiar.
+ * @property {() => void} onNameUpdated - Callback que se ejecuta cuando el nombre se actualiza correctamente.
+ */
 interface RenameGroupModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -17,17 +35,28 @@ interface RenameGroupModalProps {
     onNameUpdated: () => void;
 }
 
+/**
+ * Componente modal para cambiar el nombre de un grupo de chat.
+ *
+ * @param {RenameGroupModalProps} props - Las props del componente.
+ * @returns {JSX.Element} El diálogo modal.
+ */
 export function RenameGroupModal({ isOpen, onClose, channel, onNameUpdated }: RenameGroupModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [groupName, setGroupName] = useState(channel.nombre);
 
+    // Actualiza el estado del nombre del grupo si el modal se abre con un canal diferente.
     useEffect(() => {
         if (isOpen) {
             setGroupName(channel.nombre);
         }
     }, [isOpen, channel.nombre]);
     
+    /**
+     * Maneja el envío del formulario.
+     * Llama a la server action `updateChannelName` para guardar el cambio.
+     */
     async function handleRename() {
         if (!groupName.trim()) {
             toast({ variant: 'destructive', title: 'Error', description: 'El nombre del grupo no puede estar vacío.' });
@@ -39,7 +68,7 @@ export function RenameGroupModal({ isOpen, onClose, channel, onNameUpdated }: Re
 
         if (result.success) {
             toast({ title: "Éxito", description: result.message });
-            onNameUpdated();
+            onNameUpdated(); // Notifica al componente padre que el nombre ha cambiado.
         } else {
             toast({ variant: "destructive", title: "Error", description: result.message });
         }
@@ -77,4 +106,3 @@ export function RenameGroupModal({ isOpen, onClose, channel, onNameUpdated }: Re
         </Dialog>
     );
 }
-

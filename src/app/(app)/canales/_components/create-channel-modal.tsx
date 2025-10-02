@@ -1,4 +1,17 @@
+
 "use client";
+/**
+ * @file create-channel-modal.tsx
+ * @description Componente modal que permite a los usuarios crear nuevas conversaciones.
+ * Ofrece dos pestañas: una para crear mensajes directos con un solo usuario y otra
+ * para crear un chat grupal con múltiples usuarios.
+ *
+ * @requires react
+ * @requires @/components/ui/*
+ * @requires @/hooks/use-toast
+ * @requires @/app/actions
+ * @requires @/lib/types
+ */
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
@@ -13,6 +26,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 
+/**
+ * Props para el componente CreateChannelModal.
+ * @interface CreateChannelModalProps
+ * @property {boolean} isOpen - Controla si el modal está abierto.
+ * @property {() => void} onClose - Función para cerrar el modal.
+ * @property {User[]} users - Lista de todos los usuarios para seleccionar.
+ * @property {User} currentUser - El usuario que está creando el canal.
+ * @property {() => void} onChannelCreated - Callback que se ejecuta después de crear un canal.
+ */
 interface CreateChannelModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -21,28 +43,43 @@ interface CreateChannelModalProps {
     onChannelCreated: () => void;
 }
 
+/**
+ * Componente modal para la creación de nuevos canales de chat.
+ *
+ * @param {CreateChannelModalProps} props - Las props del componente.
+ * @returns {JSX.Element} El diálogo modal.
+ */
 export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChannelCreated }: CreateChannelModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     
-    // State for Direct Message
+    // Estado para la pestaña de Mensaje Directo.
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-    // State for Group Chat
+    // Estado para la pestaña de Chat Grupal.
     const [groupName, setGroupName] = useState('');
     const [selectedGroupUserIds, setSelectedGroupUserIds] = useState<string[]>([currentUser.id]);
 
     const [activeTab, setActiveTab] = useState('directo');
     
     const currentUserId = currentUser.id;
+    // Filtra la lista de usuarios para no incluir al usuario actual.
     const availableUsers = users.filter(u => u.id !== currentUserId);
 
+    /**
+     * Maneja la selección y deselección de usuarios para un grupo.
+     * @param {string} userId - El ID del usuario a añadir o quitar.
+     */
     const handleGroupUserSelect = (userId: string) => {
         setSelectedGroupUserIds(prev =>
             prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
         );
     };
 
+    /**
+     * Lógica principal para crear el canal.
+     * Llama a la server action correspondiente según la pestaña activa.
+     */
     async function handleCreate() {
         setIsLoading(true);
         let result;
@@ -60,7 +97,7 @@ export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChan
                 setIsLoading(false);
                 return;
             }
-            if (selectedGroupUserIds.length < 2) { // Creator + at least one other person
+            if (selectedGroupUserIds.length < 2) { // El creador + al menos otra persona.
                 toast({ variant: 'destructive', title: 'Error', description: 'Un grupo debe tener al menos 2 miembros.' });
                 setIsLoading(false);
                 return;
@@ -71,7 +108,7 @@ export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChan
         if (result.success) {
             toast({ title: "Éxito", description: result.message });
             onChannelCreated();
-            // Reset states
+            // Resetea los estados del formulario.
             setSelectedUserId(null);
             setGroupName('');
             setSelectedGroupUserIds([currentUser.id]);
@@ -82,6 +119,10 @@ export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChan
         onClose();
     }
     
+    /**
+     * Determina si el botón de crear debe estar deshabilitado.
+     * @returns {boolean} True si el botón debe estar deshabilitado.
+     */
     const isCreateDisabled = () => {
         if (isLoading) return true;
         if (activeTab === 'directo') return !selectedUserId;
@@ -105,7 +146,7 @@ export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChan
                         <TabsTrigger value="grupo">Grupo</TabsTrigger>
                     </TabsList>
                     
-                    {/* Direct Message Content */}
+                    {/* Contenido de la pestaña "Mensaje Directo" */}
                     <TabsContent value="directo" className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="user-select">Usuario</Label>
@@ -124,7 +165,7 @@ export function CreateChannelModal({ isOpen, onClose, users, currentUser, onChan
                         </div>
                     </TabsContent>
                     
-                    {/* Group Chat Content */}
+                    {/* Contenido de la pestaña "Grupo" */}
                     <TabsContent value="grupo" className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label htmlFor="group-name">Nombre del Grupo</Label>

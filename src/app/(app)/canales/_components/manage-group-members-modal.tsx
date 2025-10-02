@@ -1,5 +1,16 @@
 
 "use client";
+/**
+ * @file manage-group-members-modal.tsx
+ * @description Componente modal para gestionar los miembros de un grupo de chat.
+ * Permite a los administradores o moderadores añadir o expulsar usuarios de un grupo existente.
+ *
+ * @requires react
+ * @requires @/components/ui/*
+ * @requires @/hooks/use-toast
+ * @requires @/app/actions
+ * @requires @/lib/types
+ */
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
@@ -12,6 +23,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 
+/**
+ * Props para el componente ManageGroupMembersModal.
+ * @interface ManageGroupMembersModalProps
+ * @property {boolean} isOpen - Controla si el modal está abierto.
+ * @property {() => void} onClose - Función para cerrar el modal.
+ * @property {Channel} channel - El canal de grupo a gestionar.
+ * @property {User[]} allUsers - Lista de todos los usuarios del sistema.
+ * @property {User} currentUser - El usuario autenticado que realiza la acción.
+ * @property {() => void} onMembersUpdated - Callback que se ejecuta después de actualizar los miembros.
+ */
 interface ManageGroupMembersModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -21,26 +42,44 @@ interface ManageGroupMembersModalProps {
     onMembersUpdated: () => void;
 }
 
+/**
+ * Componente modal para añadir o expulsar miembros de un grupo de chat.
+ *
+ * @param {ManageGroupMembersModalProps} props - Las props del componente.
+ * @returns {JSX.Element} El diálogo modal.
+ */
 export function ManageGroupMembersModal({ isOpen, onClose, channel, allUsers, currentUser, onMembersUpdated }: ManageGroupMembersModalProps) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     
+    // Estados para las listas de usuarios a añadir o expulsar.
     const [usersToAdd, setUsersToAdd] = useState<string[]>([]);
     const [usersToRemove, setUsersToRemove] = useState<string[]>([]);
     const [activeTab, setActiveTab] = useState('add');
 
-    // Users not in the group
+    // Filtra para obtener los usuarios que aún no están en el grupo.
     const availableUsers = allUsers.filter(u => !channel.members.includes(u.id));
 
-    // Users currently in the group (excluding the current admin)
+    // Filtra para obtener los miembros actuales del grupo (excluyendo al propio gestor).
     const currentMembers = allUsers.filter(u => channel.members.includes(u.id) && u.id !== currentUser.id);
 
+    /**
+     * Maneja la selección/deselección de un usuario en las listas.
+     * @param {string} userId - El ID del usuario.
+     * @param {string[]} list - La lista de estado actual (añadir o quitar).
+     * @param {React.Dispatch<React.SetStateAction<string[]>>} setList - La función para actualizar el estado.
+     */
     const handleUserSelect = (userId: string, list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>) => {
         setList(prev =>
             prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
         );
     };
 
+    /**
+     * Lógica principal para actualizar los miembros.
+     * Llama a la server action `addMembersToChannel` o `removeMembersFromChannel`
+     * según la pestaña activa.
+     */
     async function handleUpdateMembers() {
         setIsLoading(true);
         let result;
@@ -64,7 +103,7 @@ export function ManageGroupMembersModal({ isOpen, onClose, channel, allUsers, cu
         if (result.success) {
             toast({ title: "Éxito", description: result.message });
             onMembersUpdated();
-            // Reset states
+            // Resetear estados.
             setUsersToAdd([]);
             setUsersToRemove([]);
         } else {
@@ -74,6 +113,10 @@ export function ManageGroupMembersModal({ isOpen, onClose, channel, allUsers, cu
         onClose();
     }
     
+    /**
+     * Determina si el botón de acción debe estar deshabilitado.
+     * @returns {boolean} True si el botón está deshabilitado.
+     */
     const isUpdateDisabled = () => {
         if (isLoading) return true;
         if (activeTab === 'add') return usersToAdd.length === 0;
@@ -97,6 +140,7 @@ export function ManageGroupMembersModal({ isOpen, onClose, channel, allUsers, cu
                         <TabsTrigger value="remove">Expulsar Miembro</TabsTrigger>
                     </TabsList>
                     
+                    {/* Pestaña para añadir miembros */}
                     <TabsContent value="add" className="space-y-4 py-4">
                          <Label>Seleccione usuarios para añadir</Label>
                         <ScrollArea className="h-48 rounded-md border">
@@ -117,6 +161,7 @@ export function ManageGroupMembersModal({ isOpen, onClose, channel, allUsers, cu
                         </ScrollArea>
                     </TabsContent>
                     
+                    {/* Pestaña para expulsar miembros */}
                     <TabsContent value="remove" className="space-y-4 py-4">
                         <Label>Seleccione miembros para expulsar</Label>
                         <ScrollArea className="h-48 rounded-md border">

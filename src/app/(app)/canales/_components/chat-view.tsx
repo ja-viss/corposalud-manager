@@ -1,5 +1,22 @@
 
 'use client';
+/**
+ * @file chat-view.tsx
+ * @description Componente que renderiza la vista de una conversación de chat individual.
+ * Muestra los mensajes, permite enviar nuevos mensajes y proporciona opciones de
+ * administración del canal (como eliminarlo o gestionar miembros).
+ *
+ * @requires react
+ * @requires lucide-react
+ * @requires @/components/ui/*
+ * @requires @/app/actions
+ * @requires @/hooks/use-toast
+ * @requires @/lib/types
+ * @requires next/navigation
+ * @requires ./manage-group-members-modal
+ * @requires ./rename-group-modal
+ * @requires ./message-item
+ */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Paperclip, Send, Trash2, MoreVertical, UserPlus, UserX, FileEdit } from 'lucide-react';
@@ -16,7 +33,15 @@ import { ManageGroupMembersModal } from './manage-group-members-modal';
 import { RenameGroupModal } from './rename-group-modal';
 import { MessageItem } from './message-item';
 
-
+/**
+ * Props para el componente ChatView.
+ * @interface ChatViewProps
+ * @property {Channel | null} channel - El canal seleccionado para mostrar.
+ * @property {User | null} currentUser - El usuario autenticado.
+ * @property {User[]} allUsers - Lista de todos los usuarios para resolver nombres.
+ * @property {() => void} onChannelDeleted - Callback que se ejecuta cuando el canal es eliminado.
+ * @property {() => void} onChannelUpdated - Callback que se ejecuta cuando el canal es actualizado (miembros/nombre).
+ */
 interface ChatViewProps {
   channel: Channel | null;
   currentUser: User | null;
@@ -25,6 +50,13 @@ interface ChatViewProps {
   onChannelUpdated: () => void;
 }
 
+/**
+ * Obtiene el nombre legible para un canal de mensaje directo.
+ * @param {Channel} channel - El canal.
+ * @param {string} currentUserId - ID del usuario actual.
+ * @param {User[]} allUsers - Lista de todos los usuarios.
+ * @returns {string} El nombre del otro participante.
+ */
 const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers: User[]) => {
     if (channel.type !== 'DIRECT') return channel.nombre;
     const otherMemberId = channel.members.find(id => id !== currentUserId);
@@ -33,18 +65,29 @@ const getDirectChannelName = (channel: Channel, currentUserId: string, allUsers:
     return otherUser ? `${otherUser.nombre} ${otherUser.apellido}` : "Usuario Eliminado";
 }
 
+/**
+ * Componente que renderiza la interfaz de una conversación.
+ *
+ * @param {ChatViewProps} props - Las props del componente.
+ * @returns {JSX.Element} La vista del chat.
+ */
 export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onChannelUpdated }: ChatViewProps) {
   const [messages, setMessages] = useState<PopulatedMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  // Estado para controlar los diálogos de confirmación de eliminación.
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<PopulatedMessage | null>(null);
   const [showDeleteChannelConfirm, setShowDeleteChannelConfirm] = useState<Channel | null>(null);
+  // Estado para los modales de gestión de grupo.
   const [isManageMembersModalOpen, setIsManageMembersModalOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  /**
+   * Carga los mensajes del canal seleccionado desde el servidor.
+   */
   const fetchMessages = useCallback(async () => {
     if (!channel) return;
     setLoading(true);
@@ -61,6 +104,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     fetchMessages();
   }, [fetchMessages]);
   
+  // Efecto para hacer scroll hasta el final cada vez que llegan nuevos mensajes.
   useEffect(() => {
     if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
@@ -70,12 +114,18 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     }
   }, [messages]);
 
+  /**
+   * Manejador para el envío de un nuevo mensaje.
+   * Llama a la server action `sendMessage` y actualiza el estado local.
+   * @param {React.FormEvent} e - El evento del formulario.
+   */
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !channel || !currentUser) return;
 
     const result = await sendMessage(channel.id, currentUser.id, newMessage);
     if (result.success && result.data) {
+      // Actualización optimista: añade el nuevo mensaje al estado local.
       setMessages((prev) => [...prev, result.data!]);
       setNewMessage('');
     } else {
@@ -83,6 +133,10 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     }
   };
 
+  /**
+   * Manejador para la eliminación de un mensaje.
+   * Llama a la server action `deleteMessage` y filtra el mensaje del estado local.
+   */
   const handleDeleteMessage = async () => {
     if (showDeleteConfirm) {
       const result = await deleteMessage(showDeleteConfirm.id);
@@ -96,6 +150,10 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     }
   };
   
+  /**
+   * Manejador para la eliminación de un canal completo.
+   * Llama a la server action `deleteChannel` y notifica al componente padre.
+   */
   const handleDeleteChannel = async () => {
     if (showDeleteChannelConfirm && currentUser) {
       const result = await deleteChannel(showDeleteChannelConfirm.id, currentUser.id);
@@ -109,6 +167,9 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     }
   };
   
+  /**
+   * Callbacks que se ejecutan cuando los miembros o el nombre del canal se actualizan.
+   */
   const handleMembersUpdated = () => {
     onChannelUpdated();
     setIsManageMembersModalOpen(false);
@@ -119,7 +180,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
       setIsRenameModalOpen(false);
   };
 
-
+  // Si no hay ningún canal seleccionado, muestra un placeholder.
   if (!channel || !currentUser) {
     return (
       <div className="flex-col h-full items-center justify-center bg-muted/20 hidden md:flex">
@@ -131,14 +192,17 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     );
   }
 
-  const isObreroInNonDirectChannel = currentUser?.role === 'Obrero' && channel.type !== 'DIRECT';
-  
+  /**
+   * Determina si el usuario actual puede enviar mensajes en el canal.
+   * Se basa en el rol del usuario y el tipo de canal.
+   * @returns {boolean} True si puede postear, false en caso contrario.
+   */
   const canPostInChannel = () => {
     if (!currentUser) return false;
     if (currentUser.role === 'Admin') return true;
     if (currentUser.role === 'Moderador') return true;
     if (currentUser.role === 'Obrero') {
-        // Obreros can only post in direct messages and their own crew channels
+        // Obreros solo pueden escribir en mensajes directos y en los canales de sus cuadrillas.
         return channel.type === 'DIRECT' || (channel.type === 'CREW' && channel.members.includes(currentUser.id));
     }
     return false;
@@ -146,6 +210,10 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
   
   const isInputDisabled = !canPostInChannel();
 
+  /**
+   * Devuelve el texto del placeholder para el campo de entrada de mensaje.
+   * @returns {string} El placeholder apropiado.
+   */
   const getInputPlaceholder = () => {
     if (isInputDisabled) {
         if (channel.nombre === "Anuncios Generales" || channel.nombre === "Obreros" || channel.nombre === "Moderadores") {
@@ -156,6 +224,10 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     return "Escriba su mensaje...";
   }
 
+  /**
+   * Devuelve el título del canal.
+   * @returns {string} El título.
+   */
   const getChannelTitle = () => {
     if (channel.type === 'DIRECT') {
         return getDirectChannelName(channel, currentUser.id, allUsers);
@@ -163,6 +235,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
     return channel.nombre;
   }
   
+  // Lógica para determinar si el usuario puede administrar el canal (eliminar, gestionar miembros).
   const canManageChannel = channel.isDeletable && (currentUser.role === 'Admin' || (currentUser.role === 'Moderador' && (channel.type === 'GROUP' || channel.type === 'DIRECT')));
   const isGroupChannel = channel.type === 'GROUP';
 
@@ -170,6 +243,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
   return (
     <>
       <div className="flex flex-col h-full bg-muted/20">
+        {/* Cabecera del chat con título y menú de opciones */}
         <header className="flex items-center justify-between p-4 border-b bg-card flex-shrink-0">
           <h2 className="text-lg font-semibold">{getChannelTitle()}</h2>
           {canManageChannel && (
@@ -210,6 +284,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
           )}
         </header>
         
+        {/* Área de mensajes con scroll */}
         <div className="flex-1 overflow-y-auto">
             <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
             <div className="space-y-4">
@@ -236,6 +311,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
             </ScrollArea>
         </div>
         
+        {/* Pie de página con el formulario para enviar mensajes */}
         <footer className="p-4 border-t bg-card flex-shrink-0">
           <form onSubmit={handleSendMessage} className="relative">
             <Input
@@ -257,6 +333,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
         </footer>
       </div>
 
+      {/* Diálogo de confirmación para eliminar un mensaje */}
        <AlertDialog open={!!showDeleteConfirm} onOpenChange={() => setShowDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -272,6 +349,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* Diálogo de confirmación para eliminar un canal */}
        <AlertDialog open={!!showDeleteChannelConfirm} onOpenChange={() => setShowDeleteChannelConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -287,6 +365,7 @@ export function ChatView({ channel, currentUser, allUsers, onChannelDeleted, onC
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* Modales para la gestión de grupos (se renderizan condicionalmente) */}
       {channel && isGroupChannel && (
           <>
             <ManageGroupMembersModal

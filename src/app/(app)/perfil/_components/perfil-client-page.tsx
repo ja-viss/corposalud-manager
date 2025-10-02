@@ -1,5 +1,21 @@
 
 "use client";
+/**
+ * @file perfil-client-page.tsx
+ * @description Componente del lado del cliente para la página de "Mi Perfil".
+ * Renderiza la información del usuario, las cuadrillas a las que pertenece (si aplica),
+ * y un formulario para cambiar la contraseña (solo para Admins).
+ *
+ * @requires react
+ * @requires react-hook-form
+ * @requires @hookform/resolvers/zod
+ * @requires zod
+ * @requires @/components/ui/*
+ * @requires @/hooks/use-toast
+ * @requires @/app/actions
+ * @requires @/lib/types
+ * @requires lucide-react
+ */
 
 import { useState } from 'react';
 import { useForm } from "react-hook-form";
@@ -17,28 +33,42 @@ import type { User, Crew } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, HardHat } from 'lucide-react';
 
+// Esquema de validación para el formulario de cambio de contraseña.
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, "La contraseña actual es requerida."),
     newPassword: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres."),
     confirmPassword: z.string()
 }).refine(data => data.newPassword === data.confirmPassword, {
     message: "Las contraseñas no coinciden.",
-    path: ["confirmPassword"]
+    path: ["confirmPassword"] // Indica qué campo mostrará el error.
 });
 
-
+/**
+ * Props para el componente PerfilClientPage.
+ * @interface PerfilPageProps
+ * @property {User} user - El objeto del usuario autenticado.
+ * @property {Crew[]} crews - Una lista de las cuadrillas a las que pertenece el usuario.
+ */
 interface PerfilPageProps {
     user: User;
     crews: Crew[];
 }
 
+/**
+ * Componente principal de la página de perfil del usuario.
+ *
+ * @param {PerfilPageProps} props - Las props del componente.
+ * @returns {JSX.Element} La página de perfil.
+ */
 export function PerfilClientPage({ user, crews }: PerfilPageProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  // Estados para controlar la visibilidad de las contraseñas.
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Configuración del formulario con `react-hook-form` y `zod`.
   const form = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -48,19 +78,25 @@ export function PerfilClientPage({ user, crews }: PerfilPageProps) {
     }
   });
 
+  /**
+   * Maneja el envío del formulario de cambio de contraseña.
+   * @param {z.infer<typeof passwordFormSchema>} values - Los valores del formulario.
+   */
   async function onSubmit(values: z.infer<typeof passwordFormSchema>) {
     setIsLoading(true);
     const result = await updatePassword(user.id, values.currentPassword, values.newPassword);
     if (result.success) {
       toast({ title: "Éxito", description: result.message });
-      form.reset();
+      form.reset(); // Limpia el formulario después del éxito.
     } else {
       toast({ variant: "destructive", title: "Error", description: result.message });
     }
     setIsLoading(false);
   }
 
+  // Genera las iniciales del usuario para el Avatar.
   const userInitials = user ? `${user.nombre.charAt(0)}${user.apellido.charAt(0)}` : "U";
+  // Banderas para controlar la visibilidad de secciones según el rol.
   const isWorkerOrModerator = user.role === 'Obrero' || user.role === 'Moderador';
   const isAdmin = user.role === 'Admin';
 
@@ -68,6 +104,7 @@ export function PerfilClientPage({ user, crews }: PerfilPageProps) {
     <div className="space-y-8 py-8">
         <h1 className="text-3xl font-bold tracking-tight">Mi Perfil</h1>
         <div className={`grid gap-8 ${isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-1'}`}>
+            {/* Formulario para cambiar contraseña (solo visible para Admins) */}
             {isAdmin && (
                 <div className="md:col-span-1">
                     <Card>
@@ -123,6 +160,7 @@ export function PerfilClientPage({ user, crews }: PerfilPageProps) {
                     </Card>
                 </div>
             )}
+            {/* Sección de Información Personal y Cuadrillas */}
              <div className={`${isAdmin ? 'md:col-span-2' : 'md:col-span-1'}`}>
                 <div className="flex flex-col gap-8">
                     <Card>
@@ -168,6 +206,7 @@ export function PerfilClientPage({ user, crews }: PerfilPageProps) {
                             </div>
                         </CardContent>
                     </Card>
+                    {/* Tarjeta de "Mis Cuadrillas", visible para Obreros y Moderadores */}
                     {isWorkerOrModerator && (
                         <Card>
                             <CardHeader>
