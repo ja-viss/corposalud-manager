@@ -1,6 +1,19 @@
 
 
 'use server';
+/**
+ * @file actions.ts
+ * @description Este archivo centraliza todas las "Server Actions" de la aplicación.
+ * Las Server Actions son funciones que se ejecutan en el servidor y pueden ser llamadas directamente
+ * desde componentes de cliente o servidor, eliminando la necesidad de una API REST tradicional.
+ * Este enfoque simplifica la comunicación entre el frontend y el backend.
+ *
+ * Funcionalidades principales:
+ * - Operaciones CRUD para Usuarios, Cuadrillas, Canales, Mensajes y Reportes de Trabajo.
+ * - Lógica de autenticación (inicio y cierre de sesión).
+ * - Obtención de estadísticas para el Dashboard.
+ * - Registro de actividad en la bitácora.
+ */
 
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
@@ -15,20 +28,35 @@ import WorkReport from '@/models/WorkReport';
 import mongoose from 'mongoose';
 import { cookies } from 'next/headers';
 
-// Helper function to safely serialize data
+/**
+ * Serializa de forma segura los datos obtenidos de Mongoose.
+ * Evita errores de serialización en Next.js al pasar datos de Server Components a Client Components.
+ * @param data - Los datos a serializar.
+ * @returns Los datos serializados como un objeto plano.
+ */
 function safeSerialize<T>(data: T): T {
     return JSON.parse(JSON.stringify(data));
 }
 
-// Helper to get current user from session
+/**
+ * Obtiene el usuario actualmente autenticado a partir de la cookie de sesión.
+ * @returns {Promise<UserType | null>} El objeto de usuario si la sesión es válida, o null en caso contrario.
+ */
 async function getCurrentUserFromSession(): Promise<UserType | null> {
     const userId = cookies().get('session-id')?.value;
     if (!userId) return null;
+    // .lean() devuelve un objeto JS plano, más rápido que un documento Mongoose completo
     const user = await User.findById(userId).lean().exec();
     return user ? safeSerialize(user) as UserType : null;
 }
 
+// --- Acciones de Bitácora (ActivityLog) ---
 
+/**
+ * Obtiene los registros de la bitácora de actividad del sistema.
+ * @param {number} [limit] - Un número opcional para limitar la cantidad de registros devueltos.
+ * @returns {Promise<{success: boolean, data?: ActivityLogType[], message?: string}>} Un objeto con el resultado de la operación.
+ */
 export async function getActivityLogs(limit?: number) {
     try {
         await dbConnect();
@@ -47,7 +75,14 @@ export async function getActivityLogs(limit?: number) {
     }
 }
 
+// --- Acciones de Usuarios (User) ---
 
+/**
+ * Obtiene una lista de usuarios del sistema, con filtros opcionales.
+ * @param {object} [filter] - Objeto para filtrar usuarios. Actualmente soporta filtrado por rol.
+ * @param {UserRole | UserRole[]} [filter.role] - Rol o roles para filtrar.
+ * @returns {Promise<{success: boolean, data?: UserType[], message?: string}>} Objeto con la lista de usuarios o un mensaje de error.
+ */
 export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
     try {
         await dbConnect();
@@ -57,17 +92,17 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
             return { success: false, message: "Acceso no autorizado." };
         }
         
+        // Filtro para excluir al usuario actual de la lista
         const queryFilter: any = { _id: { $ne: new mongoose.Types.ObjectId(currentUser.id) } };
 
         if (filter.role) {
             const roles = Array.isArray(filter.role) ? filter.role : [filter.role];
             queryFilter.role = { $in: roles };
         } else if (currentUser.role === 'Moderador') {
-            // If the user is a Moderator and no specific role filter is applied,
-            // they should see Admins, other Moderators, and Obreros.
+            // Un Moderador, por defecto, puede ver a todos los demás roles.
             queryFilter.role = { $in: ['Admin', 'Moderador', 'Obrero'] };
         }
-        // Admins, by default (no role filter), will see everyone (except themselves).
+        // Los Admins ven a todos por defecto si no se especifica filtro de rol.
 
         const users = await User.find(queryFilter).sort({ fechaCreacion: -1 }).exec();
 
@@ -78,7 +113,11 @@ export async function getUsers(filter: { role?: UserRole | UserRole[] } = {}) {
     }
 }
 
-
+/**
+ * Obtiene un usuario específico por su ID.
+ * @param {string} userId - El ID del usuario a buscar.
+ * @returns {Promise<{success: boolean, data?: UserType, message?: string}>} El objeto de usuario si se encuentra.
+ */
 export async function getUserById(userId: string) {
     try {
         await dbConnect();
@@ -93,7 +132,11 @@ export async function getUserById(userId: string) {
     }
 }
 
-
+/**
+ * Elimina un usuario del sistema.
+ * @param {string} userId - El ID del usuario a eliminar.
+ * @returns {Promise<{success: boolean, message: string}>} Mensaje de éxito o error.
+ */
 export async function deleteUser(userId: string) {
     try {
         await dbConnect();
@@ -107,10 +150,12 @@ export async function deleteUser(userId: string) {
             return { success: false, message: "Usuario no encontrado." };
         }
         
+        // Regla de negocio: Moderadores solo pueden eliminar Obreros.
         if (currentUser.role === 'Moderador' && userToDelete.role !== 'Obrero') {
              return { success: false, message: "Los moderadores solo pueden eliminar obreros." };
         }
 
+        // Regla de negocio: No se puede eliminar un usuario asignado a una cuadrilla.
         const crewWithUser = await Crew.findOne({
           $or: [{ moderadores: userId }, { obreros: userId }],
         });
@@ -129,6 +174,11 @@ export async function deleteUser(userId: string) {
     }
 }
 
+/**
+ * Crea un nuevo usuario en el sistema.
+ * @param {Partial<Omit<UserType, 'id' | 'fechaCreacion' | 'creadoPor' | 'status'>>} userData - Datos del nuevo usuario.
+ * @returns {Promise<{success: boolean, data?: any, message: string}>} El resultado de la operación, incluyendo datos del usuario creado y contraseña generada si aplica.
+ */
 export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaCreacion' | 'creadoPor' | 'status'>>) {
     try {
         await dbConnect();
@@ -141,6 +191,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
             return { success: false, message: "Los moderadores solo pueden crear usuarios con el rol de Obrero." };
         }
 
+        // Validar que no exista un usuario con el mismo email o cédula
         const existingUser = await User.findOne({ $or: [{ email: userData.email }, { cedula: userData.cedula }] });
         if (existingUser) {
             let message = 'Ya existe un usuario con los mismos datos:';
@@ -154,6 +205,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
         let generatedPasswordForResponse: string | undefined = undefined;
         let finalRole = userData.role;
 
+        // Lógica de generación de credenciales según el rol
         if (userData.role === 'Obrero') {
             finalUsername = userData.cedula;
             finalPassword = userData.cedula; 
@@ -174,7 +226,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
                 return { success: false, message: 'La contraseña es obligatoria para el rol de Admin.' };
             }
         } else {
-            // Default users without a valid role to 'Moderador'
+            // Rol por defecto si no es válido
             finalRole = 'Moderador';
             finalUsername = userData.cedula;
             const initialName = userData.nombre?.charAt(0).toUpperCase() ?? '';
@@ -187,7 +239,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
              return { success: false, message: 'Faltan credenciales para crear el usuario.' };
         }
 
-
+        // Encriptar contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(finalPassword, salt);
 
@@ -205,6 +257,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
         await logActivity(`user-creation:${newUser.username}`, currentUser.username);
         
         const responseData = safeSerialize(newUser) as any;
+        // Si se generó una contraseña, la devolvemos para mostrarla en el UI
         if (generatedPasswordForResponse) {
            responseData.generatedPassword = generatedPasswordForResponse;
         }
@@ -217,6 +270,12 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
     }
 }
 
+/**
+ * Actualiza los datos de un usuario existente.
+ * @param {string} userId - El ID del usuario a actualizar.
+ * @param {Partial<Omit<UserType, 'id' | 'contrasena'>> & { contrasena?: string }} userData - Los nuevos datos para el usuario.
+ * @returns {Promise<{success: boolean, data?: UserType, message: string}>} El usuario actualizado o un mensaje de error.
+ */
 export async function updateUser(userId: string, userData: Partial<Omit<UserType, 'id' | 'contrasena'>> & { contrasena?: string }) {
     try {
         await dbConnect();
@@ -230,25 +289,26 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
             return { success: false, message: 'Usuario no encontrado.' };
         }
 
+        // Regla de negocio: Moderadores solo pueden editar Obreros.
         if (currentUser.role === 'Moderador' && (userToUpdate.role !== 'Obrero' || (userData.role && userData.role !== 'Obrero'))) {
             return { success: false, message: "Los moderadores solo pueden modificar usuarios con el rol de Obrero." };
         }
 
-
         const updateData: any = { ...userData };
 
+        // Si se proporciona una nueva contraseña, se encripta.
         if (userData.contrasena) {
             const salt = await bcrypt.genSalt(10);
             updateData.contrasena = await bcrypt.hash(userData.contrasena, salt);
         } else {
+            // Asegurarse de no sobreescribir la contraseña con un valor vacío.
             delete updateData.contrasena;
         }
         
-        // Prevent role escalation by moderators
+        // Evitar que un moderador se escale a sí mismo o a otros a Admin.
         if (currentUser.role === 'Moderador') {
             delete updateData.role;
         }
-
 
         const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true }).exec();
         
@@ -264,7 +324,13 @@ export async function updateUser(userId: string, userData: Partial<Omit<UserType
     }
 }
 
-
+/**
+ * Autentica a un usuario de tipo Personal (Admin/Moderador).
+ * @param {object} credentials - Credenciales de usuario.
+ * @param {string} credentials.username - Nombre de usuario.
+ * @param {string} credentials.password - Contraseña.
+ * @returns {Promise<{success: boolean, data?: UserType, message: string}>} El resultado de la autenticación.
+ */
 export async function loginUser(credentials: {username: string, password: string}) {
     try {
         await dbConnect();
@@ -273,7 +339,8 @@ export async function loginUser(credentials: {username: string, password: string
         if (!user) {
             return { success: false, message: 'Usuario no encontrado.' };
         }
-
+        
+        // Comprobar si ya existe una sesión activa para este usuario
         if (user.isSessionActive) {
             return { success: false, message: 'Ya existe una sesión activa para este usuario.' };
         }
@@ -284,12 +351,14 @@ export async function loginUser(credentials: {username: string, password: string
             return { success: false, message: 'Contraseña incorrecta.' };
         }
         
+        // Marcar la sesión como activa
         user.isSessionActive = true;
         await user.save();
 
         await logActivity(`user-login:${user.username}`, user.username);
         
         const serializedUser = safeSerialize(user);
+        // Establecer la cookie de sesión
         cookies().set('session-id', serializedUser.id, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -305,7 +374,11 @@ export async function loginUser(credentials: {username: string, password: string
     }
 }
 
-
+/**
+ * Autentica a un usuario de tipo Obrero usando su cédula.
+ * @param {string} cedula - Cédula del obrero.
+ * @returns {Promise<{success: boolean, data?: UserType, message: string}>} El resultado de la autenticación.
+ */
 export async function loginObrero(cedula: string) {
     try {
         await dbConnect();
@@ -314,17 +387,20 @@ export async function loginObrero(cedula: string) {
         if (!user) {
             return { success: false, message: 'Obrero no encontrado con esa cédula.' };
         }
-
+        
+        // Comprobar si ya existe una sesión activa para este usuario
         if (user.isSessionActive) {
             return { success: false, message: 'Ya existe una sesión activa para este usuario.' };
         }
-
+        
+        // Marcar la sesión como activa
         user.isSessionActive = true;
         await user.save();
 
         await logActivity(`worker-login:${cedula}`, 'Sistema');
         
         const serializedUser = safeSerialize(user);
+        // Establecer la cookie de sesión
         cookies().set('session-id', serializedUser.id, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -340,20 +416,33 @@ export async function loginObrero(cedula: string) {
     }
 }
 
+/**
+ * Cierra la sesión del usuario actual.
+ * Elimina la cookie de sesión y marca la sesión como inactiva en la base de datos.
+ */
 export async function logout() {
     const userId = cookies().get('session-id')?.value;
     if (userId) {
         try {
             await dbConnect();
+            // Marcar la sesión como inactiva en la BD
             await User.findByIdAndUpdate(userId, { isSessionActive: false });
         } catch (error) {
             console.error('Error updating session status on logout:', error);
         }
     }
+    // Eliminar la cookie
     cookies().delete('session-id');
 }
 
 
+/**
+ * Actualiza la contraseña de un usuario.
+ * @param {string} userId - ID del usuario.
+ * @param {string} currentPassword - Contraseña actual para verificación.
+ * @param {string} newPassword - Nueva contraseña.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function updatePassword(userId: string, currentPassword: string, newPassword: string) {
     try {
         await dbConnect();
@@ -384,7 +473,12 @@ export async function updatePassword(userId: string, currentPassword: string, ne
     }
 }
 
-// Acciones de Cuadrillas
+// --- Acciones de Cuadrillas (Crew) ---
+
+/**
+ * Obtiene todas las cuadrillas del sistema, populando sus miembros.
+ * @returns {Promise<{success: boolean, data?: CrewType[], message?: string}>} Una lista de todas las cuadrillas.
+ */
 export async function getCrews() {
     try {
         await dbConnect();
@@ -401,6 +495,11 @@ export async function getCrews() {
     }
 }
 
+/**
+ * Obtiene las cuadrillas a las que pertenece un usuario específico.
+ * @param {string} userId - El ID del usuario.
+ * @returns {Promise<{success: boolean, data?: CrewType[], message?: string}>} Una lista de cuadrillas del usuario.
+ */
 export async function getUserCrews(userId: string) {
     try {
         await dbConnect();
@@ -416,6 +515,11 @@ export async function getUserCrews(userId: string) {
     }
 }
 
+/**
+ * Obtiene una cuadrilla específica por su ID.
+ * @param {string} crewId - El ID de la cuadrilla.
+ * @returns {Promise<{success: boolean, data?: CrewType, message?: string}>} El objeto de la cuadrilla.
+ */
 export async function getCrewById(crewId: string) {
     try {
         await dbConnect();
@@ -434,6 +538,10 @@ export async function getCrewById(crewId: string) {
     }
 }
 
+/**
+ * Obtiene el siguiente número secuencial para nombrar una nueva cuadrilla.
+ * @returns {Promise<number>} El siguiente número de cuadrilla.
+ */
 async function getNextCrewNumber() {
     const lastCrew = await Crew.findOne().sort({ 'nombre': -1 });
     if (!lastCrew || !lastCrew.nombre.includes('N°')) return 1;
@@ -442,11 +550,18 @@ async function getNextCrewNumber() {
         const lastNumber = parseInt(lastCrew.nombre.split(' - N°')[1] || '0', 10);
         return lastNumber + 1;
     } catch {
-        return 1; // Fallback if parsing fails
+        return 1; // Fallback
     }
 }
 
-
+/**
+ * Crea una nueva cuadrilla.
+ * @param {object} crewData - Datos de la cuadrilla.
+ * @param {string} [crewData.descripcion] - Descripción de la actividad.
+ * @param {string[]} crewData.moderadores - IDs de los moderadores.
+ * @param {string[]} crewData.obreros - IDs de los obreros.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function createCrew(crewData: { descripcion?: string; moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
@@ -455,14 +570,13 @@ export async function createCrew(crewData: { descripcion?: string; moderadores: 
             return { success: false, message: "Acceso no autorizado." };
         }
         
-        // --- Validation: Check if any of the selected workers are already in another crew ---
+        // Validar que los obreros seleccionados no pertenezcan ya a otra cuadrilla.
         const conflictingCrews = await Crew.find({ obreros: { $in: crewData.obreros } });
         if (conflictingCrews.length > 0) {
             const assignedObreros = await User.find({ _id: { $in: conflictingCrews.flatMap(c => c.obreros) } }).select('nombre apellido');
             const assignedNames = assignedObreros.map(o => `${o.nombre} ${o.apellido}`).join(', ');
             return { success: false, message: `Los siguientes obreros ya están en otra cuadrilla: ${assignedNames}.` };
         }
-        // --- End Validation ---
 
         const crewNumber = await getNextCrewNumber();
         const crewName = `Cuadrilla - N°${crewNumber}`;
@@ -481,6 +595,12 @@ export async function createCrew(crewData: { descripcion?: string; moderadores: 
     }
 }
 
+/**
+ * Actualiza una cuadrilla existente.
+ * @param {string} crewId - ID de la cuadrilla a actualizar.
+ * @param {object} crewData - Nuevos datos de la cuadrilla.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function updateCrew(crewId: string, crewData: { nombre?: string; descripcion?: string; moderadores: string[]; obreros: string[] }) {
     try {
         await dbConnect();
@@ -489,10 +609,10 @@ export async function updateCrew(crewId: string, crewData: { nombre?: string; de
             return { success: false, message: "Acceso no autorizado." };
         }
         
-        // --- Validation: Check if any of the selected workers are already in another crew ---
+        // Validar que los obreros no estén en OTRA cuadrilla diferente a la que se está editando.
         const crewObjectId = new mongoose.Types.ObjectId(crewId);
         const conflictingCrews = await Crew.find({ 
-            _id: { $ne: crewObjectId }, // Exclude the current crew from the check
+            _id: { $ne: crewObjectId }, // Excluir la cuadrilla actual
             obreros: { $in: crewData.obreros } 
         });
 
@@ -505,7 +625,6 @@ export async function updateCrew(crewId: string, crewData: { nombre?: string; de
             const assignedNames = assignedObreros.map(o => `${o.nombre} ${o.apellido}`).join(', ');
             return { success: false, message: `Los siguientes obreros ya están en otra cuadrilla: ${assignedNames}.` };
         }
-        // --- End Validation ---
 
         const crew = await Crew.findByIdAndUpdate(crewId, crewData, { new: true });
         if (!crew) {
@@ -519,6 +638,11 @@ export async function updateCrew(crewId: string, crewData: { nombre?: string; de
     }
 }
 
+/**
+ * Elimina una cuadrilla y su canal de chat asociado.
+ * @param {string} crewId - ID de la cuadrilla a eliminar.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function deleteCrew(crewId: string) {
     try {
         await dbConnect();
@@ -529,7 +653,7 @@ export async function deleteCrew(crewId: string) {
 
         const crewObjectId = new mongoose.Types.ObjectId(crewId);
 
-        // Find and delete the associated channel and its messages
+        // Buscar y eliminar el canal de chat asociado y sus mensajes
         const channelToDelete = await Channel.findOne({ crewId: crewObjectId });
         if (channelToDelete) {
             await Message.deleteMany({ channelId: channelToDelete._id });
@@ -537,7 +661,7 @@ export async function deleteCrew(crewId: string) {
             await logActivity(`channel-deletion-auto:${channelToDelete.nombre}`, currentUser.username);
         }
 
-        // Delete the crew
+        // Eliminar la cuadrilla
         const crew = await Crew.findByIdAndDelete(crewId);
         if (!crew) {
             return { success: false, message: 'Cuadrilla no encontrada.' };
@@ -552,12 +676,19 @@ export async function deleteCrew(crewId: string) {
 }
 
 
-// Acciones de Canales
+// --- Acciones de Canales (Channel) ---
+
+/**
+ * Obtiene los canales de chat. Sincroniza y crea canales base si no existen.
+ * @param {string} [userId] - ID del usuario para filtrar canales en los que es miembro.
+ * @param {UserRole} [userRole] - Rol del usuario.
+ * @returns {Promise<{success: boolean, data?: ChannelType[], message?: string}>} Una lista de canales.
+ */
 export async function getChannels(userId?: string, userRole?: UserRole) {
     try {
         await dbConnect();
 
-        // Step 1: Ensure base channels exist and sync members
+        // 1. Sincronizar canales base (Generales, por Rol) y sus miembros
         const baseChannels = [
             { name: "Anuncios Generales", type: 'GENERAL', roles: ['Admin', 'Moderador', 'Obrero'] },
             { name: "Moderadores", type: 'ROLE', roles: ['Admin', 'Moderador'] },
@@ -573,14 +704,14 @@ export async function getChannels(userId?: string, userRole?: UserRole) {
                 { 
                     nombre: ch.name,
                     type: ch.type,
-                    $addToSet: { members: memberIds }, // Use $addToSet to avoid duplicates
-                    isDeletable: false
+                    $addToSet: { members: memberIds }, // Usar $addToSet para evitar miembros duplicados
+                    isDeletable: false // Estos canales no se pueden borrar
                 },
-                { upsert: true, new: true }
+                { upsert: true, new: true } // `upsert` crea el canal si no existe
             );
         }
 
-        // Step 2: Sync crew channels
+        // 2. Sincronizar canales de cuadrillas
         const crews = await Crew.find({}).populate('moderadores obreros');
         for (const crew of crews) {
             const memberIds = [...crew.moderadores.map(m => m._id), ...crew.obreros.map(o => o._id)];
@@ -591,13 +722,13 @@ export async function getChannels(userId?: string, userRole?: UserRole) {
                     type: 'CREW',
                     members: memberIds,
                     crewId: crew._id,
-                    isDeletable: false,
+                    isDeletable: false, // Los canales de cuadrilla se borran con la cuadrilla
                 },
                 { upsert: true, new: true }
             );
         }
         
-        // Step 3: Fetch channels where the current user is a member
+        // 3. Obtener solo los canales donde el usuario actual es miembro
         if (!userId) {
             return { success: false, message: 'ID de usuario no proporcionado.' };
         }
@@ -612,6 +743,12 @@ export async function getChannels(userId?: string, userRole?: UserRole) {
     }
 }
 
+/**
+ * Crea un canal de chat directo entre dos usuarios.
+ * @param {string} userId1 - ID del primer usuario (generalmente el creador).
+ * @param {string} userId2 - ID del segundo usuario.
+ * @returns {Promise<{success: boolean, data?: ChannelType, message: string}>} El canal creado o existente.
+ */
 export async function createDirectChannel(userId1: string, userId2: string) {
     try {
         await dbConnect();
@@ -623,7 +760,7 @@ export async function createDirectChannel(userId1: string, userId2: string) {
             return { success: false, message: "Uno de los usuarios no existe." };
         }
 
-        // Check if a direct channel between these two users already exists
+        // Comprobar si ya existe un canal directo entre estos dos usuarios
         const existingChannel = await Channel.findOne({
             type: 'DIRECT',
             members: { $all: [user1._id, user2._id], $size: 2 }
@@ -649,6 +786,13 @@ export async function createDirectChannel(userId1: string, userId2: string) {
     }
 }
 
+/**
+ * Crea un canal de chat grupal.
+ * @param {string} name - Nombre del grupo.
+ * @param {string[]} memberIds - IDs de los miembros a incluir.
+ * @param {string} createdBy - ID del usuario que crea el grupo.
+ * @returns {Promise<{success: boolean, data?: ChannelType, message: string}>} El grupo creado.
+ */
 export async function createGroupChannel(name: string, memberIds: string[], createdBy: string) {
     try {
         await dbConnect();
@@ -674,6 +818,12 @@ export async function createGroupChannel(name: string, memberIds: string[], crea
     }
 }
 
+/**
+ * Añade miembros a un canal de grupo.
+ * @param {string} channelId - ID del canal.
+ * @param {string[]} memberIds - IDs de los miembros a añadir.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function addMembersToChannel(channelId: string, memberIds: string[]) {
     try {
         await dbConnect();
@@ -697,6 +847,12 @@ export async function addMembersToChannel(channelId: string, memberIds: string[]
     }
 }
 
+/**
+ * Elimina miembros de un canal de grupo.
+ * @param {string} channelId - ID del canal.
+ * @param {string[]} memberIds - IDs de los miembros a eliminar.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function removeMembersFromChannel(channelId: string, memberIds: string[]) {
     try {
         await dbConnect();
@@ -710,7 +866,7 @@ export async function removeMembersFromChannel(channelId: string, memberIds: str
             return { success: false, message: 'Canal no encontrado o no es un grupo.' };
         }
         
-        // Ensure the creator/admin is not removed
+        // Evitar que el propio usuario se elimine a sí mismo
         const safeMemberIds = memberIds.filter(id => id !== currentUser.id);
 
         await Channel.findByIdAndUpdate(channelId, { $pullAll: { members: safeMemberIds } });
@@ -723,7 +879,12 @@ export async function removeMembersFromChannel(channelId: string, memberIds: str
     }
 }
 
-
+/**
+ * Elimina un canal de chat (si es eliminable).
+ * @param {string} channelId - ID del canal a eliminar.
+ * @param {string} userId - ID del usuario que realiza la acción.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function deleteChannel(channelId: string, userId: string) {
     try {
         await dbConnect();
@@ -742,21 +903,19 @@ export async function deleteChannel(channelId: string, userId: string) {
             return { success: false, message: "Este canal no puede ser eliminado." };
         }
         
-        // Admins can delete any deletable channel.
-        // Moderators can only delete GROUP or DIRECT channels.
+        // Reglas de permisos para eliminación
         if (user.role === 'Moderador' && channel.type !== 'GROUP' && channel.type !== 'DIRECT') {
             return { success: false, message: "No tienes permiso para eliminar este tipo de canal." };
         }
         
-        // Block anyone else
         if (user.role !== 'Admin' && user.role !== 'Moderador') {
             return { success: false, message: "No tienes permiso para eliminar este canal." };
         }
         
-        // Delete all messages in the channel
+        // Eliminar todos los mensajes del canal
         await Message.deleteMany({ channelId: channel._id });
 
-        // Delete the channel itself
+        // Eliminar el canal
         await Channel.findByIdAndDelete(channelId);
 
         await logActivity(`channel-deletion:${channel.nombre}`, user.username);
@@ -768,19 +927,61 @@ export async function deleteChannel(channelId: string, userId: string) {
     }
 }
 
+/**
+ * Cambia el nombre de un canal de grupo.
+ * @param {string} channelId - ID del canal.
+ * @param {string} newName - Nuevo nombre para el grupo.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
+export async function updateChannelName(channelId: string, newName: string) {
+    try {
+        await dbConnect();
+        const currentUser = await getCurrentUserFromSession();
+        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
+            return { success: false, message: 'No tiene permiso para realizar esta acción.' };
+        }
 
+        const channel = await Channel.findById(channelId);
+        if (!channel) {
+            return { success: false, message: 'Canal no encontrado.' };
+        }
+
+        if (channel.type !== 'GROUP') {
+            return { success: false, message: 'Solo se puede cambiar el nombre de los grupos.' };
+        }
+
+        channel.nombre = newName;
+        await channel.save();
+        
+        await logActivity(`channel-rename:${channelId}`, currentUser.username);
+
+        return { success: true, message: 'Nombre del grupo actualizado exitosamente.' };
+
+    } catch (error) {
+        console.error('Error al actualizar nombre del canal:', error);
+        return { success: false, message: 'Error al actualizar el nombre del canal.' };
+    }
+}
+
+// --- Acciones de Mensajes (Message) ---
+
+/**
+ * Obtiene todos los mensajes de un canal específico.
+ * @param {string} channelId - ID del canal.
+ * @returns {Promise<{success: boolean, data?: PopulatedMessage[], message?: string}>} Lista de mensajes populados.
+ */
 export async function getMessages(channelId: string) {
     try {
         await dbConnect();
         const messages = await Message.find({ channelId })
             .populate('senderId', 'nombre apellido username role')
             .sort({ fecha: 1 })
-            .lean() // Use .lean() for faster, plain JS objects
+            .lean() // Usar .lean() para objetos JS planos y más rápidos
             .exec();
         
-        // Manually serialize and structure the data
+        // Procesar y estructurar manualmente los datos para asegurar la serialización correcta
         const processedMessages = messages.map(msg => {
-            const sender = msg.senderId as any; // Cast sender to any
+            const sender = msg.senderId as any; // Castear a 'any' para acceso flexible
             return {
                 id: msg._id.toString(),
                 channelId: msg.channelId.toString(),
@@ -803,7 +1004,13 @@ export async function getMessages(channelId: string) {
     }
 }
 
-
+/**
+ * Envía un nuevo mensaje a un canal.
+ * @param {string} channelId - ID del canal.
+ * @param {string} senderId - ID del usuario que envía el mensaje.
+ * @param {string} content - Contenido del mensaje.
+ * @returns {Promise<{success: boolean, data?: PopulatedMessage, message: string}>} El mensaje enviado y populado.
+ */
 export async function sendMessage(channelId: string, senderId: string, content: string) {
     try {
         await dbConnect();
@@ -814,9 +1021,10 @@ export async function sendMessage(channelId: string, senderId: string, content: 
         });
         await newMessage.save();
 
-        // Update the channel's lastMessageAt timestamp
+        // Actualizar el timestamp del último mensaje en el canal para ordenarlo
         await Channel.findByIdAndUpdate(channelId, { lastMessageAt: new Date() });
         
+        // Popular el mensaje recién creado para devolverlo completo al cliente
         const populatedMessage = await Message.findById(newMessage._id)
             .populate('senderId', 'nombre apellido username role')
             .lean()
@@ -848,7 +1056,11 @@ export async function sendMessage(channelId: string, senderId: string, content: 
     }
 }
 
-
+/**
+ * Elimina un mensaje.
+ * @param {string} messageId - ID del mensaje a eliminar.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function deleteMessage(messageId: string) {
     try {
         await dbConnect();
@@ -865,37 +1077,14 @@ export async function deleteMessage(messageId: string) {
     }
 }
 
-export async function updateChannelName(channelId: string, newName: string) {
-    try {
-        await dbConnect();
-        const currentUser = await getCurrentUserFromSession();
-        if (!currentUser || (currentUser.role !== 'Admin' && currentUser.role !== 'Moderador')) {
-            return { success: false, message: 'No tiene permiso para realizar esta acción.' };
-        }
 
-        const channel = await Channel.findById(channelId);
-        if (!channel) {
-            return { success: false, message: 'Canal no encontrado.' };
-        }
+// --- Acciones de Reportes de Trabajo (WorkReport) ---
 
-        if (channel.type !== 'GROUP') {
-            return { success: false, message: 'Solo se puede cambiar el nombre de los grupos.' };
-        }
-
-        channel.nombre = newName;
-        await channel.save();
-        
-        await logActivity(`channel-rename:${channelId}`, currentUser.username);
-
-        return { success: true, message: 'Nombre del grupo actualizado exitosamente.' };
-
-    } catch (error) {
-        console.error('Error al actualizar nombre del canal:', error);
-        return { success: false, message: 'Error al actualizar el nombre del canal.' };
-    }
-}
-
-// Acciones de Reportes de Trabajo
+/**
+ * Crea un nuevo reporte de trabajo.
+ * @param {Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>} data - Datos del reporte.
+ * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message: string}>} El reporte creado y populado.
+ */
 export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>) {
     try {
         await dbConnect();
@@ -914,7 +1103,7 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
         
         await logActivity(`work-report-creation:${newWorkReport._id}`, currentUser.username);
 
-        // Fetch the newly created report to populate it
+        // Devolver el reporte populado para la exportación a PDF inmediata
         const populatedReport = await getWorkReportById(newWorkReport._id.toString());
         if (!populatedReport.success) {
             return { success: false, message: "Reporte creado, pero no se pudo recuperar para la exportación." };
@@ -924,7 +1113,7 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
 
     } catch (error: any) {
         if (error instanceof mongoose.Error.ValidationError) {
-            // Extrae el primer mensaje de error de validación
+            // Manejar errores de validación de Mongoose de forma legible
             const messages = Object.values(error.errors).map(e => e.message);
             return { success: false, message: `Error de validación: ${messages[0]}` };
         }
@@ -933,6 +1122,12 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
     }
 }
 
+/**
+ * Actualiza un reporte de trabajo existente.
+ * @param {string} reportId - ID del reporte a actualizar.
+ * @param {Partial<Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>>} data - Datos a actualizar.
+ * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message: string}>} El reporte actualizado y populado.
+ */
 export async function updateWorkReport(reportId: string, data: Partial<Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>>) {
     try {
         await dbConnect();
@@ -966,6 +1161,10 @@ export async function updateWorkReport(reportId: string, data: Partial<Omit<Work
     }
 }
 
+/**
+ * Obtiene todos los reportes de trabajo.
+ * @returns {Promise<{success: boolean, data?: PopulatedWorkReport[], message?: string}>} Una lista de todos los reportes populados.
+ */
 export async function getWorkReports() {
     try {
         await dbConnect();
@@ -990,6 +1189,11 @@ export async function getWorkReports() {
     }
 }
 
+/**
+ * Obtiene un reporte de trabajo específico por su ID.
+ * @param {string} reportId - ID del reporte.
+ * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message?: string}>} El reporte populado.
+ */
 export async function getWorkReportById(reportId: string) {
     try {
         await dbConnect();
@@ -1017,6 +1221,11 @@ export async function getWorkReportById(reportId: string) {
     }
 }
 
+/**
+ * Elimina un reporte de trabajo.
+ * @param {string} reportId - ID del reporte a eliminar.
+ * @returns {Promise<{success: boolean, message: string}>} El resultado de la operación.
+ */
 export async function deleteWorkReport(reportId: string) {
     try {
         await dbConnect();
@@ -1042,15 +1251,21 @@ export async function deleteWorkReport(reportId: string) {
 }
 
 
-// Dashboard actions
+// --- Acciones de Dashboard ---
+
+/**
+ * Obtiene estadísticas agregadas para el dashboard de Admin y Moderador.
+ * @returns {Promise<object>} Un objeto con varias estadísticas.
+ */
 export async function getAdminDashboardStats() {
   await dbConnect();
 
+  // Contar usuarios por rol
   const userCountsByRole = await User.aggregate([
     { $group: { _id: '$role', count: { $sum: 1 } } },
   ]);
 
-  const roleCounts = {
+  const roleCounts: Record<UserRole, number> = {
     Admin: 0,
     Moderador: 0,
     Obrero: 0,
@@ -1065,10 +1280,10 @@ export async function getAdminDashboardStats() {
   const totalUsers = await User.countDocuments();
   const activeUsers = await User.countDocuments({ status: 'active' });
   const inactiveUsers = totalUsers - activeUsers;
-  const logResult = await getActivityLogs(5);
+  const logResult = await getActivityLogs(5); // Obtener las 5 actividades más recientes
   
   const activeCrews = await Crew.countDocuments(); 
-  const reportsGenerated = 0; // Placeholder
+  const reportsGenerated = 0; // Placeholder, podría implementarse con WorkReport.countDocuments()
 
   return {
     totalUsers,
@@ -1084,14 +1299,3 @@ export async function getAdminDashboardStats() {
     ],
   };
 }
-
-    
-
-    
-
-
-
-
-    
-
-
