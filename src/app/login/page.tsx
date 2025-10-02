@@ -169,10 +169,10 @@ export default function LoginPage() {
       <Button
         variant="outline"
         size="icon"
-        className="fixed bottom-4 right-4 rounded-full h-12 w-12 shadow-lg"
+        className="fixed bottom-4 right-4 rounded-full h-14 w-14 shadow-lg"
         onClick={() => setShowSupportDialog(true)}
       >
-        <StrongArmIcon className="h-6 w-6" />
+        <StrongArmIcon className="h-8 w-8" />
         <span className="sr-only">Soporte</span>
       </Button>
 
