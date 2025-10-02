@@ -13,6 +13,7 @@ const UserSchema = new Schema({
   fechaCreacion: { type: Date, default: Date.now },
   creadoPor: { type: String, required: true },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  isSessionActive: { type: Boolean, default: false }, // Campo para controlar sesión activa
 }, {
   toJSON: {
     virtuals: true,

@@ -16,6 +16,7 @@ export interface User {
   fechaCreacion: string;
   creadoPor: string;
   status: 'active' | 'inactive';
+  isSessionActive: boolean;
 }
 
 export interface Crew {
@@ -77,6 +78,7 @@ export interface ToolEntry {
 }
 
 export interface WorkReport {
+  _id: string;
   id: string;
   crewId: string;
   municipio: string;
@@ -96,4 +98,5 @@ export type PopulatedWorkReport = Omit<WorkReport, 'crewId' | 'realizadoPor'> & 
     
 
     
+
 

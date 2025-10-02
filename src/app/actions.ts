@@ -274,12 +274,19 @@ export async function loginUser(credentials: {username: string, password: string
             return { success: false, message: 'Usuario no encontrado.' };
         }
 
+        if (user.isSessionActive) {
+            return { success: false, message: 'Ya existe una sesión activa para este usuario.' };
+        }
+
         const isMatch = await bcrypt.compare(credentials.password, user.contrasena);
 
         if (!isMatch) {
             return { success: false, message: 'Contraseña incorrecta.' };
         }
         
+        user.isSessionActive = true;
+        await user.save();
+
         await logActivity(`user-login:${user.username}`, user.username);
         
         const serializedUser = safeSerialize(user);
@@ -308,6 +315,13 @@ export async function loginObrero(cedula: string) {
             return { success: false, message: 'Obrero no encontrado con esa cédula.' };
         }
 
+        if (user.isSessionActive) {
+            return { success: false, message: 'Ya existe una sesión activa para este usuario.' };
+        }
+
+        user.isSessionActive = true;
+        await user.save();
+
         await logActivity(`worker-login:${cedula}`, 'Sistema');
         
         const serializedUser = safeSerialize(user);
@@ -327,6 +341,15 @@ export async function loginObrero(cedula: string) {
 }
 
 export async function logout() {
+    const userId = cookies().get('session-id')?.value;
+    if (userId) {
+        try {
+            await dbConnect();
+            await User.findByIdAndUpdate(userId, { isSessionActive: false });
+        } catch (error) {
+            console.error('Error updating session status on logout:', error);
+        }
+    }
     cookies().delete('session-id');
 }
 
@@ -1070,4 +1093,5 @@ export async function getAdminDashboardStats() {
 
 
     
+
 
