@@ -45,7 +45,7 @@ const generateWorkReportPDF = (report: PopulatedWorkReport) => {
     const primaryColorH = 173;
     const headerColor = hslToRgb(primaryColorH, 80, 30);
 
-    const reportId = report?.id?.slice(-6).toUpperCase() ?? 'N/A';
+    const reportId = report?._id?.slice(-6).toUpperCase() ?? 'N/A';
     const reportDate = report?.fecha ? format(new Date(report.fecha), "dd/MM/yyyy", { locale: es }) : 'N/A';
     const crewName = report?.crewId?.nombre ?? 'Cuadrilla no especificada';
 
