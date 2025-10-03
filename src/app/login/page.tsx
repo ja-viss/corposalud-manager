@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -14,32 +15,23 @@ import { Eye, EyeOff } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 const StrongArmIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width="24" 
-        height="24" 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        {...props}
-    >
-        <path d="M13 5.5s-1-1.5-2.5-1.5-2.5 1.5-2.5 1.5S6.5 8.5 8 10.5c1.5 2 1.5 3.5 1.5 3.5" />
-        <path d="M18 12.5s-1.5-1-3-1-3 1-3 1" />
-        <path d="M12 11.5V14" />
-        <path d="M14.5 13.5h-5" />
-        <path d="M6 16.5c-1 1-1.5 2.5-1.5 2.5s1 1.5 2.5 1.5 2.5-1.5 2.5-1.5" />
-        <path d="M19.5 16.5c1 1 1.5 2.5 1.5 2.5s-1 1.5-2.5 1.5-2.5-1.5-2.5-1.5" />
-    </svg>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M7.5,21.31a.5.5,0,0,1-.4-.2,5.1,5.1,0,0,1-.5-4.4c.5-1.4,1.4-2.8,2.8-3.8.4-.3.9-.2,1.2.2s.2.9-.2,1.2c-1.1.8-1.8,1.9-2.2,3s.1,2.8.9,3.6a.5.5,0,0,1-.1.7A.5.5,0,0,1,7.5,21.31ZM17,2H16a1,1,0,0,0-1,1V6.18A4,4,0,0,0,12,10v3H10a1,1,0,0,0-1,1v8a1,1,0,0,0,1,1h7a1,1,0,0,0,1-1V12.5A3.5,3.5,0,0,0,14.5,9,3.49,3.49,0,0,0,17,5.5a3.5,3.5,0,0,0,0-7Z" />
+  </svg>
 );
 
 
@@ -181,15 +173,13 @@ export default function LoginPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Soporte Técnico</AlertDialogTitle>
             <AlertDialogDescription>
-              Si necesita ayuda o tiene problemas para acceder, por favor contacte al siguiente número:
+              Si necesita ayuda, puede contactarnos al siguiente número:
+              <p className="font-semibold text-lg text-foreground mt-2">+58 412 - 1278416</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="my-4 text-center text-2xl font-bold tracking-widest font-mono">
-            +58 412 - 1278416
-          </div>
-          <AlertDialogAction onClick={() => setShowSupportDialog(false)} className="w-full">
-            Cerrar
-          </AlertDialogAction>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowSupportDialog(false)}>Cerrar</AlertDialogCancel>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
