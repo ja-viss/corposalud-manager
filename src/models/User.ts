@@ -28,8 +28,6 @@ const UserSchema = new Schema({
   creadoPor: { type: String, required: true }, // Username de quien creó el usuario.
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 
-  // Control de sesión.
-  isSessionActive: { type: Boolean, default: false }, // Flag para controlar sesiones activas.
 }, {
   // Opciones de serialización.
   toJSON: {

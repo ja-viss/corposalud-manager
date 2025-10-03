@@ -30,7 +30,6 @@ export interface User {
   fechaCreacion: string; // Se almacena como Date, se serializa a string
   creadoPor: string;
   status: 'active' | 'inactive';
-  isSessionActive: boolean; // Indica si el usuario tiene una sesión activa
 }
 
 /**

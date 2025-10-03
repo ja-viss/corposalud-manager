@@ -274,7 +274,7 @@ export async function createUser(userData: Partial<Omit<UserType, 'id' | 'fechaC
  * Actualiza los datos de un usuario existente.
  * @param {string} userId - El ID del usuario a actualizar.
  * @param {Partial<Omit<UserType, 'id' | 'contrasena'>> & { contrasena?: string }} userData - Los nuevos datos para el usuario.
- * @returns {Promise<{success: boolean, data?: UserType, message: string}>} El usuario actualizado o un mensaje de error.
+ * @returns {Promise<{success: boolean, data?: UserType, message?: string}>} El usuario actualizado o un mensaje de error.
  */
 export async function updateUser(userId: string, userData: Partial<Omit<UserType, 'id' | 'contrasena'>> & { contrasena?: string }) {
     try {
@@ -339,11 +339,6 @@ export async function loginUser(credentials: {username: string, password: string
         if (!user) {
             return { success: false, message: 'Usuario no encontrado.' };
         }
-        
-        // Comprobar si ya existe una sesión activa para este usuario
-        if (user.isSessionActive) {
-            return { success: false, message: 'Ya existe una sesión activa para este usuario.' };
-        }
 
         const isMatch = await bcrypt.compare(credentials.password, user.contrasena);
 
@@ -351,10 +346,6 @@ export async function loginUser(credentials: {username: string, password: string
             return { success: false, message: 'Contraseña incorrecta.' };
         }
         
-        // Marcar la sesión como activa
-        user.isSessionActive = true;
-        await user.save();
-
         await logActivity(`user-login:${user.username}`, user.username);
         
         const serializedUser = safeSerialize(user);
@@ -388,15 +379,6 @@ export async function loginObrero(cedula: string) {
             return { success: false, message: 'Obrero no encontrado con esa cédula.' };
         }
         
-        // Comprobar si ya existe una sesión activa para este usuario
-        if (user.isSessionActive) {
-            return { success: false, message: 'Ya existe una sesión activa para este usuario.' };
-        }
-        
-        // Marcar la sesión como activa
-        user.isSessionActive = true;
-        await user.save();
-
         await logActivity(`worker-login:${cedula}`, 'Sistema');
         
         const serializedUser = safeSerialize(user);
@@ -418,19 +400,9 @@ export async function loginObrero(cedula: string) {
 
 /**
  * Cierra la sesión del usuario actual.
- * Elimina la cookie de sesión y marca la sesión como inactiva en la base de datos.
+ * Elimina la cookie de sesión.
  */
 export async function logout() {
-    const userId = cookies().get('session-id')?.value;
-    if (userId) {
-        try {
-            await dbConnect();
-            // Marcar la sesión como inactiva en la BD
-            await User.findByIdAndUpdate(userId, { isSessionActive: false });
-        } catch (error) {
-            console.error('Error updating session status on logout:', error);
-        }
-    }
     // Eliminar la cookie
     cookies().delete('session-id');
 }
@@ -1083,7 +1055,7 @@ export async function deleteMessage(messageId: string) {
 /**
  * Crea un nuevo reporte de trabajo.
  * @param {Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>} data - Datos del reporte.
- * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message: string}>} El reporte creado y populado.
+ * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message?: string}>} El reporte creado y populado.
  */
 export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>) {
     try {
@@ -1126,7 +1098,7 @@ export async function createWorkReport(data: Omit<WorkReportType, 'id' | 'realiz
  * Actualiza un reporte de trabajo existente.
  * @param {string} reportId - ID del reporte a actualizar.
  * @param {Partial<Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>>} data - Datos a actualizar.
- * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message: string}>} El reporte actualizado y populado.
+ * @returns {Promise<{success: boolean, data?: PopulatedWorkReport, message?: string}>} El reporte actualizado y populado.
  */
 export async function updateWorkReport(reportId: string, data: Partial<Omit<WorkReportType, 'id' | 'realizadoPor' | 'fecha'>>) {
     try {
